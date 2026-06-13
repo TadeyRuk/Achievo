@@ -25,13 +25,11 @@ Welcome to the **Achievo** Obsidian Vault. This vault maps out the design, compo
 
 | Component | Status | Target File |
 | :--- | :---: | :--- |
- | **Activity Agent** | ⏳ Not Started | `src/agents/activity.js` | 
- | **Verification Agent** | ⏳ Not Started | `src/agents/verification.js` | 
- | **Reward Decision Agent** | ⏳ Not Started | `src/agents/reward.js` | 
- | **Stellar Agent** | ⏳ Not Started | `src/agents/stellar.js` | 
- | **Transaction Feedback Agent** | ⏳ Not Started | `src/agents/feedback.js` | 
- | **Freighter Wallet Integration** | ⏳ Not Started | `src/wallet.js` | 
- | **Frontend UI Dashboard** | ⏳ Not Started | `src/index.html` | 
+ | **Soroban Smart Contract (Rust)** | 🚧 In Progress | `contract/src/lib.rs` | 
+ | **Wallet Kit Integration (TS)** | 🚧 In Progress | `frontend/src/wallet.ts` | 
+ | **Contract Call Wrapper (TS)** | 🚧 In Progress | `frontend/src/contract.ts` | 
+ | **Split Bill Calculator UI (React)** | 🚧 In Progress | `frontend/src/App.tsx` | 
+ | **Custom Styling Sheet (CSS)** | 🚧 In Progress | `frontend/src/index.css` | 
 
 ---
 

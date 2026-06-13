@@ -1,0 +1,14 @@
+/home/tadeyruk/Documents/Projects/achievo/contract/target/release/deps/serde-52940c2884ed6427.d: /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/tadeyruk/Documents/Projects/achievo/contract/target/release/build/serde-77aef4189176bd0e/out/private.rs
+
+/home/tadeyruk/Documents/Projects/achievo/contract/target/release/deps/libserde-52940c2884ed6427.rlib: /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/tadeyruk/Documents/Projects/achievo/contract/target/release/build/serde-77aef4189176bd0e/out/private.rs
+
+/home/tadeyruk/Documents/Projects/achievo/contract/target/release/deps/libserde-52940c2884ed6427.rmeta: /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/tadeyruk/Documents/Projects/achievo/contract/target/release/build/serde-77aef4189176bd0e/out/private.rs
+
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/tadeyruk/Documents/Projects/achievo/contract/target/release/build/serde-77aef4189176bd0e/out/private.rs:
+
+# env-dep:OUT_DIR=/home/tadeyruk/Documents/Projects/achievo/contract/target/release/build/serde-77aef4189176bd0e/out
