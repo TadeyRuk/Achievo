@@ -1,0 +1,9 @@
+# Ignore code dependency folders in Obsidian
+node_modules/**
+dist/**
+build/**
+.git/**
+scripts/**
+.next/**
+out/**
+*.log
