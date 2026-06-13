@@ -14,12 +14,11 @@ import { StellarWalletsKit, horizonServer } from "./wallet";
 // Soroban RPC Server for Testnet
 export const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
 
-// Stellar Testnet Native XLM Token Contract ID
-export const XLM_TOKEN_CONTRACT_ID = "CAS3J7CYCJ34TRCB4YEX6ADYZ37CTAMCCMI43GAPK4R4SUK2VJYZATJQ";
+// Stellar Testnet Native XLM Token (SAC — Stellar Asset Contract)
+export const XLM_TOKEN_CONTRACT_ID = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 
 // Deployed Reward Treasury Contract ID (Testnet)
-// Update this after deploying the new treasury contract.
-export const CONTRACT_ID = "PLACEHOLDER_DEPLOY_AND_UPDATE";
+export const CONTRACT_ID = "CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ";
 
 const STROOP_FACTOR = 10_000_000;
 
