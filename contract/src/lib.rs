@@ -1,119 +1,98 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, Map, Symbol, token};
+use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, token};
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BillState {
-    pub organizer: Address,
+pub struct TreasuryState {
+    pub admin: Address,
     pub token: Address,
-    pub description: Symbol,
-    pub total_amount: i128,
-    pub share_per_person: i128,
-    pub participants: Map<Address, bool>,
+    pub total_disbursed: i128,
 }
 
 #[contract]
-pub struct SplitBillContract;
+pub struct RewardTreasuryContract;
 
 #[contractimpl]
-impl SplitBillContract {
-    // Initialize the bill
-    pub fn init(
-        env: Env,
-        organizer: Address,
-        token: Address,
-        description: Symbol,
-        total_amount: i128,
-        participants_vec: soroban_sdk::Vec<Address>,
-    ) {
-        organizer.require_auth();
-
-        let count = participants_vec.len() as i128;
-        if count == 0 {
-            panic!("Must have at least one participant");
+impl RewardTreasuryContract {
+    /// One-time setup. Admin funds this contract address externally after calling initialize.
+    pub fn initialize(env: Env, admin: Address, token: Address) {
+        if env.storage().instance().has(&symbol_short!("state")) {
+            panic!("Contract already initialized");
         }
-        if total_amount <= 0 {
-            panic!("Total amount must be positive");
-        }
+        admin.require_auth();
 
-        let share = total_amount / count;
-
-        let mut participants = Map::new(&env);
-        for p in participants_vec.iter() {
-            participants.set(p, false);
-        }
-
-        let state = BillState {
-            organizer,
+        let state = TreasuryState {
+            admin,
             token,
-            description,
-            total_amount,
-            share_per_person: share,
-            participants,
+            total_disbursed: 0,
         };
-
         env.storage().instance().set(&symbol_short!("state"), &state);
 
-        // Emit an event
         env.events().publish(
-            (symbol_short!("bill"), symbol_short!("created")),
-            (state.organizer, state.description, state.total_amount),
+            (symbol_short!("treasury"), symbol_short!("init")),
+            (state.admin,),
         );
     }
 
-    // Pay a participant's share
-    pub fn pay_share(env: Env, payer: Address) {
-        payer.require_auth();
+    /// Admin-only: send an XLM reward from the treasury to a student wallet.
+    pub fn send_reward(env: Env, recipient: Address, amount: i128) {
+        let mut state: TreasuryState = env
+            .storage()
+            .instance()
+            .get(&symbol_short!("state"))
+            .expect("Contract not initialized");
 
-        let mut state: BillState = env.storage().instance().get(&symbol_short!("state")).expect("Contract not initialized");
+        state.admin.require_auth();
 
-        if !state.participants.contains_key(payer.clone()) {
-            panic!("Payer is not a participant in this bill");
+        if amount <= 0 {
+            panic!("Reward amount must be positive");
         }
 
-        if state.participants.get(payer.clone()).unwrap() {
-            panic!("Payer has already paid");
-        }
-
-        // Transfer tokens from payer to the contract
         let token_client = token::Client::new(&env, &state.token);
-        token_client.transfer(&payer, &env.current_contract_address(), &state.share_per_person);
+        let balance = token_client.balance(&env.current_contract_address());
+        if balance < amount {
+            panic!("Insufficient treasury balance");
+        }
 
-        // Mark as paid
-        state.participants.set(payer.clone(), true);
+        token_client.transfer(&env.current_contract_address(), &recipient, &amount);
+
+        state.total_disbursed += amount;
         env.storage().instance().set(&symbol_short!("state"), &state);
 
-        // Emit a payment event
         env.events().publish(
-            (symbol_short!("bill"), symbol_short!("paid")),
-            (payer, state.share_per_person),
+            (symbol_short!("reward"), symbol_short!("sent")),
+            (recipient, amount),
         );
     }
 
-    // Claim funds (only organizer, once everyone has paid or at any time)
-    pub fn claim(env: Env) {
-        let state: BillState = env.storage().instance().get(&symbol_short!("state")).expect("Contract not initialized");
-        state.organizer.require_auth();
-
+    /// View: current XLM balance held in this contract (in stroops).
+    pub fn get_balance(env: Env) -> i128 {
+        let state: TreasuryState = env
+            .storage()
+            .instance()
+            .get(&symbol_short!("state"))
+            .expect("Contract not initialized");
         let token_client = token::Client::new(&env, &state.token);
-        let contract_balance = token_client.balance(&env.current_contract_address());
-        
-        if contract_balance == 0 {
-            panic!("No funds to claim");
-        }
-
-        // Transfer funds from contract to the organizer
-        token_client.transfer(&env.current_contract_address(), &state.organizer, &contract_balance);
-
-        // Emit a claim event
-        env.events().publish(
-            (symbol_short!("bill"), symbol_short!("claimed")),
-            (state.organizer, contract_balance),
-        );
+        token_client.balance(&env.current_contract_address())
     }
 
-    // Get current state of the bill
-    pub fn get_state(env: Env) -> BillState {
-        env.storage().instance().get(&symbol_short!("state")).expect("Contract not initialized")
+    /// View: total XLM disbursed so far (in stroops).
+    pub fn get_disbursed(env: Env) -> i128 {
+        let state: TreasuryState = env
+            .storage()
+            .instance()
+            .get(&symbol_short!("state"))
+            .expect("Contract not initialized");
+        state.total_disbursed
+    }
+
+    /// View: admin address (frontend uses this to check if connected wallet is admin).
+    pub fn get_admin(env: Env) -> Address {
+        let state: TreasuryState = env
+            .storage()
+            .instance()
+            .get(&symbol_short!("state"))
+            .expect("Contract not initialized");
+        state.admin
     }
 }

@@ -1,189 +1,193 @@
-import { useState, useEffect } from 'react';
-import { 
-  getXlmBalance, 
+import { useState, useEffect, useCallback } from 'react';
+import {
+  getXlmBalance,
   fundWithFriendbot,
   StellarWalletsKit
 } from './wallet';
-import { 
-  CONTRACT_ID, 
-  XLM_TOKEN_CONTRACT_ID,
-  getBillState, 
-  createBillOnChain, 
-  payShareOnChain, 
-  claimFundsOnChain,
-  type BillStateData
+import {
+  CONTRACT_ID,
+  getTreasuryInfo,
+  sendRewardOnChain,
+  type TreasuryInfo
 } from './contract';
-import { 
-  Wallet, 
-  User, 
-  Plus, 
-  Trash2, 
-  DollarSign, 
-  Info, 
-  CheckCircle, 
-  XCircle, 
-  RefreshCw, 
+import {
+  activityAgent,
+  verificationAgent,
+  rewardAgent,
+  feedbackAgent
+} from './agents';
+import {
+  Wallet,
+  User,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
   ExternalLink,
   ShieldAlert,
-  ArrowRight,
+  Info,
+  Settings,
   TrendingUp,
-  Settings
+  ArrowRight,
+  Send
 } from 'lucide-react';
 
+// ─── Pipeline step type ───────────────────────────────────────────────────────
+
+type StepStatus = 'idle' | 'running' | 'done' | 'error';
+
+interface PipelineStep {
+  label: string;
+  detail: string;
+  status: StepStatus;
+}
+
+const INITIAL_PIPELINE: PipelineStep[] = [
+  { label: 'Activity Agent',     detail: 'Parsing your submission...',        status: 'idle' },
+  { label: 'Verification Agent', detail: 'Checking activity whitelist...',    status: 'idle' },
+  { label: 'Reward Agent',       detail: 'Calculating XLM reward...',         status: 'idle' },
+  { label: 'Stellar Agent',      detail: 'Executing on-chain transaction...', status: 'idle' },
+  { label: 'Feedback Agent',     detail: 'Formatting result...',              status: 'idle' },
+];
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+
 function App() {
-  // Wallet State
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [xlmBalance, setXlmBalance] = useState<string>("0");
-  const [isFunded, setIsFunded] = useState<boolean>(true);
+  // Wallet state
+  const [walletAddress, setWalletAddress]           = useState<string | null>(null);
+  const [xlmBalance, setXlmBalance]                 = useState<string>("0");
+  const [isFunded, setIsFunded]                     = useState<boolean>(true);
   const [isWalletConnecting, setIsWalletConnecting] = useState<boolean>(false);
 
-  // Contract Config State
-  const [currentContractId, setCurrentContractId] = useState<string>(CONTRACT_ID);
+  // Contract config
+  const [currentContractId, setCurrentContractId]     = useState<string>(CONTRACT_ID);
   const [customContractInput, setCustomContractInput] = useState<string>("");
-  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showSettings, setShowSettings]               = useState<boolean>(false);
 
-  // Create Bill Form State
-  const [billDesc, setBillDesc] = useState<string>("Dinner");
-  const [totalAmount, setTotalAmount] = useState<string>("30");
-  const [participantInput, setParticipantInput] = useState<string>("");
-  const [participants, setParticipants] = useState<string[]>([]);
+  // Treasury info
+  const [treasuryInfo, setTreasuryInfo] = useState<TreasuryInfo | null>(null);
 
-  // Active Bill State
-  const [activeBill, setActiveBill] = useState<BillStateData | null>(null);
-  const [isLoadingBillState, setIsLoadingBillState] = useState<boolean>(false);
+  // Derived: no separate state needed — avoids cascading setState in effects
+  const isAdmin = walletAddress !== null && treasuryInfo !== null && walletAddress === treasuryInfo.admin;
 
-  // App Loading / Feedback States
+  // Activity submission form
+  const [activityText, setActivityText]         = useState<string>("");
+  const [recipientAddress, setRecipientAddress] = useState<string>("");
+
+  // Pipeline state
+  const [pipeline, setPipeline]   = useState<PipelineStep[]>(INITIAL_PIPELINE);
+  const [isRunning, setIsRunning] = useState<boolean>(false);
+
+  // Result / feedback
+  const [rewardXlm, setRewardXlm]         = useState<number | null>(null);
+  const [txHash, setTxHash]               = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage]   = useState<string | null>(null);
 
-  // 1. Check if wallet was previously connected or setup listener
+  // ── Helpers (defined before useEffect hooks that reference them) ─────────────
+
+  const fetchBalance = useCallback(async (address: string) => {
+    try {
+      const { balance, isFunded: funded } = await getXlmBalance(address);
+      setXlmBalance(balance);
+      setIsFunded(funded);
+    } catch (e) {
+      setErrorMessage(`Error fetching balance: ${(e as Error).message ?? String(e)}`);
+    }
+  }, []);
+
+  const loadTreasuryInfo = useCallback(async (contractId: string) => {
+    if (contractId === "PLACEHOLDER_DEPLOY_AND_UPDATE") {
+      setTreasuryInfo(null);
+      return null;
+    }
+    try {
+      const info = await getTreasuryInfo(contractId);
+      setTreasuryInfo(info);
+      return info;
+    } catch {
+      setTreasuryInfo(null);
+      return null;
+    }
+  }, []);
+
+  const updateStep = (index: number, patch: Partial<PipelineStep>) => {
+    setPipeline(prev => prev.map((s, i) => i === index ? { ...s, ...patch } : s));
+  };
+
+  // ── Effects ──────────────────────────────────────────────────────────────────
+
+  // On mount: reconnect wallet if previously connected
   useEffect(() => {
-    const checkConnection = async () => {
+    (async () => {
       try {
         const { address } = await StellarWalletsKit.getAddress();
         if (address) {
           setWalletAddress(address);
           fetchBalance(address);
         }
-      } catch (e) {
-        // No wallet connected yet
-      }
-    };
-    checkConnection();
-  }, []);
+      } catch { /* not connected */ }
+    })();
+  }, [fetchBalance]);
 
-  // Fetch Wallet Balance
-  const fetchBalance = async (address: string) => {
-    try {
-      const { balance, isFunded: funded } = await getXlmBalance(address);
-      setXlmBalance(balance);
-      setIsFunded(funded);
-    } catch (e: any) {
-      setErrorMessage(`Error fetching balance: ${e.message || e}`);
-    }
-  };
+  // Load treasury info when contract ID changes (async external fetch — setState inside is intentional)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadTreasuryInfo(currentContractId);
+  }, [currentContractId, loadTreasuryInfo]);
 
-  // Connect Wallet Flow (StellarWalletsKit modal)
+  // ── Wallet actions ────────────────────────────────────────────────────────────
+
   const handleConnect = async () => {
     setIsWalletConnecting(true);
     setErrorMessage(null);
     try {
       const result = await StellarWalletsKit.authModal();
-      if (result && result.address) {
+      if (result?.address) {
         setWalletAddress(result.address);
         fetchBalance(result.address);
+        void loadTreasuryInfo(currentContractId);
       }
-    } catch (e: any) {
-      setErrorMessage(`Connection modal failed: ${e.message || e}`);
+    } catch (e) {
+      setErrorMessage(`Wallet connection failed: ${(e as Error).message ?? String(e)}`);
     } finally {
       setIsWalletConnecting(false);
     }
   };
 
-  // Disconnect Wallet
   const handleDisconnect = async () => {
-    try {
-      await StellarWalletsKit.disconnect();
-    } catch (e) {
-      console.error("Disconnect failed", e);
-    }
+    try { await StellarWalletsKit.disconnect(); } catch { /* ignore */ }
     setWalletAddress(null);
     setXlmBalance("0");
     setIsFunded(true);
+    setTreasuryInfo(null);
     setStatusMessage(null);
     setTxHash(null);
+    setErrorMessage(null);
   };
 
-  // Request Testnet XLM from Faucet
   const handleFundFaucet = async () => {
     if (!walletAddress) return;
     setStatusMessage("Requesting testnet XLM from Friendbot faucet...");
     setErrorMessage(null);
     try {
       await fundWithFriendbot(walletAddress);
-      setStatusMessage("Account successfully funded!");
+      setStatusMessage("Account funded with 10,000 testnet XLM!");
       await fetchBalance(walletAddress);
-    } catch (e: any) {
-      setErrorMessage(`Friendbot funding failed: ${e.message || e}`);
+    } catch (e) {
+      setErrorMessage(`Friendbot funding failed: ${(e as Error).message ?? String(e)}`);
     } finally {
       setTimeout(() => setStatusMessage(null), 5000);
     }
   };
 
-  // Add Participant to Form List
-  const handleAddParticipant = () => {
-    const addr = participantInput.trim();
-    if (!addr) return;
-    if (!addr.startsWith("G") || addr.length !== 56) {
-      setErrorMessage("Invalid Stellar public key format (must start with G and be 56 characters)");
-      return;
-    }
-    if (participants.includes(addr)) {
-      setErrorMessage("Participant address already added");
-      return;
-    }
-    setParticipants([...participants, addr]);
-    setParticipantInput("");
-    setErrorMessage(null);
-  };
-
-  // Remove Participant from Form List
-  const handleRemoveParticipant = (index: number) => {
-    const updated = [...participants];
-    updated.splice(index, 1);
-    setParticipants(updated);
-  };
-
-  // Load active bill details from contract
-  const loadBillDetails = async (contractIdToLoad: string = currentContractId) => {
-    if (contractIdToLoad === "CCK5BOUB7Y7GSP2J2P2P2P2P2P2P2P2P2P2P2P2P2P2P2P2P2P2P2P2P") {
-      // Don't try loading placeholder contract ID
-      return;
-    }
-    setIsLoadingBillState(true);
-    setErrorMessage(null);
-    try {
-      const data = await getBillState(contractIdToLoad);
-      setActiveBill(data);
-    } catch (e: any) {
-      console.error("Failed to load bill", e);
-      setActiveBill(null);
-    } finally {
-      setIsLoadingBillState(false);
-    }
-  };
-
-  // Load bill details on startup or when contract ID changes
-  useEffect(() => {
-    loadBillDetails(currentContractId);
-  }, [currentContractId]);
-
-  // Apply custom contract address
   const handleApplyContract = () => {
     const addr = customContractInput.trim();
     if (addr.length !== 56) {
-      setErrorMessage("Stellar contract ID must be 56 characters long.");
+      setErrorMessage("Contract ID must be 56 characters.");
       return;
     }
     setCurrentContractId(addr);
@@ -192,132 +196,133 @@ function App() {
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  // Submit/Create Bill On-Chain
-  const handleCreateBill = async (e: React.FormEvent) => {
+  // ── Main: submit activity through agent pipeline ──────────────────────────────
+
+  const handleSubmitActivity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!walletAddress) {
-      setErrorMessage("Please connect your wallet first.");
-      return;
-    }
-    if (participants.length === 0) {
-      setErrorMessage("Please add at least one participant.");
-      return;
-    }
-    const amt = parseFloat(totalAmount);
-    if (isNaN(amt) || amt <= 0) {
-      setErrorMessage("Please enter a valid total amount.");
+    if (!walletAddress)    { setErrorMessage("Connect your wallet first."); return; }
+    if (!isAdmin)          { setErrorMessage("Only the treasury admin can send rewards."); return; }
+    if (!activityText.trim()) { setErrorMessage("Enter an activity description."); return; }
+    if (!recipientAddress.trim() || !recipientAddress.startsWith("G") || recipientAddress.length !== 56) {
+      setErrorMessage("Enter a valid student Stellar public key (G... 56 chars).");
       return;
     }
 
+    setIsRunning(true);
     setErrorMessage(null);
     setTxHash(null);
-    // Include the organizer as part of the split participants list automatically
-    const allParticipants = Array.from(new Set([walletAddress, ...participants]));
+    setRewardXlm(null);
+    setPipeline(INITIAL_PIPELINE);
 
     try {
-      const hash = await createBillOnChain(
-        walletAddress,
-        XLM_TOKEN_CONTRACT_ID,
-        billDesc,
-        amt,
-        allParticipants,
-        (status) => setStatusMessage(status),
-        currentContractId
-      );
-      setTxHash(hash);
-      setStatusMessage("Bill successfully initialized on-chain!");
-      await loadBillDetails(currentContractId);
-      await fetchBalance(walletAddress);
-      // Clear form
-      setParticipants([]);
-      setBillDesc("Dinner");
-    } catch (err: any) {
-      console.error(err);
-      // Detailed error type parsing (Requirement: 3 error types handled)
-      if (err.message && err.message.includes("User declined")) {
-        setErrorMessage("Wallet Error: Signature request was rejected by the user.");
-      } else if (err.message && err.message.includes("insufficient")) {
-        setErrorMessage("Transaction Error: Insufficient wallet balance to cover total amount or network fee.");
-      } else if (err.message && err.message.includes("404")) {
-        setErrorMessage("Network Error: Account or contract not found on the Stellar network.");
-      } else {
-        setErrorMessage(`Contract Error: ${err.message || err}`);
+      // ── Step 0: Activity Agent ────────────────────────────────────────────────
+      updateStep(0, { status: 'running', detail: 'Parsing your submission...' });
+      await delay(400);
+      const actResult = activityAgent(activityText);
+      if (!actResult.valid) {
+        updateStep(0, { status: 'error', detail: `Unknown activity in: "${activityText}"` });
+        setErrorMessage(`Activity Agent: could not classify your submission. Try mentioning: tutoring, workshop, volunteering, event, or participation.`);
+        setIsRunning(false);
+        return;
       }
-      setStatusMessage(null);
-    }
-  };
+      updateStep(0, { status: 'done', detail: `Classified as: ${actResult.activity} (${actResult.suggestedReward} XLM suggested)` });
 
-  // Pay Participant Share
-  const handlePayShare = async () => {
-    if (!walletAddress) return;
-    setErrorMessage(null);
-    setTxHash(null);
-    try {
-      const hash = await payShareOnChain(
-        walletAddress,
-        (status) => setStatusMessage(status),
-        currentContractId
-      );
-      setTxHash(hash);
-      setStatusMessage("Payment completed successfully!");
-      await loadBillDetails(currentContractId);
-      await fetchBalance(walletAddress);
-    } catch (err: any) {
-      console.error(err);
-      if (err.message && err.message.includes("User declined")) {
-        setErrorMessage("Wallet Error: Signature request was rejected by the user.");
-      } else if (err.message && err.message.includes("insufficient")) {
-        setErrorMessage("Transaction Error: Insufficient balance to pay your share.");
-      } else {
-        setErrorMessage(`Payment failed: ${err.message || err}`);
+      // ── Step 1: Verification Agent ────────────────────────────────────────────
+      updateStep(1, { status: 'running', detail: 'Checking activity whitelist...' });
+      await delay(300);
+      const verResult = verificationAgent(actResult.activity);
+      if (verResult.status === 'rejected') {
+        updateStep(1, { status: 'error', detail: verResult.reason ?? 'Rejected' });
+        setErrorMessage(`Verification Agent: ${verResult.reason}`);
+        setIsRunning(false);
+        return;
       }
+      updateStep(1, { status: 'done', detail: 'Activity approved ✓' });
+
+      // ── Step 2: Reward Agent ──────────────────────────────────────────────────
+      updateStep(2, { status: 'running', detail: 'Calculating XLM reward...' });
+      await delay(300);
+      const rwdResult = rewardAgent(actResult.activity);
+      setRewardXlm(rwdResult.reward);
+      updateStep(2, { status: 'done', detail: `Reward assigned: ${rwdResult.reward} XLM` });
+
+      // ── Step 3: Stellar Agent (on-chain) ──────────────────────────────────────
+      updateStep(3, { status: 'running', detail: 'Sending XLM on Stellar testnet...' });
+      let hash: string;
+      try {
+        hash = await sendRewardOnChain(
+          walletAddress,
+          recipientAddress,
+          rwdResult.reward,
+          (msg) => {
+            updateStep(3, { detail: msg });
+            setStatusMessage(msg);
+          },
+          currentContractId
+        );
+      } catch (err) {
+        updateStep(3, { status: 'error', detail: 'Transaction failed.' });
+        const msg = (err as Error).message ?? String(err);
+        // Level 2: 3 error types handled
+        if (msg.includes("User declined")) {
+          setErrorMessage("Wallet Error: Signature request rejected by user.");
+        } else if (msg.toLowerCase().includes("insufficient")) {
+          setErrorMessage("Transaction Error: Insufficient treasury balance to cover this reward.");
+        } else if (msg.includes("404") || msg.includes("not found")) {
+          setErrorMessage("Network Error: Contract or account not found on Stellar testnet.");
+        } else {
+          setErrorMessage(`Contract Error: ${msg}`);
+        }
+        setIsRunning(false);
+        return;
+      }
+
+      setTxHash(hash);
+      updateStep(3, { status: 'done', detail: `Settled on-chain: ${hash.slice(0, 12)}...` });
+
+      // ── Step 4: Feedback Agent ────────────────────────────────────────────────
+      updateStep(4, { status: 'running', detail: 'Formatting result...' });
+      await delay(200);
+      const fb = feedbackAgent({ success: true, txHash: hash, reward: rwdResult.reward });
+      updateStep(4, { status: 'done', detail: fb.message });
+
       setStatusMessage(null);
+      await fetchBalance(walletAddress);
+      void loadTreasuryInfo(currentContractId);
+      setActivityText("");
+      setRecipientAddress("");
+
+    } catch (err) {
+      setErrorMessage(`Unexpected error: ${(err as Error).message ?? String(err)}`);
+    } finally {
+      setIsRunning(false);
     }
   };
 
-  // Withdraw ESCROW Funds (Organizer Only)
-  const handleClaimFunds = async () => {
-    if (!walletAddress) return;
-    setErrorMessage(null);
-    setTxHash(null);
-    try {
-      const hash = await claimFundsOnChain(
-        walletAddress,
-        (status) => setStatusMessage(status),
-        currentContractId
-      );
-      setTxHash(hash);
-      setStatusMessage("Escrow funds successfully withdrawn!");
-      await loadBillDetails(currentContractId);
-      await fetchBalance(walletAddress);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMessage(`Withdrawal failed: ${err.message || err}`);
-      setStatusMessage(null);
-    }
-  };
+  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="app-container">
+
       {/* Header */}
       <header className="app-header">
         <div className="header-brand">
           <TrendingUp className="brand-logo" />
           <div className="brand-texts">
             <h1 className="brand-title">Achievo</h1>
-            <p className="brand-subtitle">Soroban Split Bill Manager</p>
+            <p className="brand-subtitle">AI Student Reward System · Stellar Testnet</p>
           </div>
         </div>
 
         <div className="header-actions">
-          <button 
+          <button
             className="settings-toggle-btn"
             onClick={() => setShowSettings(!showSettings)}
             title="Configure Contract Settings"
           >
             <Settings className="icon" />
           </button>
-          
+
           {walletAddress ? (
             <div className="wallet-info-badge">
               <div className="wallet-balance">
@@ -327,11 +332,12 @@ function App() {
               <div className="wallet-address" title={walletAddress}>
                 <User className="icon" />
                 <span>{walletAddress.slice(0, 5)}...{walletAddress.slice(-4)}</span>
+                {isAdmin && <span className="badge active" style={{ marginLeft: 6, fontSize: '0.7rem' }}>Admin</span>}
               </div>
               <button className="btn-disconnect" onClick={handleDisconnect}>Disconnect</button>
             </div>
           ) : (
-            <button 
+            <button
               className="btn-connect-wallet"
               onClick={handleConnect}
               disabled={isWalletConnecting}
@@ -343,16 +349,15 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="main-content">
-        
-        {/* Unfunded Alert */}
+
+        {/* Unfunded alert */}
         {walletAddress && !isFunded && (
           <div className="alert-banner warning">
             <ShieldAlert className="alert-icon" />
             <div className="alert-text">
-              <h4>Unfunded Account Detected</h4>
-              <p>Your connected account has 0 XLM. You need to fund it with testnet XLM to perform operations.</p>
+              <h4>Unfunded Account</h4>
+              <p>Your wallet has 0 XLM. Fund it with testnet XLM to send rewards.</p>
             </div>
             <button className="btn-alert-action" onClick={handleFundFaucet}>
               <RefreshCw className="icon" /> Faucet Fund (10,000 XLM)
@@ -360,40 +365,39 @@ function App() {
           </div>
         )}
 
-        {/* Global Error Banners */}
+        {/* Error banner */}
         {errorMessage && (
           <div className="alert-banner error">
             <XCircle className="alert-icon" />
             <div className="alert-text">
-              <h4>Operation Failed</h4>
+              <h4>Error</h4>
               <p>{errorMessage}</p>
             </div>
             <button className="btn-alert-close" onClick={() => setErrorMessage(null)}>×</button>
           </div>
         )}
 
-        {/* Global Transaction Status Messages */}
+        {/* Status banner */}
         {statusMessage && (
           <div className="alert-banner info">
             <Info className="alert-icon spin" />
             <div className="alert-text">
-              <h4>Processing Transaction</h4>
+              <h4>Processing</h4>
               <p>{statusMessage}</p>
             </div>
           </div>
         )}
 
-        {/* Successful Transaction Output */}
+        {/* TX success banner */}
         {txHash && (
           <div className="alert-banner success">
             <CheckCircle className="alert-icon" />
             <div className="alert-text">
-              <h4>Transaction Completed</h4>
-              <p>The transaction settled on the Stellar Testnet ledger successfully!</p>
-              <a 
-                href={`https://stellar.expert/explorer/testnet/tx/${txHash}`} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <h4>Reward Sent! {rewardXlm !== null && `+${rewardXlm} XLM`}</h4>
+              <a
+                href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="tx-explorer-link"
               >
                 View on StellarExpert <ExternalLink className="inline-icon" />
@@ -403,234 +407,162 @@ function App() {
           </div>
         )}
 
-        {/* Contract Settings Section */}
+        {/* Contract settings */}
         {showSettings && (
           <section className="dashboard-section settings-section animate-fade">
-            <h3>⚙️ Deployed Smart Contract ID Config</h3>
-            <p className="description-text">
-              By default, we utilize a pre-deployed Split Bill contract. You can override it with your own contract ID below:
-            </p>
+            <h3>⚙️ Treasury Contract Config</h3>
+            <p className="description-text">Override the deployed treasury contract ID.</p>
             <div className="input-group">
-              <input 
-                type="text" 
-                className="text-input" 
-                placeholder="Enter contract ID (e.g. C...)" 
+              <input
+                type="text"
+                className="text-input"
+                placeholder="Enter contract ID (C... 56 chars)"
                 value={customContractInput}
                 onChange={(e) => setCustomContractInput(e.target.value)}
               />
               <button className="btn-action" onClick={handleApplyContract}>Apply</button>
             </div>
             <p className="active-contract-indicator">
-              Currently Active: <code>{currentContractId}</code>
+              Active: <code>{currentContractId}</code>
             </p>
+            {treasuryInfo && (
+              <p className="active-contract-indicator">
+                Balance: <strong>{treasuryInfo.balance.toFixed(2)} XLM</strong> &nbsp;|&nbsp;
+                Disbursed: <strong>{treasuryInfo.totalDisbursed.toFixed(2)} XLM</strong>
+              </p>
+            )}
           </section>
         )}
 
-        {/* Dashboard Grid */}
         <div className="dashboard-grid">
-          
-          {/* Column 1: Create Bill Form */}
+
+          {/* ── Column 1: Activity Submission ── */}
           <section className="dashboard-section">
             <div className="section-header">
-              <h2>Split Bill Calculator</h2>
-              <span className="badge">On-Chain Setup</span>
+              <h2>Submit Student Activity</h2>
+              <span className="badge">{isAdmin ? 'Admin Mode' : 'Read-Only'}</span>
             </div>
 
-            <form onSubmit={handleCreateBill} className="bill-setup-form">
+            <form onSubmit={handleSubmitActivity} className="bill-setup-form">
               <div className="form-group">
-                <label>Bill Description</label>
-                <input 
-                  type="text" 
+                <label>What did the student do?</label>
+                <textarea
+                  className="text-input"
+                  rows={3}
+                  required
+                  placeholder="e.g. I helped tutor 2 classmates in Python"
+                  value={activityText}
+                  onChange={(e) => setActivityText(e.target.value)}
+                  style={{ resize: 'vertical' }}
+                />
+                <span className="info-text">
+                  Recognized: tutoring, workshop, volunteering, event, participation
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label>Student Wallet Address (recipient)</label>
+                <input
+                  type="text"
                   className="text-input"
                   required
-                  placeholder="e.g. Pizza Night"
-                  value={billDesc}
-                  onChange={(e) => setBillDesc(e.target.value)}
+                  placeholder="G... (56 chars)"
+                  value={recipientAddress}
+                  onChange={(e) => setRecipientAddress(e.target.value)}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Total Bill Amount (XLM)</label>
-                <div className="amount-input-wrapper">
-                  <DollarSign className="input-decorator" />
-                  <input 
-                    type="number" 
-                    className="text-input decorated"
-                    required
-                    min="1"
-                    step="0.01"
-                    placeholder="30.00"
-                    value={totalAmount}
-                    onChange={(e) => setTotalAmount(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Add Participant Address</label>
-                <div className="input-action-wrapper">
-                  <input 
-                    type="text" 
-                    className="text-input" 
-                    placeholder="Enter G... address" 
-                    value={participantInput}
-                    onChange={(e) => setParticipantInput(e.target.value)}
-                  />
-                  <button type="button" className="btn-icon-add" onClick={handleAddParticipant}>
-                    <Plus />
-                  </button>
-                </div>
-                <span className="info-text">Note: Your connected address is automatically added.</span>
-              </div>
-
-              <div className="participants-list">
-                <label>Added Participants ({participants.length + (walletAddress ? 1 : 0)})</label>
-                <div className="list-scroller">
-                  {walletAddress && (
-                    <div className="participant-row self">
-                      <span className="index-indicator">Org</span>
-                      <span className="address-hash" title={walletAddress}>{walletAddress.slice(0, 12)}...{walletAddress.slice(-12)} (You)</span>
-                    </div>
-                  )}
-
-                  {participants.map((p, idx) => (
-                    <div key={p} className="participant-row">
-                      <span className="index-indicator">#{idx + 1}</span>
-                      <span className="address-hash" title={p}>{p.slice(0, 12)}...{p.slice(-12)}</span>
-                      <button 
-                        type="button" 
-                        className="btn-row-remove"
-                        onClick={() => handleRemoveParticipant(idx)}
-                      >
-                        <Trash2 className="row-icon" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {participants.length === 0 && !walletAddress && (
-                    <div className="empty-state">No participants added yet.</div>
-                  )}
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn-submit-bill"
-                disabled={!walletAddress || participants.length === 0}
+                disabled={!walletAddress || !isAdmin || isRunning}
               >
-                Create Bill Split <ArrowRight className="btn-icon" />
+                {isRunning
+                  ? <><RefreshCw className="btn-icon spin-icon" /> Processing...</>
+                  : <><Send className="btn-icon" /> Run Agent Pipeline <ArrowRight className="btn-icon" /></>
+                }
               </button>
+
+              {!walletAddress && (
+                <p className="info-text" style={{ textAlign: 'center', marginTop: 8 }}>
+                  Connect wallet to submit rewards.
+                </p>
+              )}
+              {walletAddress && !isAdmin && (
+                <p className="info-text" style={{ textAlign: 'center', marginTop: 8 }}>
+                  Only the treasury admin can send rewards.
+                </p>
+              )}
             </form>
           </section>
 
-          {/* Column 2: Active Bill Status Dashboard */}
+          {/* ── Column 2: Agent Pipeline Visualizer ── */}
           <section className="dashboard-section">
             <div className="section-header">
-              <h2>Active Bill Escrow</h2>
-              <span className={`badge ${activeBill ? 'active' : 'inactive'}`}>
-                {activeBill ? 'On-Chain Sync' : 'No Active Bill'}
+              <h2>Agent Pipeline</h2>
+              <span className={`badge ${isRunning ? 'active' : 'inactive'}`}>
+                {isRunning ? 'Running' : txHash ? 'Completed' : 'Idle'}
               </span>
             </div>
 
-            {isLoadingBillState ? (
-              <div className="bill-loading-state">
-                <RefreshCw className="spin-icon" />
-                <p>Syncing status with Stellar Soroban ledger...</p>
-              </div>
-            ) : activeBill ? (
-              <div className="bill-dashboard-view">
-                
-                {/* Bill Header Info Card */}
-                <div className="bill-info-card">
-                  <div className="card-top">
-                    <h3>{activeBill.description}</h3>
-                    <span className="total-badge">{activeBill.totalAmount.toFixed(2)} XLM</span>
-                  </div>
-                  <div className="card-splits">
-                    <div className="split-item">
-                      <span className="lbl">Total Split</span>
-                      <span className="val">{activeBill.participants.length} Ways</span>
-                    </div>
-                    <div className="split-item">
-                      <span className="lbl">Share / Person</span>
-                      <span className="val highlight">{activeBill.sharePerPerson.toFixed(2)} XLM</span>
-                    </div>
-                  </div>
-                  <div className="card-organizer">
-                    <span className="lbl">Organizer:</span>
-                    <span className="val" title={activeBill.organizer}>
-                      {activeBill.organizer.slice(0, 6)}...{activeBill.organizer.slice(-6)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Real-time Checklist */}
-                <div className="bill-status-list">
-                  <label>Participant Payment Status (Real-time Sync)</label>
-                  <div className="status-scroller">
-                    {activeBill.participants.map((p, idx) => {
-                      const isSelf = p.address === walletAddress;
-                      return (
-                        <div key={p.address} className={`status-row ${p.hasPaid ? 'paid' : 'pending'} ${isSelf ? 'highlight-self' : ''}`}>
-                          <div className="row-user">
-                            <span className="indicator">{idx + 1}</span>
-                            <span className="address-lbl" title={p.address}>
-                              {p.address.slice(0, 8)}...{p.address.slice(-8)}
-                              {isSelf && " (You)"}
-                            </span>
-                          </div>
-                          
-                          <div className="row-status">
-                            {p.hasPaid ? (
-                              <span className="status-badge success">
-                                <CheckCircle className="icon" /> Paid
-                              </span>
-                            ) : (
-                              <span className="status-badge pending">
-                                <Info className="icon" /> Pending
-                              </span>
-                            )}
-                          </div>
+            <div className="bill-status-list">
+              <div className="status-scroller">
+                {pipeline.map((step, idx) => (
+                  <div
+                    key={step.label}
+                    className={`status-row ${step.status === 'done' ? 'paid' : step.status === 'error' ? 'pending' : ''}`}
+                  >
+                    <div className="row-user">
+                      <span className="index-indicator">{idx + 1}</span>
+                      <div>
+                        <div className="address-lbl" style={{ fontWeight: 600 }}>{step.label}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                          {step.detail}
                         </div>
-                      );
-                    })}
+                      </div>
+                    </div>
+                    <div className="row-status">
+                      {step.status === 'done'    && <span className="status-badge success"><CheckCircle className="icon" /> Done</span>}
+                      {step.status === 'running' && <span className="status-badge pending"><RefreshCw className="icon spin" /> Running</span>}
+                      {step.status === 'error'   && <span className="status-badge pending"><XCircle className="icon" /> Error</span>}
+                      {step.status === 'idle'    && <span className="status-badge pending"><Info className="icon" /> Waiting</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reward result card */}
+            {txHash && rewardXlm !== null && (
+              <div className="bill-info-card animate-fade" style={{ marginTop: 16 }}>
+                <div className="card-top">
+                  <h3>Reward Sent!</h3>
+                  <span className="total-badge">+{rewardXlm} XLM</span>
+                </div>
+                <div className="card-splits">
+                  <div className="split-item">
+                    <span className="lbl">Recipient</span>
+                    <span className="val">{recipientAddress.slice(0, 8)}...{recipientAddress.slice(-8)}</span>
+                  </div>
+                  <div className="split-item">
+                    <span className="lbl">Amount</span>
+                    <span className="val highlight">{rewardXlm} XLM</span>
                   </div>
                 </div>
-
-                {/* Dashboard Actions */}
-                <div className="bill-dashboard-actions">
-                  
-                  {/* Action 1: Pay Share */}
-                  {walletAddress && 
-                   activeBill.participants.some(p => p.address === walletAddress && !p.hasPaid) && (
-                    <button className="btn-action-pay" onClick={handlePayShare}>
-                      <DollarSign className="icon" /> Pay My Share ({activeBill.sharePerPerson.toFixed(2)} XLM)
-                    </button>
-                  )}
-
-                  {/* Action 2: Claim Funds (Organizer only) */}
-                  {walletAddress === activeBill.organizer && (
-                    <button className="btn-action-claim" onClick={handleClaimFunds}>
-                      <RefreshCw className="icon" /> Claim Escrowed Funds
-                    </button>
-                  )}
-                  
-                </div>
-
-              </div>
-            ) : (
-              <div className="bill-empty-state">
-                <Info className="empty-icon" />
-                <h3>No active bill tracked</h3>
-                <p>
-                  Create a new bill split in the calculator or customize the contract configuration to sync with an existing bill split escrow.
-                </p>
+                <a
+                  href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="tx-explorer-link"
+                  style={{ display: 'block', marginTop: 12 }}
+                >
+                  View transaction on StellarExpert <ExternalLink className="inline-icon" />
+                </a>
               </div>
             )}
           </section>
 
         </div>
-
       </main>
     </div>
   );

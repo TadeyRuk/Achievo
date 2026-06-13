@@ -1,278 +1,109 @@
-# 🤖 Achievo AI Agent System (Design Plan)
+# Achievo — AI Student Reward System on Stellar
 
-## 🧠 Core Idea
+Achievo is an AI-assisted student reward distribution system built on Stellar Soroban (testnet).
 
-Achievo uses a multi-agent system to manage the entire reward lifecycle:
-
-> From student activity submission → verification → reward decision → Stellar XLM payout.
-
-Each responsibility is handled by a specialized “agent” (can be real AI or simulated logic in the MVP).
+Students submit activities in natural language. A pipeline of five agents interprets the submission, verifies eligibility, calculates an XLM reward, and executes the on-chain payout — all visible in real time through an animated UI.
 
 ---
 
-# 🧩 System Overview
+## How It Works
 
-```text
-Student Action
-      ↓
-Activity Agent
-      ↓
-Verification Agent
-      ↓
-Reward Decision Agent
-      ↓
-Blockchain Agent (Stellar / XLM)
-      ↓
-Transaction Feedback Agent
-      ↓
-User Notification (UI)
+```
+Student submits activity text
+         ↓
+  1. Activity Agent     — keyword classification
+         ↓
+  2. Verification Agent — whitelist check
+         ↓
+  3. Reward Agent       — XLM amount lookup
+         ↓
+  4. Stellar Agent      — Soroban contract call (send_reward)
+         ↓
+  5. Feedback Agent     — human-readable result
+         ↓
+  UI shows reward confirmation + StellarExpert link
 ```
 
+**Recognized activities and rewards:**
+
+| Activity              | Reward |
+|-----------------------|--------|
+| tutoring              | 5 XLM  |
+| workshop              | 2 XLM  |
+| volunteering          | 10 XLM |
+| event / participation | 3 XLM  |
+
 ---
 
-# 🧑‍💻 The AI Agents
+## Tech Stack
 
-## 1. 🎯 Activity Agent
+- **Smart contract**: Rust / Soroban SDK 26.1 (WASM, deployed on Stellar Testnet)
+- **Frontend**: React 19 + Vite + TypeScript
+- **Wallet**: StellarWalletsKit (Freighter, xBull, Albedo, Lobstr, Hana)
+- **Network**: Stellar Testnet (Soroban RPC + Horizon)
 
-### Role
-Interprets student-submitted activities into structured data.
+---
 
-### Input
-- "I attended a workshop"
-- "I helped tutor 2 classmates"
+## Setup — Run Locally
 
-### Output
+```bash
+# 1. Clone
+git clone https://github.com/TadeyRuk/Achievo.git
+cd Achievo
 
-```json
-{
-  "activity": "tutoring",
-  "valid": true,
-  "suggested_reward": "5 XLM"
-}
+# 2. Install frontend dependencies
+cd frontend
+npm install
+
+# 3. Start dev server
+npm run dev
+# → http://localhost:5173
 ```
 
-### Implementation (MVP)
-- Rule-based parser OR
-- Simple keyword classification OR
-- Optional LLM prompt
+Requires a Stellar wallet browser extension (Freighter recommended).
 
 ---
 
-## 2. 🛡️ Verification Agent
+## Deployed Contract
 
-### Role
-Validates if the activity is allowed or recognized.
+| Item | Value |
+|------|-------|
+| Network | Stellar Testnet |
+| Contract ID | *(update after deploy)* |
+| XLM Token Contract | `CAS3J7CYCJ34TRCB4YEX6ADYZ37CTAMCCMI43GAPK4R4SUK2VJYZATJQ` |
 
-### MVP Logic
-Simple whitelist check:
+---
 
-Allowed activities:
-- workshop
-- tutoring
-- volunteering
-- event participation
+## Build the Contract (Rust)
 
-### Output
-
-```json
-{
-  "status": "approved"
-}
+```bash
+cd contract
+cargo build --release --target wasm32v1-none
 ```
 
-or
+> **Note:** Requires Rust 1.84+ and `wasm32v1-none` target. The older `wasm32-unknown-unknown` target is incompatible with Soroban SDK 26+ on Rust 1.82+.
 
-```json
-{
-  "status": "rejected",
-  "reason": "Invalid activity"
-}
+---
+
+## Screenshots
+
+*(Add after first test run)*
+
+- [ ] Wallet connected state
+- [ ] Balance displayed
+- [ ] Activity submitted — pipeline running
+- [ ] Reward sent — transaction hash on StellarExpert
+
+---
+
+## Project Structure
+
 ```
-
----
-
-## 3. 💰 Reward Decision Agent
-
-### Role
-Assigns XLM reward based on activity type.
-
-### Reward Rules
-
-| Activity | Reward |
-|----------|--------|
-| tutoring | 5 XLM |
-| workshop | 2 XLM |
-| volunteering | 10 XLM |
-| event participation | 5 XLM |
-
-### Output
-
-```json
-{
-  "reward": 5,
-  "currency": "XLM"
-}
+contract/       — Soroban treasury contract (Rust)
+frontend/src/
+  agents.ts     — 5 pure agent functions (Activity → Feedback)
+  contract.ts   — Soroban RPC calls (view + send_reward tx)
+  wallet.ts     — StellarWalletsKit + Horizon + Friendbot
+  App.tsx       — Single-page UI + pipeline visualizer
+*.md            — Obsidian vault design docs
 ```
-
----
-
-## 4. ⛓️ Blockchain Agent (Stellar Agent)
-
-### Role
-Handles all blockchain transactions.
-
-### Responsibilities
-- Connect to Stellar SDK
-- Build transaction
-- Send XLM from treasury wallet
-- Return transaction hash
-
-### Output
-
-```json
-{
-  "success": true,
-  "txHash": "ABCD1234..."
-}
-```
-
----
-
-## 5. 📣 Transaction Feedback Agent
-
-### Role
-Formats transaction results for UI display.
-
-### Output Examples
-
-### Success
-
-```text
-🎉 Reward Sent!
-
-+5 XLM to your wallet
-Transaction Hash: ABCD1234
-```
-
-### Failure
-
-```text
-❌ Transaction Failed
-
-Please try again later.
-```
-
----
-
-# 🧠 Optional AI Layer (Upgrade Feature)
-
-Instead of pure rules, you can use AI for interpretation:
-
-## Prompt Example
-
-```text
-You are a campus reward system.
-
-Classify the student activity and assign a reward in XLM.
-
-Activity: "I helped organize a coding workshop"
-
-Return JSON only.
-```
-
----
-
-# 🏗️ Architecture Options
-
-## Option A — Simple MVP (Recommended)
-
-Each agent is a function:
-
-- activityAgent()
-- verificationAgent()
-- rewardAgent()
-- stellarAgent()
-
-✔ Fast  
-✔ Easy  
-✔ Hackathon-safe  
-✔ No AI cost  
-
----
-
-## Option B — AI-Enhanced System
-
-Use LLM for:
-- activity classification
-- reward suggestions
-- message generation
-
----
-
-## Option C — Hybrid System (Best)
-
-| Layer | Type |
-|------|------|
-| Activity parsing | AI |
-| Verification | Rules |
-| Reward logic | Rules |
-| Stellar transaction | SDK |
-| Messaging | AI |
-
----
-
-# 🔄 Full End-to-End Flow
-
-```text
-1. Student submits activity
-        ↓
-2. Activity Agent interprets input
-        ↓
-3. Verification Agent approves activity
-        ↓
-4. Reward Agent assigns XLM value
-        ↓
-5. Blockchain Agent sends XLM
-        ↓
-6. Transaction Agent returns result
-        ↓
-7. UI displays reward confirmation
-```
-
----
-
-# 💡 Why This Matters
-
-Instead of being just a wallet app, Achievo becomes:
-
-> An AI-assisted reward distribution system powered by Stellar.
-
-This makes the project significantly more impressive in a hackathon context.
-
----
-
-# 🚀 MVP Recommendation
-
-### Must Implement
-- Freighter Wallet integration
-- Stellar XLM transaction (testnet)
-- Reward logic (rule-based agent)
-- Basic activity submission UI
-
-### Optional
-- AI classification (Activity Agent)
-- Smart reward suggestions
-
----
-
-# 🧭 Summary
-
-Achievo’s AI agent system simulates intelligent decision-making across:
-
-- Understanding student actions
-- Validating contributions
-- Assigning fair rewards
-- Executing blockchain transactions
-- Returning user-friendly feedback
-
-This structure keeps the system modular, scalable, and hackathon-ready.

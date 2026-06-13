@@ -25,9 +25,10 @@ export async function getXlmBalance(publicKey: string): Promise<{ balance: strin
       balance: nativeBalance ? nativeBalance.balance : "0.0000000",
       isFunded: true
     };
-  } catch (error: any) {
+  } catch (error) {
     // 404 indicates the account has not been funded yet
-    if (error.response && error.response.status === 404) {
+    const status = (error as { response?: { status?: number } }).response?.status;
+    if (status === 404) {
       return { balance: "0.0000000", isFunded: false };
     }
     throw error;
