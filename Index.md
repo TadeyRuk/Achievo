@@ -25,11 +25,11 @@ Welcome to the **Achievo** Obsidian Vault. This vault maps out the design, compo
 
 | Component | Status | Target File |
 | :--- | :---: | :--- |
- | **Soroban Smart Contract (Rust)** | 🚧 In Progress | `contract/src/lib.rs` | 
- | **Wallet Kit Integration (TS)** | 🚧 In Progress | `frontend/src/wallet.ts` | 
- | **Contract Call Wrapper (TS)** | 🚧 In Progress | `frontend/src/contract.ts` | 
- | **Split Bill Calculator UI (React)** | 🚧 In Progress | `frontend/src/App.tsx` | 
- | **Custom Styling Sheet (CSS)** | 🚧 In Progress | `frontend/src/index.css` | 
+ | **Soroban Smart Contract (Rust)** | ✅ Completed | `contract/src/lib.rs` | 
+ | **Wallet Kit Integration (TS)** | ✅ Completed | `frontend/src/wallet.ts` | 
+ | **Contract Call Wrapper (TS)** | ✅ Completed | `frontend/src/contract.ts` | 
+ | **Split Bill Calculator UI (React)** | ✅ Completed | `frontend/src/App.tsx` | 
+ | **Custom Styling Sheet (CSS)** | ✅ Completed | `frontend/src/index.css` | 
 
 ---
 
