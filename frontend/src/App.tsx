@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Networks } from '@stellar/stellar-sdk';
 import { getXlmBalance, fundWithFriendbot, StellarWalletsKit } from './wallet';
@@ -67,7 +67,19 @@ export default function App() {
   const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState<boolean>(false);
   const [showDisconnectSuccess, setShowDisconnectSuccess] = useState<boolean>(false);
-  const [showRewardModal, setShowRewardModal] = useState<boolean>(false);
+
+  // Scroll reference for auto-scrolling
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom as logs update or on completion
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "smooth"
+      });
+    }
+  }, [logs, txHash]);
 
 
 
@@ -284,7 +296,6 @@ export default function App() {
       await fetchBalance(walletAddress);
       void loadTreasury();
       setActivityText("");
-      setShowRewardModal(true);
 
     } finally {
       setIsRunning(false);
@@ -301,7 +312,7 @@ export default function App() {
         <Navbar />
 
         {/* Scrollable tab content */}
-        <div className="flex-1 overflow-y-auto pt-[84px] pb-20 custom-scrollbar">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-[84px] pb-20 custom-scrollbar">
           <AnimatePresence mode="wait" initial={false}>
             {tab === 'home' && (
               !walletAddress ? (
@@ -330,14 +341,33 @@ export default function App() {
                   </button>
                 </div>
               ) : isRunning || txHash || pipeline.some(step => step.status === 'error') ? (
-                <div key="home-running" className="p-5">
+                <div key="home-running" className="p-5 space-y-5">
                   <PipelineVisualizer steps={pipeline} logs={logs} />
+                  
+                  {txHash && rewardXlm !== null && (
+                    <RewardCard reward={rewardXlm} txHash={txHash} />
+                  )}
+                  
+                  {txHash && !isRunning && (
+                    <button
+                      onClick={() => {
+                        setTxHash(null);
+                        setRewardXlm(null);
+                        setPipeline(makePipeline());
+                        setActivityText("");
+                      }}
+                      className="w-full flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
+                    >
+                      Submit Another Activity
+                    </button>
+                  )}
+                  
                   {!isRunning && pipeline.some(step => step.status === 'error') && (
                     <button
                       onClick={() => {
                         setPipeline(makePipeline());
                       }}
-                      className="w-full mt-5 flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
+                      className="w-full flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
                     >
                       Back to Form
                     </button>
@@ -538,35 +568,7 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {/* Reward Success Modal Overlay */}
-        <AnimatePresence>
-          {showRewardModal && txHash && rewardXlm !== null && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setShowRewardModal(false);
-                setTxHash(null);
-                setRewardXlm(null);
-                setPipeline(makePipeline());
-                setActivityText("");
-              }}
-              className="absolute inset-0 bg-[#00162b]/45 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 cursor-pointer"
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                animate={{ scale: 1, y: 0, opacity: 1 }}
-                exit={{ scale: 0.9, y: 20, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-[340px] relative cursor-default"
-              >
-                <RewardCard reward={rewardXlm} txHash={txHash} />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+
       </div>
     </div>
   );
