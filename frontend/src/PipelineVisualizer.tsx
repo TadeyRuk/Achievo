@@ -20,9 +20,9 @@ const ICONS = [Bot, ShieldCheck, Coins, LinkIcon, MessageSquare];
 export function PipelineVisualizer({ steps, logs }: PipelineVisualizerProps) {
   return (
     <div className="space-y-5">
-      {/* Step List Card - 24px corner radius */}
-      <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 space-y-0 shadow-sm">
-        <h3 className="text-[14px] font-bold uppercase tracking-[0.08em] text-[var(--dah-outline)] mb-4 font-display">
+      {/* Step List Card - 24px corner radius with dark background */}
+      <div className="bg-[#041221] rounded-[24px] border border-white/10 p-5 space-y-0 shadow-lg">
+        <h3 className="text-[14px] font-bold uppercase tracking-[0.08em] text-[#7e93ac] mb-4 font-display">
           Verification Logs
         </h3>
         {steps.map((step, index) => {
@@ -38,11 +38,11 @@ export function PipelineVisualizer({ steps, logs }: PipelineVisualizerProps) {
               {/* Connector Line */}
               {!isLast && (
                 <div className={`absolute left-[20px] top-[42px] w-[2px] h-[calc(100%-14px)] transition-colors duration-500 ${
-                  isDone ? "bg-[var(--dah-secondary-container)]" : "bg-[var(--dah-surface-high)]"
+                  isDone ? "bg-[#ffbe42]" : "bg-white/10"
                 }`} />
               )}
 
-              <div className={`relative flex items-start gap-4 py-3.5 ${isIdle ? "opacity-45" : ""} transition-opacity duration-300`}>
+              <div className={`relative flex items-start gap-4 py-3.5 ${isIdle ? "opacity-35" : ""} transition-opacity duration-300`}>
                 {/* Step Circle Icon */}
                 <div className="shrink-0 mt-0.5">
                   {isDone ? (
@@ -50,22 +50,22 @@ export function PipelineVisualizer({ steps, logs }: PipelineVisualizerProps) {
                       initial={{ scale: 0.7, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ type: "spring", stiffness: 360, damping: 24 }}
-                      className="w-10 h-10 rounded-full bg-[var(--dah-secondary-container)] flex items-center justify-center shadow-sm"
+                      className="w-10 h-10 rounded-full bg-[#ffbe42] flex items-center justify-center shadow-sm"
                     >
-                      <CheckCircle2 className="w-5 h-5 text-[var(--dah-on-secondary-container)]" />
+                      <CheckCircle2 className="w-5 h-5 text-[#00162b]" />
                     </motion.div>
                   ) : isError ? (
                     <div className="w-10 h-10 rounded-full bg-[var(--dah-error-container)] border-2 border-[var(--dah-error)] flex items-center justify-center">
                       <XCircle className="w-5 h-5 text-[var(--dah-error)]" />
                     </div>
                   ) : isRunning ? (
-                    <div className="w-10 h-10 rounded-full bg-[var(--dah-surface-container)] border-2 border-[var(--dah-primary)] flex items-center justify-center text-[var(--dah-primary)] pulse-ring">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border-2 border-[#ffbe42] flex items-center justify-center text-[#ffbe42] pulse-ring">
                       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
                         <Icon className="w-5 h-5" />
                       </motion.div>
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)] flex items-center justify-center text-[var(--dah-outline)]">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/15 flex items-center justify-center text-white/40">
                       <Icon className="w-5 h-5" />
                     </div>
                   )}
@@ -75,13 +75,13 @@ export function PipelineVisualizer({ steps, logs }: PipelineVisualizerProps) {
                 <div className="flex-1 min-w-0 pt-1">
                   <p className={`text-[14px] font-bold leading-tight font-display ${
                     isError   ? "text-[var(--dah-error)]" :
-                    isRunning ? "text-[var(--dah-primary)]" :
-                    isDone    ? "text-[var(--dah-on-surface)]" :
-                                "text-[var(--dah-outline)]"
+                    isRunning ? "text-[#ffbe42]" :
+                    isDone    ? "text-white" :
+                                "text-white/40"
                   }`}>
                     {step.name}
                   </p>
-                  <p className="text-[12px] text-[var(--dah-on-surface-variant)] mt-0.5 leading-snug font-medium">
+                  <p className="text-[12px] text-slate-400 mt-0.5 leading-snug font-medium">
                     {step.detail ?? step.desc}
                   </p>
                 </div>
@@ -91,7 +91,7 @@ export function PipelineVisualizer({ steps, logs }: PipelineVisualizerProps) {
                   <motion.span
                     initial={{ opacity: 0, x: 4 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[var(--dah-secondary)] bg-[var(--dah-secondary-container)]/20 px-2.5 py-1 rounded-full mt-1 font-display"
+                    className="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#ffbe42] bg-[#ffbe42]/10 px-2.5 py-1 rounded-full mt-1 font-display"
                   >
                     Done
                   </motion.span>
@@ -102,7 +102,7 @@ export function PipelineVisualizer({ steps, logs }: PipelineVisualizerProps) {
                   </span>
                 )}
                 {isRunning && (
-                  <span className="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[var(--dah-primary)] bg-[var(--dah-surface-container)] px-2.5 py-1 rounded-full mt-1 animate-pulse font-display">
+                  <span className="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.06em] text-[#ffbe42] bg-[#ffbe42]/20 px-2.5 py-1 rounded-full mt-1 animate-pulse font-display">
                     Live
                   </span>
                 )}
