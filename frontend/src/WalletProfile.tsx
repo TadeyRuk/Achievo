@@ -58,6 +58,7 @@ export function WalletProfile({
   walletAddress, balance, isFunded, treasuryInfo,
   isConnecting, onConnect, onDisconnect, onFund
 }: WalletProfileProps) {
+  const isMobile = typeof window !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -203,7 +204,9 @@ export function WalletProfile({
           {/* Wallet Options List - Pill-shaped items */}
           <div className="space-y-3 pt-2">
             {/* Freighter Card */}
-            <div className="flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all shadow-sm">
+            <div className={`flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/45 transition-all shadow-sm ${
+              isMobile ? "opacity-60" : "hover:border-[var(--dah-primary)]"
+            }`}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
                   <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center text-white text-[10px] font-bold">
@@ -213,19 +216,27 @@ export function WalletProfile({
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)]">Freighter</span>
-                    <span className="text-[8px] font-extrabold text-[#6e4f00] bg-[#ffbf21] px-1.5 py-0.5 rounded-full font-display">
-                      RECOMMENDED
-                    </span>
+                    {!isMobile && (
+                      <span className="text-[8px] font-extrabold text-[#6e4f00] bg-[#ffbf21] px-1.5 py-0.5 rounded-full font-display">
+                        RECOMMENDED
+                      </span>
+                    )}
                   </div>
-                  <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold truncate">Stellar Browser Extension</p>
+                  <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold truncate">
+                    {isMobile ? "Extension unavailable on mobile" : "Stellar Browser Extension"}
+                  </p>
                 </div>
               </div>
               <button
                 onClick={() => onConnect("freighter")}
-                disabled={isConnecting}
-                className="px-4.5 py-2.5 bg-[#00162b] hover:bg-[#061d32] text-white text-[13px] font-extrabold rounded-full transition-all shrink-0 font-display shadow-sm"
+                disabled={isConnecting || isMobile}
+                className={`px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all shrink-0 font-display shadow-sm ${
+                  isMobile
+                    ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
+                    : "bg-[#00162b] hover:bg-[#061d32] text-white"
+                }`}
               >
-                Connect
+                {isMobile ? "N/A" : "Connect"}
               </button>
             </div>
 
