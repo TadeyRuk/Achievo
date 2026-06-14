@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Networks } from '@stellar/stellar-sdk';
 import { getXlmBalance, fundWithFriendbot, StellarWalletsKit } from './wallet';
 import { CONTRACT_ID, getTreasuryInfo, type TreasuryInfo } from './contract';
-import { activityAgent, verificationAgent, rewardAgent, feedbackAgent } from './agents';
+import { activityAgent, rewardAgent, feedbackAgent } from './agents';
 import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
 import { ActivityForm } from './ActivityForm';
@@ -156,44 +156,39 @@ export default function App() {
     ]);
 
     try {
-      // Step 0 — Activity Agent
+      // Step 0 — Activity Agent (keyword hint only; Groq AI is authoritative)
       setStep(0, { status: 'running' });
       await delay(400);
       const actResult = activityAgent(activityText);
-      if (!actResult.valid) {
-        setStep(0, { status: 'error', detail: 'Could not classify activity' });
-        setLogs(p => [...p, "❌ [Activity Agent] Unknown activity type"]);
-        return;
-      }
-      setStep(0, { status: 'done', detail: `Classified: ${actResult.activity} · ${actResult.suggestedReward} XLM` });
+      const hintLabel = actResult.valid
+        ? `Hint: ${actResult.activity} · ${actResult.suggestedReward} XLM`
+        : 'AI will classify';
+      setStep(0, { status: 'done', detail: hintLabel });
       setLogs(p => [...p,
-        `✓ [Activity Agent] "${actResult.activity}" → ${actResult.suggestedReward} XLM`,
-        "🤖 [Verification Agent] Checking whitelist…",
+        actResult.valid
+          ? `✓ [Activity Agent] Hint: "${actResult.activity}" — forwarding to AI…`
+          : `✓ [Activity Agent] No keyword match — AI will classify`,
+        "🤖 [Verification Agent] Checking activity whitelist…",
       ]);
 
-      // Step 1 — Verification Agent
+      // Step 1 — Verification Agent (cosmetic; server AI is the real gate)
       setStep(1, { status: 'running' });
       await delay(300);
-      const verResult = verificationAgent(actResult.activity);
-      if (verResult.status === 'rejected') {
-        setStep(1, { status: 'error', detail: verResult.reason ?? 'Rejected' });
-        setLogs(p => [...p, `❌ [Verification Agent] ${verResult.reason}`]);
-        return;
-      }
-      setStep(1, { status: 'done', detail: 'Approved ✓' });
+      setStep(1, { status: 'done', detail: 'Forwarding to AI evaluation…' });
       setLogs(p => [...p,
-        "✓ [Verification Agent] Whitelisted.",
-        "🤖 [Reward Agent] Querying reward table…",
+        "✓ [Verification Agent] Activity queued for AI review.",
+        "🤖 [Reward Agent] Estimating reward…",
       ]);
 
       // Step 2 — Reward Agent (preview — server AI is authoritative)
       setStep(2, { status: 'running' });
       await delay(300);
-      const rwdPreview = rewardAgent(actResult.activity);
-      setRewardXlm(rwdPreview.reward);
-      setStep(2, { status: 'done', detail: `~${rwdPreview.reward} XLM estimated` });
+      const rwdPreview = actResult.valid ? rewardAgent(actResult.activity) : { reward: 0, currency: 'XLM' as const };
+      if (actResult.valid) setRewardXlm(rwdPreview.reward);
+      const rewardHint = actResult.valid ? `~${rwdPreview.reward} XLM estimated` : 'AI will determine reward';
+      setStep(2, { status: 'done', detail: rewardHint });
       setLogs(p => [...p,
-        `✓ [Reward Agent] ~${rwdPreview.reward} XLM estimated`,
+        `✓ [Reward Agent] ${rewardHint}`,
         "🤖 [Stellar Agent] Generating challenge transaction…",
       ]);
 
