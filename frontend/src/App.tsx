@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Networks } from '@stellar/stellar-sdk';
 import { getXlmBalance, fundWithFriendbot, StellarWalletsKit } from './wallet';
 import { CONTRACT_ID, getTreasuryInfo, type TreasuryInfo } from './contract';
@@ -12,7 +12,8 @@ import { WalletProfile } from './components/WalletProfile';
 import { RewardCard } from './components/RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './components/RewardHistory';
 import { StudentProfile } from './components/StudentProfile';
-import { Wallet } from 'lucide-react';
+import { Wallet, CheckCircle2 } from 'lucide-react';
+
 
 type Tab = 'home' | 'history' | 'wallet' | 'profile';
 
@@ -61,6 +62,10 @@ export default function App() {
     }
   });
 
+  // Success modal state for wallet connections
+  const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
+
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   const fetchBalance = useCallback(async (address: string) => {
@@ -102,6 +107,7 @@ export default function App() {
         setWalletAddress(result.address);
         fetchBalance(result.address);
         void loadTreasury();
+        setShowConnectSuccess(true);
       }
     } catch { /* user cancelled */ } finally { setIsConnecting(false); }
   };
@@ -361,6 +367,58 @@ export default function App() {
         </div>
 
         <BottomNav activeTab={tab} onTabChange={setTab} />
+
+        {/* Wallet Connection Success Prompt Modal Overlay */}
+        <AnimatePresence>
+          {showConnectSuccess && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#00162b]/40 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className="bg-white rounded-[32px] p-6 text-center max-w-[300px] shadow-2xl space-y-4.5 border border-slate-100"
+              >
+                {/* Animated checkmark circle */}
+                <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
+                  >
+                    <CheckCircle2 className="w-9 h-9" />
+                  </motion.div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-[20px] font-extrabold text-[#00162b] font-display">
+                    Wallet Connected!
+                  </h3>
+                  <p className="text-[12.5px] text-[var(--dah-on-surface-variant)] leading-relaxed font-semibold">
+                    Your Stellar account is linked successfully. Ready to earn XLM rewards for your achievements.
+                  </p>
+                </div>
+
+                {/* Address Chip */}
+                <div className="bg-[var(--dah-surface-low)] py-2 px-3 rounded-full border border-[var(--dah-outline-variant)]/30 font-mono text-[11px] text-[var(--dah-on-surface-variant)]">
+                  {walletAddress ? `${walletAddress.slice(0, 10)}...${walletAddress.slice(-10)}` : ""}
+                </div>
+
+                <button
+                  onClick={() => setShowConnectSuccess(false)}
+                  className="w-full py-3 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[13px] font-display uppercase tracking-wider transition-all shadow-md active:scale-95"
+                >
+                  Got it
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
