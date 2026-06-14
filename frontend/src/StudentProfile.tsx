@@ -331,13 +331,11 @@ export function StudentProfile({
               style={{ perspective: 1000, transformStyle: "preserve-3d" }}
               className="w-16 h-16 relative flex items-center justify-center bg-transparent"
             >
-              {/* 3D thickness edge layers (stacked along Z-axis) */}
-              {[-3, -2, -1, 0, 1, 2, 3].map((z) => (
+              {/* Core solid backing layers to prevent internal transparency gaps */}
+              {[-2.5, 0, 2.5].map((z) => (
                 <div
                   key={z}
-                  style={{ 
-                    transform: `translateZ(${z}px)`
-                  }}
+                  style={{ transform: `translateZ(${z}px)` }}
                   className={`absolute inset-0 rounded-full border border-black/5 pointer-events-none ${
                     selectedBadge.unlocked
                       ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
@@ -345,6 +343,32 @@ export function StudentProfile({
                   }`}
                 />
               ))}
+
+              {/* 3D Side Rim Cylindrical Band (fills the side-on view completely to prevent split-second disappearance) */}
+              {Array.from({ length: 12 }).map((_, i) => {
+                const angle = i * 30;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      transform: `rotateY(${angle}deg) translateZ(31.5px)`,
+                      width: "17.4px",
+                      height: "7px",
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      marginTop: "-3.5px",
+                      marginLeft: "-8.7px",
+                      backfaceVisibility: "visible",
+                    }}
+                    className={`border-t border-b border-black/15 pointer-events-none ${
+                      selectedBadge.unlocked
+                        ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
+                        : "bg-gradient-to-tr from-slate-700/50 via-slate-600/50 to-slate-800/50"
+                    }`}
+                  />
+                );
+              })}
 
               {/* Front Face */}
               <div
