@@ -323,7 +323,7 @@ export default function App() {
         <Navbar />
 
         {/* Scrollable tab content */}
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-[84px] pb-36 custom-scrollbar">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-[84px] pb-44 custom-scrollbar">
           <AnimatePresence mode="wait" initial={false}>
             {tab === 'home' && (
               !walletAddress ? (
