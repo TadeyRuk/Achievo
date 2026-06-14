@@ -464,23 +464,13 @@ export function WalletProfile({
                   <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold">Web-based signer</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href="https://albedo.link"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3.5 py-2 text-[11px] font-extrabold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-full transition-all font-display uppercase tracking-wider"
-                >
-                  Open
-                </a>
-                <button
-                  onClick={() => onConnect("albedo")}
-                  disabled={isConnecting}
-                  className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shadow-sm font-display cursor-pointer"
-                >
-                  Connect
-                </button>
-              </div>
+              <button
+                onClick={() => onConnect("albedo")}
+                disabled={isConnecting}
+                className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shrink-0 shadow-sm font-display cursor-pointer"
+              >
+                Connect
+              </button>
             </div>
 
             {/* xBull Card */}
@@ -496,23 +486,13 @@ export function WalletProfile({
                   <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold">Secure mobile & desktop</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href="https://xbull.app"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3.5 py-2 text-[11px] font-extrabold text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-full transition-all font-display uppercase tracking-wider"
-                >
-                  Get
-                </a>
-                <button
-                  onClick={() => onConnect("xbull")}
-                  disabled={isConnecting}
-                  className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shadow-sm font-display cursor-pointer"
-                >
-                  Connect
-                </button>
-              </div>
+              <button
+                onClick={() => onConnect("xbull")}
+                disabled={isConnecting}
+                className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shrink-0 shadow-sm font-display cursor-pointer"
+              >
+                Connect
+              </button>
             </div>
 
             {/* Lobstr Card */}
@@ -530,23 +510,13 @@ export function WalletProfile({
                   <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold">Popular mobile wallet</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <a
-                  href="https://lobstr.co"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3.5 py-2 text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-all font-display uppercase tracking-wider"
-                >
-                  Get
-                </a>
-                <button
-                  onClick={() => onConnect("lobstr")}
-                  disabled={isConnecting}
-                  className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shadow-sm font-display cursor-pointer"
-                >
-                  Connect
-                </button>
-              </div>
+              <button
+                onClick={() => onConnect("lobstr")}
+                disabled={isConnecting}
+                className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shrink-0 shadow-sm font-display cursor-pointer"
+              >
+                Connect
+              </button>
             </div>
           </div>
 
