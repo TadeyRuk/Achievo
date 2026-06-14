@@ -104,63 +104,63 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       let reqMsg = "";
       if (xp < 10000) {
         const diff = 10000 - xp;
-        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
       }
-      if (scienceCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Science activity` : "Log 1 Science activity";
-      if (streakVal < 5) reqMsg = reqMsg ? `${reqMsg} and reach a 5-Day Streak` : "Reach a 5-Day Streak";
+      if (scienceCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Science` : "1 Science";
+      if (streakVal < 5) reqMsg = reqMsg ? `${reqMsg} + 5-day streak` : "5-day streak";
 
       return { 
         name: "Platinum Scholar", 
         nextName: "Diamond Scholar", 
         minXP: 5000, 
         maxXP: 10000,
-        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
       };
     } else if (isGold) {
       let reqMsg = "";
       if (xp < 5000) {
         const diff = 5000 - xp;
-        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
       }
-      if (workshopCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Workshop` : "Log 1 Workshop";
-      if (streakVal < 3) reqMsg = reqMsg ? `${reqMsg} and reach a 3-Day Streak` : "Reach a 3-Day Streak";
+      if (workshopCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Workshop` : "1 Workshop";
+      if (streakVal < 3) reqMsg = reqMsg ? `${reqMsg} + 3-day streak` : "3-day streak";
 
       return { 
         name: "Gold Scholar", 
         nextName: "Platinum Scholar", 
         minXP: 2500, 
         maxXP: 5000,
-        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
       };
     } else if (isSilver) {
       let reqMsg = "";
       if (xp < 2500) {
         const diff = 2500 - xp;
-        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
       }
-      if (tutoringOrMathCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Tutoring or Math activity` : "Log 1 Tutoring or Math activity";
+      if (tutoringOrMathCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Tutoring/Math` : "1 Tutoring/Math";
 
       return { 
         name: "Silver Scholar", 
         nextName: "Gold Scholar", 
         minXP: 1000, 
         maxXP: 2500,
-        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
       };
     } else {
       let reqMsg = "";
       if (xp < 1000) {
         const diff = 1000 - xp;
-        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
       }
-      if (volunteeringCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Volunteering activity` : "Log 1 Volunteering activity";
+      if (volunteeringCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Volunteering` : "1 Volunteering";
 
       return { 
         name: "Bronze Scholar", 
         nextName: "Silver Scholar", 
         minXP: 0, 
         maxXP: 1000,
-        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
       };
     }
   };
