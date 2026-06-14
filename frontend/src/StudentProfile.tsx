@@ -484,14 +484,15 @@ export function StudentProfile({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             className="fixed inset-0 z-50 bg-[#00162b]/65 backdrop-blur-md flex items-center justify-center p-4"
           >
             {/* Modal Body */}
             <motion.div
-              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              initial={{ scale: 0.96, y: 10, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.95, y: 15, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 350, damping: 26 }}
+              exit={{ scale: 0.96, y: 10, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 480, damping: 28 }}
               className="bg-white rounded-[32px] w-full max-w-[360px] p-6 shadow-2xl relative border border-slate-100 flex flex-col"
             >
               {/* Header */}
@@ -531,8 +532,8 @@ export function StudentProfile({
                     animate="center"
                     exit="exit"
                     transition={{
-                      x: { type: "spring", stiffness: 300, damping: 30 },
-                      opacity: { duration: 0.15 },
+                      x: { type: "spring", stiffness: 450, damping: 32 },
+                      opacity: { duration: 0.12 },
                     }}
                     className="grid grid-cols-3 gap-4 w-full"
                   >
