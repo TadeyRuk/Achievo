@@ -284,7 +284,7 @@ export function WalletProfile({
                 <span className="text-[12px] font-mono text-white/95 truncate">
                   {showAddress
                     ? `${walletAddress.slice(0, 8)}…${walletAddress.slice(-8)}`
-                    : (walletId && WALLET_META[walletId] ? WALLET_META[walletId].name : "Stellar Wallet")
+                    : (walletId && WALLET_META[walletId] ? WALLET_META[walletId].name : `${walletAddress.slice(0, 8)}…${walletAddress.slice(-8)}`)
                   }
                 </span>
               </button>
