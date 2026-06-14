@@ -11,10 +11,11 @@ import { PipelineVisualizer, type PipelineStep } from './components/PipelineVisu
 import { WalletProfile } from './components/WalletProfile';
 import { RewardCard } from './components/RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './components/RewardHistory';
+import { StudentProfile } from './components/StudentProfile';
 import { Wallet } from 'lucide-react';
 
+type Tab = 'home' | 'history' | 'wallet' | 'profile';
 
-type Tab = 'home' | 'pipeline' | 'history' | 'wallet';
 
 const makePipeline = (): PipelineStep[] => [
   { name: 'Activity Agent',     desc: 'Parsing your submission…',        status: 'idle' },
@@ -136,7 +137,6 @@ export default function App() {
       "⚙️ Booting agent pipeline…",
       "🤖 [Activity Agent] Initializing…",
     ]);
-    setTab('pipeline');
 
     try {
       // Step 0 — Activity Agent
@@ -303,6 +303,26 @@ export default function App() {
                     Go to Wallet Tab
                   </button>
                 </div>
+              ) : isRunning || txHash ? (
+                <div key="home-running" className="p-5">
+                  <PipelineVisualizer steps={pipeline} logs={logs} />
+                  {txHash && rewardXlm !== null && (
+                    <RewardCard reward={rewardXlm} txHash={txHash} />
+                  )}
+                  {txHash && !isRunning && (
+                    <button
+                      onClick={() => {
+                        setTxHash(null);
+                        setRewardXlm(null);
+                        setPipeline(makePipeline());
+                        setActivityText("");
+                      }}
+                      className="w-full mt-5 flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
+                    >
+                      Submit Another Activity
+                    </button>
+                  )}
+                </div>
               ) : (
                 <ActivityForm
                   key="home"
@@ -313,14 +333,6 @@ export default function App() {
                   isSubmitting={isRunning}
                 />
               )
-            )}
-            {tab === 'pipeline' && (
-              <div key="pipeline" className="p-5">
-                <PipelineVisualizer steps={pipeline} logs={logs} />
-                {txHash && rewardXlm !== null && (
-                  <RewardCard reward={rewardXlm} txHash={txHash} />
-                )}
-              </div>
             )}
             {tab === 'history' && (
               <div key="history" className="p-5">
@@ -339,6 +351,11 @@ export default function App() {
                 onDisconnect={handleDisconnect}
                 onFund={handleFund}
               />
+            )}
+            {tab === 'profile' && (
+              <div key="profile" className="p-5">
+                <StudentProfile walletAddress={walletAddress} history={history} />
+              </div>
             )}
           </AnimatePresence>
         </div>
