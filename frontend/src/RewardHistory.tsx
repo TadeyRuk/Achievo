@@ -102,7 +102,10 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       };
     } else if (isPlatinum) {
       let reqMsg = "";
-      if (xp < 10000) reqMsg = `Earn ${(10000 - xp).toLocaleString()} more XP`;
+      if (xp < 10000) {
+        const diff = 10000 - xp;
+        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+      }
       if (scienceCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Science activity` : "Log 1 Science activity";
       if (streakVal < 5) reqMsg = reqMsg ? `${reqMsg} and reach a 5-Day Streak` : "Reach a 5-Day Streak";
 
@@ -115,7 +118,10 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       };
     } else if (isGold) {
       let reqMsg = "";
-      if (xp < 5000) reqMsg = `Earn ${(5000 - xp).toLocaleString()} more XP`;
+      if (xp < 5000) {
+        const diff = 5000 - xp;
+        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+      }
       if (workshopCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Workshop` : "Log 1 Workshop";
       if (streakVal < 3) reqMsg = reqMsg ? `${reqMsg} and reach a 3-Day Streak` : "Reach a 3-Day Streak";
 
@@ -128,7 +134,10 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       };
     } else if (isSilver) {
       let reqMsg = "";
-      if (xp < 2500) reqMsg = `Earn ${(2500 - xp).toLocaleString()} more XP`;
+      if (xp < 2500) {
+        const diff = 2500 - xp;
+        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+      }
       if (tutoringOrMathCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Tutoring or Math activity` : "Log 1 Tutoring or Math activity";
 
       return { 
@@ -140,7 +149,10 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       };
     } else {
       let reqMsg = "";
-      if (xp < 1000) reqMsg = `Earn ${(1000 - xp).toLocaleString()} more XP`;
+      if (xp < 1000) {
+        const diff = 1000 - xp;
+        reqMsg = `Earn ${diff.toLocaleString()} more XP (approx. ${diff / 100} XLM)`;
+      }
       if (volunteeringCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Volunteering activity` : "Log 1 Volunteering activity";
 
       return { 
@@ -239,10 +251,13 @@ export function RewardHistory({ history }: RewardHistoryProps) {
 
         <div className="mt-5 space-y-2 relative z-10">
           <div className="flex justify-between items-end text-[11px] font-bold">
-            <span className="text-blue-100 font-display">
-              {totalXP.toLocaleString()} XP
+            <span className="text-blue-100 font-display flex items-center gap-1.5">
+              <span>{totalXP.toLocaleString()} XP</span>
+              <span className="text-[9.5px] text-blue-200/60 bg-blue-950/35 px-1.5 py-0.5 rounded-full font-medium tracking-wide">
+                1 XLM = 100 XP
+              </span>
             </span>
-            <span className="text-blue-200/80">
+            <span className="text-blue-200/80 font-display">
               {rank.nextName} ({rank.maxXP.toLocaleString()} XP)
             </span>
           </div>
