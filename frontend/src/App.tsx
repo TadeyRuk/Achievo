@@ -495,33 +495,37 @@ export default function App() {
                       </p>
                     </div>
 
-                    {/* Activity cards */}
-                    <div className="space-y-2">
+                    {/* Activity table */}
+                    <div className="rounded-[20px] overflow-hidden border border-[var(--dah-outline-variant)]/30">
+                      {/* Header */}
+                      <div className="grid grid-cols-[1fr_auto_auto] bg-[var(--dah-primary)] px-4 py-2.5">
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/50">Activity</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/50 w-16 text-center">Base</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/50 w-16 text-center">Max</span>
+                      </div>
                       {[
-                        { a: "Volunteering",  emoji: "🤝", base: 10, max: 15, color: "bg-emerald-50 border-emerald-100" },
-                        { a: "Tutoring",      emoji: "📚", base: 5,  max: 10, color: "bg-blue-50 border-blue-100"    },
-                        { a: "Workshop",      emoji: "🛠️", base: 2,  max: 5,  color: "bg-purple-50 border-purple-100" },
-                        { a: "Event",         emoji: "🎖️", base: 3,  max: 5,  color: "bg-orange-50 border-orange-100" },
-                        { a: "Participation", emoji: "⭐", base: 3,  max: 5,  color: "bg-yellow-50 border-yellow-100" },
-                      ].map(r => {
-                        const pct = (r.base / r.max) * 100;
-                        return (
-                          <div key={r.a} className={`flex items-center gap-3 px-4 py-3 rounded-[16px] border ${r.color}`}>
-                            <span className="text-lg shrink-0">{r.emoji}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[13px] font-extrabold text-[var(--dah-on-surface)]">{r.a}</p>
-                              {/* Progress bar: base vs max */}
-                              <div className="mt-1 h-1.5 rounded-full bg-black/8 overflow-hidden">
-                                <div className="h-full rounded-full bg-[var(--dah-primary)]" style={{ width: `${pct}%` }} />
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-[11px] text-[var(--dah-outline)]">{r.base} base</p>
-                              <p className="text-[13px] font-extrabold text-[var(--dah-primary)]">↑{r.max} XLM</p>
-                            </div>
+                        { a: "Volunteering",  emoji: "🤝", base: 10, max: 15 },
+                        { a: "Tutoring",      emoji: "📚", base: 5,  max: 10 },
+                        { a: "Workshop",      emoji: "🛠️", base: 2,  max: 5  },
+                        { a: "Event",         emoji: "🎖️", base: 3,  max: 5  },
+                        { a: "Participation", emoji: "⭐", base: 3,  max: 5  },
+                      ].map((r, i) => (
+                        <div
+                          key={r.a}
+                          className={`grid grid-cols-[1fr_auto_auto] items-center px-4 py-3 ${i % 2 === 0 ? "bg-white" : "bg-[var(--dah-surface-low)]"}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{r.emoji}</span>
+                            <span className="text-[13px] font-bold text-[var(--dah-on-surface)]">{r.a}</span>
                           </div>
-                        );
-                      })}
+                          <span className="text-[12px] text-[var(--dah-outline)] w-16 text-center">{r.base} XLM</span>
+                          <div className="w-16 flex justify-center">
+                            <span className="text-[12px] font-extrabold text-[var(--dah-primary)] bg-[#fff3cc] px-2 py-0.5 rounded-full">
+                              {r.max} XLM
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
