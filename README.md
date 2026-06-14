@@ -17,8 +17,13 @@ Students connect their wallet, describe what they did, and Achievo's AI pipeline
 - 🔐 **Wallet Ownership Proof** — nonce-based challenge/signature before every payout (prevents spoofing)
 - 📱 **PWA / Mobile Ready** — installable on iOS & Android, offline-capable, network-first service worker
 - 🏆 **Reward History** — local transaction log with weekly earnings trend chart
-- 🎖️ **Achievement Badges** — 6 dynamic badges that unlock based on activity milestones
-- 👛 **Multi-Wallet Support** — Freighter (desktop), Albedo, xBull, Lobstr
+- 🎖️ **Scholar Rank System** — 5 progressive badges (Bronze → Diamond) unlocked by XP, streaks, and activity milestones
+- 🏅 **3D Animated Badges** — spinning coin display with per-badge 3D hover effect
+- 🔥 **Activity Streaks** — consecutive daily participation tracked live
+- 📊 **Community Dashboard** — activity feed showing your rewards alongside simulated community pulse
+- 👥 **Refer-a-Friend** — unique referral code + one-tap share to WhatsApp, X, Email, or system share sheet
+- 👛 **Multi-Wallet Support** — Freighter (desktop), Albedo, xBull, Lobstr — with official brand logos
+- 🔔 **Connection Modals** — animated success/confirmation overlays for wallet connect and disconnect
 
 ---
 
@@ -69,6 +74,32 @@ The AI scores `effort_score` (0.0–1.0) based on:
 
 ---
 
+## Scholar Rank System
+
+XP is earned at **100 XP per XLM received**. Each rank has a badge with a 3D animated coin display and hover effect.
+
+| Rank     | XP Required | Additional Requirements              |
+|----------|-------------|--------------------------------------|
+| 🥉 Bronze   | 0           | Default starting rank                |
+| 🥈 Silver   | 1,000 XP    | ≥ 1 volunteering activity            |
+| 🥇 Gold     | 2,500 XP    | ≥ 1 tutoring or math activity        |
+| 💠 Platinum | 5,000 XP    | ≥ 1 workshop + 3-day streak          |
+| 💎 Diamond  | 10,000 XP   | ≥ 1 science activity + 5-day streak  |
+
+---
+
+## App Tabs
+
+| Tab | Component | Description |
+|-----|-----------|-------------|
+| **Home** | `Dashboard.tsx` | Community feed, streak card, quick-submit CTA, wallet prompt |
+| **History** | `RewardHistory.tsx` | Full transaction log with amounts and timestamps |
+| **Wallet** | `WalletProfile.tsx` | Balance hero card, weekly earnings chart, treasury stats, wallet selector |
+| **Profile** | `StudentProfile.tsx` | XP progress, scholar badge display, activity stats |
+| *(overlay)* | `ReferFriend.tsx` | Referral code card + share sheet (WhatsApp, X, Email, More) |
+
+---
+
 ## Tech Stack
 
 | Layer | Tech |
@@ -77,8 +108,8 @@ The AI scores `effort_score` (0.0–1.0) based on:
 | Backend | Vercel serverless TypeScript (`api/reward.ts`, `api/nonce.ts`) |
 | AI | Groq API — llama-3.1-8b-instant (activity classification + effort scoring) |
 | Frontend | React 19 + Vite + TypeScript |
-| Styling | Vanilla CSS + Tailwind utility classes |
-| Animations | Motion (Framer Motion v11) |
+| Styling | Tailwind v4 + CSS custom properties (design tokens) |
+| Animations | Motion (Framer Motion v11) — page transitions, 3D badge spin, modals |
 | Wallet | StellarWalletsKit — Freighter, xBull, Albedo, Lobstr |
 | Network | Stellar Testnet |
 
@@ -108,15 +139,17 @@ frontend/
     sw.js                   — Service worker (network-first, offline fallback)
     manifest.json           — PWA manifest
   src/
-    App.tsx                 — Root: state, pipeline orchestration, modals
+    App.tsx                 — Root: tab state, pipeline orchestration, modals
+    Dashboard.tsx           — Home tab: community feed, streak, quick-submit CTA
     ActivityForm.tsx        — Submission form with character counter
     PipelineVisualizer.tsx  — Animated 5-step pipeline + live log console
     RewardCard.tsx          — Gold reward card shown on payout success
     RewardHistory.tsx       — Transaction history list
-    WalletProfile.tsx       — Wallet dashboard: balance, weekly chart, treasury
-    StudentProfile.tsx      — Profile: stats + 6 achievement badges
+    WalletProfile.tsx       — Wallet dashboard: hero balance, weekly trend chart, treasury
+    StudentProfile.tsx      — Profile: XP progress, scholar rank badges (3D animated)
+    ReferFriend.tsx         — Referral overlay: unique code + WhatsApp/X/Email share
     BottomNav.tsx           — Floating pill-style bottom navigation
-    Navbar.tsx              — Top bar with logo
+    Navbar.tsx              — Top bar with logo and info modal trigger
     agents.ts               — 5 pure client-side agent hint functions
     contract.ts             — Soroban read-only view calls (treasury info)
     wallet.ts               — StellarWalletsKit + Horizon + Friendbot
