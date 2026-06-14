@@ -35,7 +35,7 @@ export default function App() {
 
   // Wallet
   const [walletAddress, setWalletAddress]     = useState<string | null>(null);
-  const [xlmBalance, setXlmBalance]           = useState<string>("0");
+  const [walletId, setWalletId]               = useState<string | null>(null);
   const [isFunded, setIsFunded]               = useState<boolean>(true);
   const [isConnecting, setIsConnecting]       = useState<boolean>(false);
 
@@ -99,8 +99,7 @@ export default function App() {
 
   const fetchBalance = useCallback(async (address: string) => {
     try {
-      const { balance, isFunded: funded } = await getXlmBalance(address);
-      setXlmBalance(balance);
+      const { isFunded: funded } = await getXlmBalance(address);
       setIsFunded(funded);
     } catch { /* ignore */ }
   }, []);
@@ -128,13 +127,14 @@ export default function App() {
 
   // ── Wallet actions ─────────────────────────────────────────────────────────
 
-  const handleConnect = async (walletId: string) => {
+  const handleConnect = async (id: string) => {
     setIsConnecting(true);
     try {
-      StellarWalletsKit.setWallet(walletId);
+      StellarWalletsKit.setWallet(id);
       const result = await StellarWalletsKit.fetchAddress();
       if (result?.address) {
         setWalletAddress(result.address);
+        setWalletId(id);
         fetchBalance(result.address);
         void loadTreasury();
         setShowConnectSuccess(true);
@@ -150,7 +150,7 @@ export default function App() {
     setShowDisconnectConfirm(false);
     try { await StellarWalletsKit.disconnect(); } catch { /* ignore */ }
     setWalletAddress(null);
-    setXlmBalance("0");
+    setWalletId(null);
     setIsFunded(true);
     setTreasuryInfo(null);
     setTxHash(null);
@@ -407,7 +407,7 @@ export default function App() {
               <WalletProfile
                 key="wallet"
                 walletAddress={walletAddress}
-                balance={xlmBalance}
+                walletId={walletId}
                 isFunded={isFunded}
                 treasuryInfo={treasuryInfo}
                 isConnecting={isConnecting}

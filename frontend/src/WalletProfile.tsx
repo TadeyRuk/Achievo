@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { LogOut, ShieldCheck, RefreshCw, Database, TrendingUp, Check, Clock } from "lucide-react";
 import { motion } from "motion/react";
 import type { TreasuryInfo } from "./contract";
@@ -7,7 +7,7 @@ import { CustomWallet } from "./customIcons";
 
 interface WalletProfileProps {
   walletAddress: string | null;
-  balance: string;
+  walletId: string | null;
   isFunded: boolean;
   treasuryInfo: TreasuryInfo | null;
   isConnecting: boolean;
@@ -17,6 +17,43 @@ interface WalletProfileProps {
   onRefresh?: () => Promise<void>;
   history: RewardHistoryItem[];
 }
+
+const WALLET_META: Record<string, { name: string; icon: ReactNode; color: string }> = {
+  freighter: {
+    name: "Freighter",
+    color: "#1a1a2e",
+    icon: <span className="text-base">⚓</span>,
+  },
+  albedo: {
+    name: "Albedo",
+    color: "#2563eb",
+    icon: (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.47 0-.89.09-1.3.27A6 6 0 0 0 3 13c0 3.3 2.7 6 6 6h8.5z" />
+      </svg>
+    ),
+  },
+  xbull: {
+    name: "xBull",
+    color: "#059669",
+    icon: (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+  },
+  lobstr: {
+    name: "Lobstr",
+    color: "#4338ca",
+    icon: (
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    ),
+  },
+};
 
 
 /* Smooth bezier curve line chart for weekly earnings trend */
@@ -146,11 +183,12 @@ function WeeklyEarningsTrendChart({ history }: { history: RewardHistoryItem[] })
 }
 
 export function WalletProfile({
-  walletAddress, balance, isFunded, treasuryInfo,
+  walletAddress, walletId, isFunded, treasuryInfo,
   isConnecting, onConnect, onDisconnect, onFund, onRefresh, history
 }: WalletProfileProps) {
   const isMobile = typeof window !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showAddress, setShowAddress] = useState(false);
   const totalEarned = history ? history.reduce((sum, item) => sum + item.reward, 0) : 0;
 
   const handleRefreshClick = async () => {
@@ -226,24 +264,30 @@ export function WalletProfile({
               <div className="flex items-center gap-1.5">
                 <TrendingUp className="w-4 h-4 text-[var(--dah-secondary-container)]" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/60 font-display">
-                  Wallet Balance
+                  Total Earned
                 </span>
               </div>
 
               <div className="flex items-baseline gap-2">
                 <span className="text-[44px] font-extrabold leading-none tracking-tight font-display">
-                  {parseFloat(balance).toFixed(2)}
+                  {totalEarned.toFixed(2)}
                 </span>
                 <span className="text-[18px] font-extrabold text-[var(--dah-on-primary-container)]">XLM</span>
               </div>
 
-              {/* Wallet Address Chip - Pill-shaped */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 max-w-full overflow-hidden">
+              {/* Wallet name / address toggle chip */}
+              <button
+                onClick={() => setShowAddress(v => !v)}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 max-w-full overflow-hidden hover:bg-white/20 transition-colors active:scale-95"
+              >
                 <ShieldCheck className="w-4 h-4 text-[var(--dah-secondary-container)] shrink-0" />
                 <span className="text-[12px] font-mono text-white/95 truncate">
-                  {walletAddress.slice(0, 8)}…{walletAddress.slice(-8)}
+                  {showAddress
+                    ? `${walletAddress.slice(0, 8)}…${walletAddress.slice(-8)}`
+                    : (walletId && WALLET_META[walletId] ? WALLET_META[walletId].name : `${walletAddress.slice(0, 8)}…${walletAddress.slice(-8)}`)
+                  }
                 </span>
-              </div>
+              </button>
             </div>
           </div>
 
