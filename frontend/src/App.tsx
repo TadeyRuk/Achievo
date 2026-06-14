@@ -102,10 +102,11 @@ export default function App() {
 
   // ── Wallet actions ─────────────────────────────────────────────────────────
 
-  const handleConnect = async () => {
+  const handleConnect = async (walletId: string) => {
     setIsConnecting(true);
     try {
-      const result = await StellarWalletsKit.authModal();
+      StellarWalletsKit.setWallet(walletId);
+      const result = await StellarWalletsKit.fetchAddress();
       if (result?.address) {
         setWalletAddress(result.address);
         fetchBalance(result.address);

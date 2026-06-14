@@ -8,7 +8,7 @@ interface WalletProfileProps {
   isFunded: boolean;
   treasuryInfo: TreasuryInfo | null;
   isConnecting: boolean;
-  onConnect: () => void;
+  onConnect: (walletId: string) => void;
   onDisconnect: () => void;
   onFund: () => void;
 }
@@ -220,7 +220,7 @@ export function WalletProfile({
                 </div>
               </div>
               <button
-                onClick={onConnect}
+                onClick={() => onConnect("freighter")}
                 disabled={isConnecting}
                 className="px-4.5 py-2.5 bg-[#00162b] hover:bg-[#061d32] text-white text-[13px] font-extrabold rounded-full transition-all shrink-0 font-display shadow-sm"
               >
@@ -230,7 +230,7 @@ export function WalletProfile({
 
             {/* Albedo Card */}
             <button
-              onClick={onConnect}
+              onClick={() => onConnect("albedo")}
               className="w-full flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm"
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -251,7 +251,7 @@ export function WalletProfile({
 
             {/* xBull Card */}
             <button
-              onClick={onConnect}
+              onClick={() => onConnect("xbull")}
               className="w-full flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm"
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -272,7 +272,7 @@ export function WalletProfile({
 
             {/* Lobstr Card */}
             <button
-              onClick={onConnect}
+              onClick={() => onConnect("lobstr")}
               className="w-full flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm"
             >
               <div className="flex items-center gap-3 min-w-0">
