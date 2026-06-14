@@ -18,7 +18,7 @@ export const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
 export const XLM_TOKEN_CONTRACT_ID = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 
 // Deployed Reward Treasury Contract ID (Testnet)
-export const CONTRACT_ID = "CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ";
+export const CONTRACT_ID = "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM";
 
 const STROOP_FACTOR = 10_000_000;
 
@@ -35,8 +35,8 @@ async function simulateViewCall(contractId: string, functionName: string, args: 
   const contract = new Contract(contractId);
   const callOp = contract.call(functionName, ...args);
 
-  // Arbitrary funded testnet account for simulation source
-  const dummySource = "GAAZI4TCR3TY5OJHCTJC2A4QSY6CJWJH5IAJTGKIN2ER7LBNVKOCCWN";
+  // Funded testnet account used as simulation source (read-only, no signing)
+  const dummySource = "GBPW3ETOM3525MXSQUH3QYHPQIFNM6QGOF474H4FJQQS7NCPC3FUMCOF";
   const sourceAccount = await horizonServer.loadAccount(dummySource);
 
   const tx = new TransactionBuilder(sourceAccount, {
