@@ -388,7 +388,13 @@ export default function App() {
             )}
             {tab === 'history' && (
               <div key="history" className="p-5">
-                <RewardHistory history={history} />
+                <RewardHistory 
+                  history={history} 
+                  onSelectQuest={(text) => {
+                    setActivityText(text);
+                    setTab('home');
+                  }}
+                />
               </div>
             )}
             {tab === 'wallet' && (

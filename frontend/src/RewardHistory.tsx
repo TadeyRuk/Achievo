@@ -1,4 +1,18 @@
-import { ExternalLink, Calendar, CheckCircle } from "lucide-react";
+import { 
+  ExternalLink, 
+  Calendar, 
+  CheckCircle, 
+  Flame, 
+  Trophy, 
+  Users, 
+  Brain, 
+  Plane, 
+  Gem, 
+  BookOpen, 
+  Calculator, 
+  Sparkles, 
+  Award 
+} from "lucide-react";
 import { motion } from "motion/react";
 import { CustomTrophy, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from "./customIcons";
 
@@ -12,6 +26,7 @@ export interface RewardHistoryItem {
 
 interface RewardHistoryProps {
   history: RewardHistoryItem[];
+  onSelectQuest?: (questText: string) => void;
 }
 
 const ACTIVITY_ICONS: Record<string, React.ComponentType<any>> = {
@@ -22,7 +37,7 @@ const ACTIVITY_ICONS: Record<string, React.ComponentType<any>> = {
   participation: CustomMedal,
 };
 
-export function RewardHistory({ history }: RewardHistoryProps) {
+export function RewardHistory({ history, onSelectQuest }: RewardHistoryProps) {
   const sortedHistory = [...history].sort((a, b) => b.timestamp - a.timestamp);
 
   const getIcon = (act: string) => {
@@ -39,33 +54,389 @@ export function RewardHistory({ history }: RewardHistoryProps) {
     });
   };
 
+  // Dynamic streak — consecutive days with at least one reward (going back from today)
+  const streak = (() => {
+    if (history.length === 0) return 0;
+    const daySet = new Set(
+      history.map(item => new Date(item.timestamp).toLocaleDateString("en-CA"))
+    );
+    let count = 0;
+    const today = new Date();
+    const startOffset = daySet.has(today.toLocaleDateString("en-CA")) ? 0 : 1;
+    for (let i = startOffset; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      if (daySet.has(d.toLocaleDateString("en-CA"))) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  })();
+
+  // Activity milestones counts
+  const volunteeringCount = history.filter(h => h.activity.toLowerCase().includes("volunteer")).length;
+  const tutoringOrMathCount = history.filter(h => 
+    h.activity.toLowerCase().includes("tutor") || 
+    h.activity.toLowerCase().includes("math")
+  ).length;
+  const workshopCount = history.filter(h => h.activity.toLowerCase().includes("workshop")).length;
+  const scienceCount = history.filter(h => h.activity.toLowerCase().includes("science")).length;
+
+  // Rank calculations
+  const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
+  const baseXP = 3250;
+  const totalXP = baseXP + Math.round(totalEarned * 100);
+  
+  const getRankInfo = (xp: number, streakVal: number) => {
+    const isDiamond = xp >= 10000 && scienceCount >= 1 && streakVal >= 5;
+    const isPlatinum = xp >= 5000 && workshopCount >= 1 && streakVal >= 3;
+    const isGold = xp >= 2500 && tutoringOrMathCount >= 1;
+    const isSilver = xp >= 1000 && volunteeringCount >= 1;
+
+    if (isDiamond) {
+      return { 
+        name: "Diamond Scholar", 
+        nextName: "Max Rank", 
+        minXP: 10000, 
+        maxXP: 10000,
+        reqMsg: "You have reached the highest scholar rank!"
+      };
+    } else if (isPlatinum) {
+      let reqMsg = "";
+      if (xp < 10000) reqMsg = `Earn ${(10000 - xp).toLocaleString()} more XP`;
+      if (scienceCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Science activity` : "Log 1 Science activity";
+      if (streakVal < 5) reqMsg = reqMsg ? `${reqMsg} and reach a 5-Day Streak` : "Reach a 5-Day Streak";
+
+      return { 
+        name: "Platinum Scholar", 
+        nextName: "Diamond Scholar", 
+        minXP: 5000, 
+        maxXP: 10000,
+        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+      };
+    } else if (isGold) {
+      let reqMsg = "";
+      if (xp < 5000) reqMsg = `Earn ${(5000 - xp).toLocaleString()} more XP`;
+      if (workshopCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Workshop` : "Log 1 Workshop";
+      if (streakVal < 3) reqMsg = reqMsg ? `${reqMsg} and reach a 3-Day Streak` : "Reach a 3-Day Streak";
+
+      return { 
+        name: "Gold Scholar", 
+        nextName: "Platinum Scholar", 
+        minXP: 2500, 
+        maxXP: 5000,
+        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+      };
+    } else if (isSilver) {
+      let reqMsg = "";
+      if (xp < 2500) reqMsg = `Earn ${(2500 - xp).toLocaleString()} more XP`;
+      if (tutoringOrMathCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Tutoring or Math activity` : "Log 1 Tutoring or Math activity";
+
+      return { 
+        name: "Silver Scholar", 
+        nextName: "Gold Scholar", 
+        minXP: 1000, 
+        maxXP: 2500,
+        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+      };
+    } else {
+      let reqMsg = "";
+      if (xp < 1000) reqMsg = `Earn ${(1000 - xp).toLocaleString()} more XP`;
+      if (volunteeringCount < 1) reqMsg = reqMsg ? `${reqMsg} and log 1 Volunteering activity` : "Log 1 Volunteering activity";
+
+      return { 
+        name: "Bronze Scholar", 
+        nextName: "Silver Scholar", 
+        minXP: 0, 
+        maxXP: 1000,
+        reqMsg: reqMsg ? `${reqMsg} to rank up!` : "Ready to rank up!"
+      };
+    }
+  };
+
+  const rank = getRankInfo(totalXP, streak);
+  const progressPercent = rank.minXP === rank.maxXP ? 100 : Math.min(100, Math.max(0, ((totalXP - rank.minXP) / (rank.maxXP - rank.minXP)) * 100));
+
+  const milestones = [
+    {
+      id: "streak",
+      name: "7-Day Streak",
+      unlocked: streak > 0,
+      icon: Flame,
+      activeBg: "bg-[#e2e6ff]",
+      activeIconColor: "text-[#102a9c]",
+      dot: true
+    },
+    {
+      id: "first_win",
+      name: "First Win",
+      unlocked: history.length >= 1,
+      icon: Trophy,
+      activeBg: "bg-[#ffe28a]",
+      activeIconColor: "text-[#b88a00]"
+    },
+    {
+      id: "team_player",
+      name: "Team Player",
+      unlocked: volunteeringCount >= 1,
+      icon: Users,
+      activeBg: "bg-[#e2e6ff]",
+      activeIconColor: "text-[#102a9c]"
+    },
+    {
+      id: "mastermind",
+      name: "Mastermind",
+      unlocked: tutoringOrMathCount >= 1,
+      icon: Brain,
+      activeBg: "bg-[#e2e6ff]",
+      activeIconColor: "text-[#102a9c]"
+    },
+    {
+      id: "explorer",
+      name: "Explorer",
+      unlocked: workshopCount >= 1 && streak >= 3,
+      icon: Plane,
+      activeBg: "bg-[#e2e6ff]",
+      activeIconColor: "text-[#102a9c]"
+    },
+    {
+      id: "flawless",
+      name: "Flawless",
+      unlocked: scienceCount >= 1 && streak >= 5,
+      icon: Gem,
+      activeBg: "bg-[#e2e6ff]",
+      activeIconColor: "text-[#102a9c]"
+    }
+  ];
+
+  const unlockedCount = milestones.filter(m => m.unlocked).length;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="space-y-4"
+      className="space-y-6"
     >
+      {/* 1. Current Rank Card */}
+      <div className="bg-gradient-to-br from-[#1b2a7a] via-[#101b5a] to-[#0a103c] rounded-[28px] p-5 shadow-lg shadow-[#0b1240]/20 text-white relative overflow-hidden">
+        {/* Decorative background glow */}
+        <div className="absolute -right-10 -top-10 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl" />
+        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-500/15 rounded-full blur-2xl" />
+
+        <div className="flex justify-between items-start relative z-10">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-extrabold text-blue-200/60 uppercase tracking-widest">
+              Current Rank
+            </span>
+            <h3 className="text-[24px] font-display font-extrabold tracking-tight text-white leading-tight">
+              {rank.name}
+            </h3>
+          </div>
+          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center shadow-lg shadow-yellow-500/15 shrink-0">
+            <Award className="w-6 h-6 text-[#7a5900] stroke-[2.5]" />
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-2 relative z-10">
+          <div className="flex justify-between items-end text-[11px] font-bold">
+            <span className="text-blue-100 font-display">
+              {totalXP.toLocaleString()} XP
+            </span>
+            <span className="text-blue-200/80">
+              {rank.nextName} ({rank.maxXP.toLocaleString()} XP)
+            </span>
+          </div>
+
+          {/* Progress Bar Container */}
+          <div className="w-full h-3 bg-blue-955/40 rounded-full overflow-hidden border border-blue-900/30 p-[1px]">
+            <div
+              className="h-full bg-gradient-to-r from-yellow-500 via-amber-400 to-yellow-300 rounded-full transition-all duration-700 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          <p className="text-[11.5px] font-semibold text-blue-100/90 pt-1 text-center font-display flex items-center justify-center gap-1">
+            {rank.minXP === rank.maxXP && <Sparkles className="w-3.5 h-3.5 text-yellow-300 animate-pulse" />}
+            {rank.reqMsg}
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Available Quests */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-[18px] font-display font-extrabold tracking-tight text-[var(--dah-primary)]">
+            Available Quests
+          </h3>
+          <button 
+            onClick={() => alert("All quests are listed below! Click the buttons to log/solve them.")}
+            className="text-[12px] font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+          >
+            View All
+          </button>
+        </div>
+
+        {/* Horizontal scroll container */}
+        <div className="flex overflow-x-auto gap-4 pb-3 -mx-5 px-5 custom-scrollbar snap-x snap-mandatory">
+          {[
+            {
+              id: "reading",
+              title: "Reading Marathon",
+              desc: "Log 120 minutes of reading time this week.",
+              progressText: "45 / 120 mins",
+              reward: "+50 XLM",
+              actionLabel: "Log Time",
+              icon: BookOpen,
+              activityText: "Reading Marathon: logged 75 minutes of reading time."
+            },
+            {
+              id: "math",
+              title: "Math Wizardry",
+              desc: "Complete 3 math problem sets this week.",
+              progressText: "1 / 3 sets",
+              reward: "+50 XLM",
+              actionLabel: "Solve",
+              icon: Calculator,
+              activityText: "Math Wizardry: completed 2 math problem sets."
+            },
+            {
+              id: "science",
+              title: "Science Lab",
+              desc: "Write and submit your biology lab report.",
+              progressText: "0 / 1 report",
+              reward: "+40 XLM",
+              actionLabel: "Submit",
+              icon: Award,
+              activityText: "Science Lab: submitted biology lab report."
+            }
+          ].map((quest) => {
+            const QuestIcon = quest.icon;
+            return (
+              <div
+                key={quest.id}
+                className="w-[260px] shrink-0 snap-start bg-white border border-[var(--dah-outline-variant)]/60 rounded-[24px] p-4 flex flex-col justify-between shadow-sm hover:border-[var(--dah-primary)] transition-all duration-250"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="w-10 h-10 rounded-full bg-[var(--dah-surface-low)] flex items-center justify-center text-[var(--dah-primary)] shrink-0">
+                      <QuestIcon className="w-5 h-5" />
+                    </div>
+                    {/* Golden reward badge */}
+                    <div className="bg-amber-50 border border-amber-200/60 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 font-display">
+                      <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                      {quest.reward}
+                    </div>
+                  </div>
+
+                  <h4 className="text-[14.5px] font-display font-extrabold text-[var(--dah-on-surface)] mt-3.5 tracking-tight">
+                    {quest.title}
+                  </h4>
+                  <p className="text-[11.5px] text-[var(--dah-on-surface-variant)] leading-normal mt-1 min-h-[36px] font-medium">
+                    {quest.desc}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between mt-4 pt-1 border-t border-slate-50">
+                  <span className="text-[11px] font-bold text-[var(--dah-outline)] font-display">
+                    {quest.progressText}
+                  </span>
+                  <button
+                    onClick={() => onSelectQuest?.(quest.activityText)}
+                    className="px-4 py-1.5 bg-[#00162b] hover:bg-[#061d32] text-white rounded-full font-display font-bold text-[11px] transition-all active:scale-95 shadow-sm hover:shadow"
+                  >
+                    {quest.actionLabel}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Milestones */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-[18px] font-display font-extrabold tracking-tight text-[var(--dah-primary)]">
+            Milestones
+          </h3>
+          <span className="text-[11px] font-display font-bold text-[var(--dah-outline)]">
+            {unlockedCount} / {milestones.length} Earned
+          </span>
+        </div>
+
+        {/* 3-column Grid layout matching the image */}
+        <div className="grid grid-cols-3 gap-3 bg-white border border-[var(--dah-outline-variant)]/60 rounded-[28px] p-4.5 shadow-sm">
+          {milestones.map((m) => {
+            const MIcon = m.icon;
+            return (
+              <div
+                key={m.id}
+                className={`aspect-square rounded-[24px] flex flex-col items-center justify-center p-2 relative transition-all duration-300 ${
+                  m.unlocked
+                    ? "bg-[#f1eff6] shadow-sm"
+                    : "bg-white border border-[#e4e6ec]"
+                }`}
+              >
+                {/* Notification dot (orange) for 7-Day Streak, matching the image */}
+                {m.unlocked && m.dot && (
+                  <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-orange-500 rounded-full border border-white pulse-ring" />
+                )}
+
+                {/* Icon Container */}
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center mb-1.5 transition-all duration-300 ${
+                    m.unlocked
+                      ? m.activeBg
+                      : "bg-[#f8f9fa] text-slate-400"
+                  }`}
+                >
+                  <MIcon
+                    className={`w-5.5 h-5.5 ${
+                      m.unlocked ? m.activeIconColor : "text-slate-400/80"
+                    }`}
+                  />
+                </div>
+
+                {/* Milestone Name */}
+                <span
+                  className={`text-[10.5px] font-display font-bold text-center leading-tight transition-colors duration-200 ${
+                    m.unlocked ? "text-[#00162b]" : "text-slate-400"
+                  }`}
+                >
+                  {m.name}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--dah-outline-variant)]/40 my-2" />
+
+      {/* 4. Reward History Title & List */}
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-[var(--dah-primary)]">
+        <h2 className="text-[22px] font-display font-extrabold tracking-[-0.02em] text-[var(--dah-primary)]">
           Reward History
         </h2>
-        <span className="text-[12px] font-semibold text-[var(--dah-primary)] bg-[var(--dah-secondary-container)]/30 px-2.5 py-1 rounded-full">
+        <span className="text-[12px] font-display font-semibold text-[var(--dah-primary)] bg-[var(--dah-secondary-container)]/30 px-2.5 py-1 rounded-full">
           {history.length} {history.length === 1 ? "Reward" : "Rewards"}
         </span>
       </div>
 
       {sortedHistory.length === 0 ? (
         /* Empty State */
-        <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-8 text-center space-y-4">
+        <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/60 p-8 text-center space-y-4">
           <div className="w-16 h-16 bg-[var(--dah-surface-low)] rounded-full flex items-center justify-center mx-auto text-[var(--dah-outline)]">
             <CustomTrophy className="w-8 h-8" />
           </div>
           <div className="space-y-1">
-            <p className="text-[16px] font-bold text-[var(--dah-on-surface)]">
+            <p className="text-[16px] font-display font-bold text-[var(--dah-on-surface)]">
               No rewards yet
             </p>
-            <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed max-w-[220px] mx-auto">
+            <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed max-w-[220px] mx-auto font-medium">
               Your earned rewards on the Stellar testnet will appear here automatically.
             </p>
           </div>
@@ -81,14 +452,14 @@ export function RewardHistory({ history }: RewardHistoryProps) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-4 flex items-center justify-between hover:border-[var(--dah-primary)] transition-all active:scale-[0.99]"
+                className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/60 p-4 flex items-center justify-between hover:border-[var(--dah-primary)] transition-all active:scale-[0.99]"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-12 h-12 rounded-full bg-[var(--dah-surface-low)] flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-[var(--dah-primary)]" />
                   </div>
                   <div className="min-w-0 space-y-0.5">
-                    <p className="text-[14px] font-bold text-[var(--dah-on-surface)] capitalize truncate">
+                    <p className="text-[14px] font-display font-bold text-[var(--dah-on-surface)] capitalize truncate">
                       {item.activity}
                     </p>
                     <p className="text-[11px] text-[var(--dah-on-surface-variant)] flex items-center gap-1 font-medium">

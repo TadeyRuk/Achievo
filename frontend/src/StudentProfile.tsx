@@ -11,6 +11,7 @@ import {
   CustomTrophy,
   CustomCircleUser,
   CustomClipboardList,
+  CustomMedal,
 } from "./customIcons";
 
 interface StudentProfileProps {
@@ -49,8 +50,73 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
   // Dynamic Badge Unlocking
   const volunteeredCount = history.filter(h => h.activity.toLowerCase().includes("volunteer")).length;
   const tutoredCount = history.filter(h => h.activity.toLowerCase().includes("tutor")).length;
+  
+  const tutoringOrMathCount = history.filter(h => 
+    h.activity.toLowerCase().includes("tutor") || 
+    h.activity.toLowerCase().includes("math")
+  ).length;
+  const workshopCount = history.filter(h => h.activity.toLowerCase().includes("workshop")).length;
+  const scienceCount = history.filter(h => h.activity.toLowerCase().includes("science")).length;
+
+  const baseXP = 3250;
+  const totalXP = baseXP + Math.round(totalEarned * 100);
+
+  const isSilverUnlocked = totalXP >= 1000 && volunteeredCount >= 1;
+  const isGoldUnlocked = totalXP >= 2500 && tutoringOrMathCount >= 1;
+  const isPlatinumUnlocked = totalXP >= 5000 && workshopCount >= 1 && streak >= 3;
+  const isDiamondUnlocked = totalXP >= 10000 && scienceCount >= 1 && streak >= 5;
 
   const badges = [
+    {
+      id: "rank_bronze",
+      name: "Bronze Scholar Badge",
+      desc: "Unlocked by default as your starting scholar rank.",
+      unlocked: true,
+      rimColor: "from-amber-700 via-amber-600 to-amber-900",
+      innerColor: "from-amber-900 via-stone-800 to-amber-950",
+      iconColor: "text-amber-500",
+      icon: CustomCompass,
+    },
+    {
+      id: "rank_silver",
+      name: "Silver Scholar Badge",
+      desc: "Earn 1,000+ XP and log at least 1 volunteering activity to unlock.",
+      unlocked: isSilverUnlocked,
+      rimColor: "from-slate-400 via-slate-100 to-slate-500",
+      innerColor: "from-slate-700 via-slate-800 to-slate-900",
+      iconColor: "text-slate-200",
+      icon: CustomMedal,
+    },
+    {
+      id: "rank_gold",
+      name: "Gold Scholar Badge",
+      desc: "Earn 2,500+ XP and log at least 1 tutoring or math activity to unlock.",
+      unlocked: isGoldUnlocked,
+      rimColor: "from-yellow-400 via-amber-100 to-yellow-600",
+      innerColor: "from-yellow-800 via-stone-800 to-yellow-950",
+      iconColor: "text-yellow-400",
+      icon: CustomTrophy,
+    },
+    {
+      id: "rank_platinum",
+      name: "Platinum Scholar Badge",
+      desc: "Earn 5,000+ XP, log 1 workshop activity, and reach a 3-day streak to unlock.",
+      unlocked: isPlatinumUnlocked,
+      rimColor: "from-sky-300 via-indigo-200 to-indigo-500",
+      innerColor: "from-indigo-950 via-slate-900 to-indigo-900",
+      iconColor: "text-sky-300",
+      icon: CustomStar,
+    },
+    {
+      id: "rank_diamond",
+      name: "Diamond Scholar Badge",
+      desc: "Earn 10,000+ XP, log 1 science activity, and reach a 5-day streak to unlock.",
+      unlocked: isDiamondUnlocked,
+      rimColor: "from-fuchsia-400 via-pink-100 to-pink-600",
+      innerColor: "from-fuchsia-950 via-stone-900 to-violet-950",
+      iconColor: "text-fuchsia-300",
+      icon: CustomBolt,
+    },
     {
       id: "first_spark",
       name: "First Spark",
@@ -113,7 +179,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
     },
   ];
 
-  const [selectedBadgeId, setSelectedBadgeId] = useState<string>("first_spark");
+  const [selectedBadgeId, setSelectedBadgeId] = useState<string>("rank_bronze");
   const selectedBadge = badges.find(b => b.id === selectedBadgeId) || badges[0];
   const SelectedBadgeIcon = selectedBadge.icon;
 
