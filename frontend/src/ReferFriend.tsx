@@ -223,78 +223,58 @@ export function ReferFriend({ onBack, userName }: ReferFriendProps) {
         </div>
 
         {/* How it Works Section */}
-        <div className="bg-[#f5f6fa] rounded-[32px] p-5 border border-[#eef1f6] space-y-5">
+        <div className="space-y-4">
           {/* Header */}
-          <div className="flex items-center gap-2.5 px-1">
-            <HelpCircle className="w-5 h-5 text-[#0f3b8c]" strokeWidth={2.2} />
-            <h4 className="text-[16px] font-extrabold text-[#00162b] font-display">
-              How it works
-            </h4>
+          <div className="flex items-center gap-2 px-1">
+            <div className="w-6 h-6 rounded-full bg-[#001540] flex items-center justify-center">
+              <HelpCircle className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+            </div>
+            <h4 className="text-[15px] font-black text-[#00162b] tracking-tight font-display">How it works</h4>
           </div>
 
-          {/* Step Timeline */}
-          <div className="space-y-6 relative pl-3">
-            {/* Timeline connection line */}
-            <div className="absolute left-[25px] top-4 bottom-4 w-[2px] bg-[#0f3b8c]/15" />
+          {/* Step Cards Row */}
+          <div className="grid grid-cols-3 gap-3">
 
             {/* Step 1 */}
-            <div className="relative flex items-start gap-4">
-              {/* Step circle */}
-              <div className="w-6 h-6 rounded-full bg-[#001540] text-white font-extrabold text-[11px] flex items-center justify-center shrink-0 z-10 mt-1">
+            <div className="relative flex flex-col items-center text-center bg-white rounded-[24px] p-4 border border-[#eef1f6] shadow-sm overflow-hidden">
+              {/* Subtle bg accent */}
+              <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-[#ffbe42]/10 pointer-events-none" />
+              {/* Number badge */}
+              <div className="w-7 h-7 rounded-full bg-[#001540] text-white text-[11px] font-black flex items-center justify-center mb-3 shadow-md">
                 1
               </div>
-              {/* Step info card */}
-              <div className="bg-white rounded-[24px] p-4 flex items-center gap-3.5 shadow-sm border border-white/5 flex-1">
-                <div className="w-11 h-11 rounded-full bg-[#ffbe42]/15 flex items-center justify-center text-[#ffbe42] shrink-0">
-                  <Users className="w-5.5 h-5.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h5 className="text-[13px] font-extrabold text-[#00162b]">Invite a friend</h5>
-                  <p className="text-[11.5px] text-gray-500 font-semibold leading-normal mt-0.5">
-                    Share your unique referral link or code with someone new to Achievo.
-                  </p>
-                </div>
+              {/* Icon */}
+              <div className="w-12 h-12 rounded-2xl bg-[#fff4d6] flex items-center justify-center mb-3">
+                <Users className="w-6 h-6 text-[#f5a623]" strokeWidth={1.8} />
               </div>
+              <p className="text-[11px] font-bold text-[#00162b] leading-snug">Invite a friend</p>
+              <p className="text-[10px] text-gray-400 font-semibold mt-1 leading-snug">Share your link or code</p>
             </div>
 
             {/* Step 2 */}
-            <div className="relative flex items-start gap-4">
-              {/* Step circle */}
-              <div className="w-6 h-6 rounded-full bg-[#001540] text-white font-extrabold text-[11px] flex items-center justify-center shrink-0 z-10 mt-1">
+            <div className="relative flex flex-col items-center text-center bg-white rounded-[24px] p-4 border border-[#eef1f6] shadow-sm overflow-hidden">
+              <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-blue-500/10 pointer-events-none" />
+              <div className="w-7 h-7 rounded-full bg-[#0f3b8c] text-white text-[11px] font-black flex items-center justify-center mb-3 shadow-md">
                 2
               </div>
-              {/* Step info card */}
-              <div className="bg-white rounded-[24px] p-4 flex items-center gap-3.5 shadow-sm border border-white/5 flex-1">
-                <div className="w-11 h-11 rounded-full bg-blue-500/15 flex items-center justify-center text-blue-600 shrink-0">
-                  <UserCheck className="w-5.5 h-5.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h5 className="text-[13px] font-extrabold text-[#00162b]">Friend joins & completes activity</h5>
-                  <p className="text-[11.5px] text-gray-500 font-semibold leading-normal mt-0.5">
-                    They sign up using your code and complete their first verified task or quest.
-                  </p>
-                </div>
+              <div className="w-12 h-12 rounded-2xl bg-[#eff4ff] flex items-center justify-center mb-3">
+                <UserCheck className="w-6 h-6 text-[#3b6fd4]" strokeWidth={1.8} />
               </div>
+              <p className="text-[11px] font-bold text-[#00162b] leading-snug">They join & complete</p>
+              <p className="text-[10px] text-gray-400 font-semibold mt-1 leading-snug">First verified activity</p>
             </div>
 
             {/* Step 3 */}
-            <div className="relative flex items-start gap-4">
-              {/* Step circle */}
-              <div className="w-6 h-6 rounded-full bg-[#ffbe42] text-[#00162b] font-black text-[11px] flex items-center justify-center shrink-0 z-10 mt-1">
+            <div className="relative flex flex-col items-center text-center bg-gradient-to-b from-[#001e4d] to-[#001040] rounded-[24px] p-4 shadow-md overflow-hidden">
+              <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-[#ffbe42]/20 pointer-events-none" />
+              <div className="w-7 h-7 rounded-full bg-[#ffbe42] text-[#001040] text-[11px] font-black flex items-center justify-center mb-3 shadow-md">
                 3
               </div>
-              {/* Step info card */}
-              <div className="bg-white rounded-[24px] p-4 flex items-center gap-3.5 shadow-sm border border-white/5 flex-1">
-                <div className="w-11 h-11 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-600 shrink-0">
-                  <Gift className="w-5.5 h-5.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h5 className="text-[13px] font-extrabold text-[#00162b]">You both get rewarded</h5>
-                  <p className="text-[11.5px] text-gray-500 font-semibold leading-normal mt-0.5">
-                    150 XLM is instantly deposited into both of your wallets. Enjoy!
-                  </p>
-                </div>
+              <div className="w-12 h-12 rounded-2xl bg-[#ffbe42]/20 flex items-center justify-center mb-3">
+                <Gift className="w-6 h-6 text-[#ffbe42]" strokeWidth={1.8} />
               </div>
+              <p className="text-[11px] font-bold text-white leading-snug">Both get rewarded</p>
+              <p className="text-[10px] text-[#ffbe42] font-bold mt-1 leading-snug">150 XLM each!</p>
             </div>
 
           </div>
