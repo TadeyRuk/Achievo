@@ -53,7 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name: 'achievo-challenge',
       value: Buffer.from(nonce, 'hex'), // 16 bytes
     }))
-    .addTimebounds(Math.floor(Date.now() / 1000), Math.floor(expiry / 1000))
+    .setTimebounds(0, Math.floor(expiry / 1000))
     .build();
 
   return res.status(200).json({
