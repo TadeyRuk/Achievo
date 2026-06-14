@@ -8,6 +8,16 @@ interface NavbarProps {
 export function Navbar({ onInfoClick }: NavbarProps) {
   return (
     <header className="px-4 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-[60]">
+      {/* Gradual blur layer — fades from blurred at top to transparent at bottom */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          maskImage: "linear-gradient(to bottom, black 40%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 40%, transparent 100%)",
+        }}
+      />
       {/* Left — info icon in pill cutout */}
       <div
         className="flex items-center px-2 py-1 rounded-full border border-[var(--dah-outline-variant)]/40"
