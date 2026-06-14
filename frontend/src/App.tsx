@@ -72,9 +72,6 @@ export default function App() {
 
   // Scroll reference for auto-scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  // Ref for the RewardCard to auto-scroll into view when XLM is received
-  const rewardCardRef = useRef<HTMLDivElement>(null);
-
   // Auto-scroll to bottom as logs update
   useEffect(() => {
     if (scrollContainerRef.current && !txHash) {
@@ -84,15 +81,6 @@ export default function App() {
       });
     }
   }, [logs, txHash]);
-
-  // Auto-scroll to RewardCard when XLM reward arrives
-  useEffect(() => {
-    if (txHash && rewardXlm !== null && rewardCardRef.current) {
-      setTimeout(() => {
-        rewardCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 350);
-    }
-  }, [txHash, rewardXlm]);
 
 
 
@@ -361,11 +349,6 @@ export default function App() {
                 <div key="home-running" className="p-5 space-y-5">
                   <PipelineVisualizer steps={pipeline} logs={logs} />
                   
-                  {txHash && rewardXlm !== null && (
-                    <div ref={rewardCardRef}>
-                      <RewardCard reward={rewardXlm} txHash={txHash} />
-                    </div>
-                  )}
                   
                   {txHash && !isRunning && (
                     <button
@@ -432,6 +415,17 @@ export default function App() {
         </div>
 
         <BottomNav activeTab={tab} onTabChange={setTab} />
+
+        {/* Reward Modal */}
+        <AnimatePresence>
+          {txHash && rewardXlm !== null && (
+            <RewardCard
+              reward={rewardXlm}
+              txHash={txHash}
+              onClose={() => { setTxHash(null); setRewardXlm(null); }}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Info Bottom Sheet */}
         <AnimatePresence>
