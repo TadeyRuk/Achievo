@@ -29,5 +29,6 @@ out/
 
 # Ignore Obsidian vault and local tools
 vault/
+assets/
 .playwright-mcp/
 achievo-ui.png
