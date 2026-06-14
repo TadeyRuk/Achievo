@@ -22,7 +22,7 @@ export function Navbar({ onInfoClick }: NavbarProps) {
       />
       {/* Left — info icon in pill cutout */}
       <div
-        className="flex items-center px-2 py-1 rounded-full border border-black/20"
+        className="flex items-center px-2 py-1 rounded-full border-2 border-black/20"
         style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
       >
         <button
@@ -42,7 +42,7 @@ export function Navbar({ onInfoClick }: NavbarProps) {
 
       {/* Right — rewind icon in pill cutout */}
       <div
-        className="flex items-center px-2 py-1 rounded-full border border-black/20"
+        className="flex items-center px-2 py-1 rounded-full border-2 border-black/20"
         style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
       >
         <button
