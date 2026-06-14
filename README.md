@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/only_logo.png" alt="Achievo Logo" width="96" />
+</p>
+
 # Achievo — AI Student Reward System on Stellar
 
 > Earn XLM automatically for your academic achievements — powered by a 5-agent AI pipeline and Soroban smart contracts on the Stellar Testnet.
