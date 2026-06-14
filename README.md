@@ -1,28 +1,25 @@
 # Achievo — AI Student Reward System on Stellar
 
-Achievo is an AI-assisted student reward distribution system built on Stellar Soroban (testnet).
-
-Students submit activities in natural language. A pipeline of five agents interprets the submission, verifies eligibility, calculates an XLM reward, and executes the on-chain payout — all visible in real time through an animated UI.
+Achievo automatically rewards students with XLM for completing recognized activities. A student connects their wallet, submits what they did, and the system evaluates the submission through a 5-agent pipeline and sends XLM directly to their wallet — no manual approval needed.
 
 ---
 
 ## How It Works
 
 ```
-Student submits activity text
-         ↓
-  1. Activity Agent     — keyword classification
-         ↓
-  2. Verification Agent — whitelist check
-         ↓
-  3. Reward Agent       — XLM amount lookup
-         ↓
-  4. Stellar Agent      — Soroban contract call (send_reward)
-         ↓
-  5. Feedback Agent     — human-readable result
-         ↓
-  UI shows reward confirmation + StellarExpert link
+Student connects wallet + submits activity
+              ↓
+   Vercel API (api/reward.ts)
+   ├── Activity Agent    — classifies activity type
+   ├── Verification Agent — checks against whitelist
+   ├── Reward Agent      — assigns XLM amount
+   ├── Stellar Agent     — signs + sends send_reward() on Soroban
+   └── Feedback Agent    — formats result
+              ↓
+   Student receives XLM + sees tx hash
 ```
+
+**The admin key lives in a Vercel environment variable — never in the browser.** The student's wallet is read-only (receive XLM + view balance).
 
 **Recognized activities and rewards:**
 
@@ -37,10 +34,22 @@ Student submits activity text
 
 ## Tech Stack
 
-- **Smart contract**: Rust / Soroban SDK 26.1 (WASM, deployed on Stellar Testnet)
+- **Smart contract**: Rust / Soroban SDK 26.1 (treasury contract, Stellar Testnet)
+- **Backend**: Vercel serverless function (`api/reward.ts`) — runs agents + signs transactions
 - **Frontend**: React 19 + Vite + TypeScript
-- **Wallet**: StellarWalletsKit (Freighter, xBull, Albedo, Lobstr, Hana)
-- **Network**: Stellar Testnet (Soroban RPC + Horizon)
+- **Wallet**: StellarWalletsKit (Freighter, xBull, Albedo, Lobstr, Hana) — receive-only
+- **Network**: Stellar Testnet
+
+---
+
+## Deployed Contract
+
+| Item | Value |
+|------|-------|
+| Network | Stellar Testnet |
+| Contract ID | `CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ` |
+| XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
+| Treasury balance | 10,000 testnet XLM |
 
 ---
 
@@ -55,22 +64,15 @@ cd Achievo
 cd frontend
 npm install
 
-# 3. Start dev server
-npm run dev
-# → http://localhost:5173
+# 3. Set environment variable (for local API)
+echo "ADMIN_SECRET=your_stellar_secret_key" > ../.env.local
+
+# 4. Start dev server (Vercel CLI runs API + frontend together)
+npx vercel dev
+# → http://localhost:3000
 ```
 
-Requires a Stellar wallet browser extension (Freighter recommended).
-
----
-
-## Deployed Contract
-
-| Item | Value |
-|------|-------|
-| Network | Stellar Testnet |
-| Contract ID | *(update after deploy)* |
-| XLM Token Contract | `CAS3J7CYCJ34TRCB4YEX6ADYZ37CTAMCCMI43GAPK4R4SUK2VJYZATJQ` |
+Requires a Stellar wallet browser extension (Freighter recommended) to connect and receive XLM.
 
 ---
 
@@ -81,7 +83,7 @@ cd contract
 cargo build --release --target wasm32v1-none
 ```
 
-> **Note:** Requires Rust 1.84+ and `wasm32v1-none` target. The older `wasm32-unknown-unknown` target is incompatible with Soroban SDK 26+ on Rust 1.82+.
+> **Note:** Requires `wasm32v1-none` target. The `wasm32-unknown-unknown` target is incompatible with Soroban SDK 26+ on Rust 1.82+.
 
 ---
 
@@ -89,8 +91,7 @@ cargo build --release --target wasm32v1-none
 
 *(Add after first test run)*
 
-- [ ] Wallet connected state
-- [ ] Balance displayed
+- [ ] Wallet connected (student receive-only)
 - [ ] Activity submitted — pipeline running
 - [ ] Reward sent — transaction hash on StellarExpert
 
@@ -100,10 +101,12 @@ cargo build --release --target wasm32v1-none
 
 ```
 contract/       — Soroban treasury contract (Rust)
+api/
+  reward.ts     — Vercel function: agents + admin signs send_reward tx
 frontend/src/
   agents.ts     — 5 pure agent functions (Activity → Feedback)
-  contract.ts   — Soroban RPC calls (view + send_reward tx)
+  contract.ts   — Soroban read-only view calls
   wallet.ts     — StellarWalletsKit + Horizon + Friendbot
-  App.tsx       — Single-page UI + pipeline visualizer
+  App.tsx       — UI: activity form + pipeline visualizer + reward card
 *.md            — Obsidian vault design docs
 ```

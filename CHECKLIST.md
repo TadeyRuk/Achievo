@@ -43,31 +43,36 @@
 ## Level 2 — Yellow Belt 🏗️
 
 ### Core Requirements
-- [x] 3+ error types handled
-  - [x] User declined signature
-  - [x] Insufficient balance
-  - [x] Account/contract not found
+- [x] 3+ error types handled (in `api/reward.ts`)
+  - [x] User wallet not found / invalid address
+  - [x] Insufficient treasury balance
+  - [x] Contract/account not found on network
 - [x] Contract deployed on testnet
-  - Contract ID: `CDJN47RNDWOUCOTMGFDDNNT226QWRTKCX5WRTXTDXXQIIMIBMA4MM4X4`
-- [x] Contract called from frontend
-  - [x] `init` (create bill)
-  - [x] `pay_share` (participant payment)
-  - [x] `claim` (organizer withdrawal)
-- [x] Transaction status visible
-- [x] Minimum 2+ meaningful commits
+  - Contract ID: `CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ`
+- [x] Contract called from frontend (via Vercel API → `send_reward`)
+  - [x] `initialize` (one-time setup, done)
+  - [x] `send_reward` (called by API on each student submission)
+  - [x] `get_balance` / `get_disbursed` / `get_admin` (view calls from browser)
+- [x] Transaction status visible (pipeline stepper in UI)
+- [x] Minimum 2+ meaningful commits (5+ already)
+
+### Architecture
+- [ ] **Vercel API route** `api/reward.ts` — holds admin key, runs agents, signs tx
+- [ ] Student wallet = receive-only (read-only connection, no signing required)
+- [ ] Rate limiting: 1 reward per wallet per day
 
 ### Submission Checklist
 - [x] Public GitHub repository
-- [ ] README with setup instructions
 - [x] Minimum 2+ meaningful commits
+- [ ] README with setup instructions
 - [ ] **README must include:**
-  - [ ] Live demo link (Vercel, Netlify, or similar)
-  - [ ] Deployed contract address
-  - [ ] Transaction hash of contract call (verifiable on Stellar Explorer)
+  - [ ] Live demo link (Vercel deploy)
+  - [ ] Deployed contract address: `CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ`
+  - [ ] Transaction hash of `send_reward` call (verifiable on Stellar Explorer)
   - [ ] Screenshots:
-    - [ ] Wallet options available
-    - [ ] Deployed contract address visible
-    - [ ] Transaction hash on explorer
+    - [ ] Wallet connected (student receive-only)
+    - [ ] Pipeline running
+    - [ ] Reward sent + tx hash on StellarExpert
 
 ---
 

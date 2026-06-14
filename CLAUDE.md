@@ -4,17 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Purpose
 
-Achievo is an **AI-assisted student reward distribution system** on Stellar Soroban (testnet). Students submit activities in natural language; a 5-agent pipeline (Activity → Verification → Reward → Stellar → Feedback) interprets the submission, assigns an XLM reward, and executes the payout via a Soroban treasury contract.
+Achievo is an **AI-assisted student reward distribution system** on Stellar Soroban (testnet). A student connects their wallet and submits an activity in natural language. A 5-agent pipeline running on a **Vercel serverless function** evaluates the submission and automatically sends XLM to the student's wallet — the student never needs to sign or pay; the system's admin key (held server-side) does it.
+
+## Architecture
+
+```
+Student browser                Vercel API (api/reward.ts)       Stellar Testnet
+      |                               |                               |
+      |-- POST /api/reward ---------->|                               |
+      |   { activity, wallet }        |-- activityAgent()             |
+      |                               |-- verificationAgent()         |
+      |                               |-- rewardAgent()               |
+      |                               |-- sign with ADMIN_SECRET      |
+      |                               |-- send_reward(wallet, amt) -->|
+      |                               |<-- txHash -------------------|
+      |<-- { txHash, reward } --------|                               |
+```
+
+Admin key lives in `ADMIN_SECRET` Vercel env var — never in the browser. Student wallet connection is read-only (receive XLM + show balance only).
 
 ## Repo Structure
 
 ```
 contract/           — Soroban treasury contract (Rust, compiles to WASM via cdylib)
+api/
+  reward.ts         — Vercel serverless function: runs agents + signs send_reward tx
 frontend/src/
   agents.ts         — 5 pure TS agent functions (rule-based, no external deps)
-  contract.ts       — Soroban RPC calls: view queries + sendRewardOnChain()
+  contract.ts       — Soroban RPC view queries (read-only); sendRewardOnChain used by API
   wallet.ts         — StellarWalletsKit init, Horizon, Friendbot
-  App.tsx           — Single-page React UI + agent pipeline visualizer
+  App.tsx           — Single-page React UI + pipeline visualizer
 Agents/             — Design docs for the agent pipeline
 *.md                — Obsidian vault design docs (Index.md is the nav root)
 ```
@@ -32,9 +51,9 @@ cargo test
 
 # Deploy to testnet (requires Stellar CLI)
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/contract.wasm \
+  --wasm target/wasm32v1-none/release/contract.wasm \
   --network testnet \
-  --source <YOUR_SECRET_KEY>
+  --source dev
 ```
 
 The contract has five entry points:
@@ -45,7 +64,7 @@ The contract has five entry points:
 | `send_reward(recipient, amount)` | admin | Transfer `amount` stroops from contract to recipient |
 | `get_balance()` | none | Current XLM held in contract (stroops) |
 | `get_disbursed()` | none | Total XLM paid out so far (stroops) |
-| `get_admin()` | none | Admin address (frontend uses to check role) |
+| `get_admin()` | none | Admin address |
 
 State stored in single `instance` slot under key `"state"` (`symbol_short!("state")`).
 
@@ -64,36 +83,43 @@ npm run preview    # serve dist/ locally
 ```
 
 Key files:
-- `src/wallet.ts` — `StellarWalletsKit` init (static), Horizon server, Friendbot helper
-- `src/agents.ts` — 5 pure TS agent functions (Activity, Verification, Reward, Feedback); reward table and whitelist defined here
-- `src/contract.ts` — all Soroban RPC calls; exports `CONTRACT_ID`, `XLM_TOKEN_CONTRACT_ID`, view helpers, and `sendRewardOnChain()`
-- `src/App.tsx` — single-page React UI: activity submission form + pipeline stepper + reward result card, no router
-
-The frontend talks **directly** to Stellar's Soroban RPC (`https://soroban-testnet.stellar.org`) and Horizon (`https://horizon-testnet.stellar.org`). There is no backend server.
+- `src/wallet.ts` — StellarWalletsKit init, Horizon, Friendbot helper
+- `src/agents.ts` — 5 pure TS agent functions; reward table + whitelist defined here
+- `src/contract.ts` — read-only Soroban view calls; `sendRewardOnChain()` called by API, not browser
+- `src/App.tsx` — activity form + pipeline stepper + reward card; POSTs to `/api/reward`
 
 ## Network Constants (Testnet)
 
-| Constant | Value in `contract.ts` |
+| Constant | Value |
 |---|---|
-| `CONTRACT_ID` | `CDJN47RNDWOUCOTMGFDDNNT226QWRTKCX5WRTXTDXXQIIMIBMA4MM4X4` |
-| `XLM_TOKEN_CONTRACT_ID` | `CAS3J7CYCJ34TRCB4YEX6ADYZ37CTAMCCMI43GAPK4R4SUK2VJYZATJQ` |
+| `CONTRACT_ID` | `CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ` |
+| `XLM_TOKEN_CONTRACT_ID` (XLM SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
+| Admin pubkey | `GBPW3ETOM3525MXSQUH3QYHPQIFNM6QGOF474H4FJQQS7NCPC3FUMCOF` |
 | Soroban RPC | `https://soroban-testnet.stellar.org` |
 | Horizon | `https://horizon-testnet.stellar.org` |
 
-The UI's settings panel lets users override `CONTRACT_ID` at runtime without a code change.
+Treasury funded with 10,000 testnet XLM.
 
-## Transaction Flow
+## Vercel Environment Variables
 
-All on-chain writes follow: `loadAccount → buildTx → simulateTransaction (prepareTransaction) → signTransaction (via StellarWalletsKit) → sendTransaction → poll getTransaction`. This is implemented in `sendContractTransaction()` in `contract.ts`.
+| Var | Description |
+|---|---|
+| `ADMIN_SECRET` | Stellar secret key for the treasury admin (never expose to browser) |
 
-## Agent Pipeline (implemented — `frontend/src/agents.ts`)
+## Transaction Flow (server-side)
 
-Five sequential rule-based functions (Option A from `Architecture Options.md`):
+`loadAccount → buildTx → prepareTransaction (simulate) → sign with ADMIN_SECRET → sendTransaction → poll getTransaction`. Implemented in `api/reward.ts` (mirrors `sendContractTransaction` from `contract.ts`).
 
-1. `activityAgent(text)` — keyword match against whitelist → `{ activity, valid, suggestedReward }`
-2. `verificationAgent(activity)` — whitelist check → `{ status: 'approved' | 'rejected', reason? }`
-3. `rewardAgent(activity)` — reward table lookup → `{ reward, currency: 'XLM' }`
-4. *(Stellar Agent = `sendRewardOnChain()` in `contract.ts`)*
-5. `feedbackAgent(result)` — format tx result → `{ message, type: 'success' | 'failure' }`
+## Agent Pipeline (`frontend/src/agents.ts` + `api/reward.ts`)
+
+Five sequential rule-based functions:
+
+1. `activityAgent(text)` — keyword match → `{ activity, valid, suggestedReward }`
+2. `verificationAgent(activity)` — whitelist check → `{ status, reason? }`
+3. `rewardAgent(activity)` — reward table → `{ reward, currency: 'XLM' }`
+4. *(Stellar Agent — `sendRewardOnChain()` called inside `api/reward.ts`)*
+5. `feedbackAgent(result)` — format result → `{ message, type }`
 
 Reward table: `tutoring`→5, `workshop`→2, `volunteering`→10, `event`/`participation`→3 XLM.
+
+Rate limit: 1 reward per wallet address per day (enforced in `api/reward.ts`).
