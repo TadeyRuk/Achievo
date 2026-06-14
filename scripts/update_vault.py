@@ -24,14 +24,14 @@ def get_today_changes():
     
     all_changes = sorted(list(set(diff_files + untracked_files)))
     # Exclude vault metadata and node_modules/scripts
-    filtered = [f for f in all_changes if not f.startswith('.obsidian') and not f.startswith('node_modules')]
+    filtered = [f for f in all_changes if not f.startswith('vault/') and not f.startswith('node_modules')]
     
     if not filtered:
         return "- No code files modified today yet."
     return "\n".join(f"- `{f}`" for f in filtered)
 
 def update_daily_log(today_str):
-    log_dir = "Daily Logs"
+    log_dir = "vault/Daily Logs"
     os.makedirs(log_dir, exist_ok=True)
     log_path = os.path.join(log_dir, f"{today_str}.md")
     
@@ -79,7 +79,7 @@ def get_file_status(file_path):
     return "✅ Completed"
 
 def update_index_status(today_str):
-    index_path = "Index.md"
+    index_path = "vault/Index.md"
     if not os.path.exists(index_path):
         print("Index.md not found!")
         return
@@ -119,9 +119,7 @@ def main():
     # Update Index Status Table
     update_index_status(today_str)
     
-    # Stage changes in Git
-    run_cmd("git add Index.md Daily\\ Logs/")
-    print("Vault changes staged in Git.")
+    # Vault is gitignored, so we don't stage it in Git
 
 if __name__ == "__main__":
     main()

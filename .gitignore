@@ -22,3 +22,12 @@ dist/
 build/
 out/
 .next/
+
+# Ignore all markdown files except README.md
+**/*.md
+!**/README.md
+
+# Ignore Obsidian vault and local tools
+vault/
+.playwright-mcp/
+achievo-ui.png
