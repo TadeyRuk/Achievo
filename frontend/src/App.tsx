@@ -141,6 +141,13 @@ export default function App() {
     } catch { /* ignore */ }
   };
 
+  const handleRefresh = async () => {
+    if (walletAddress) {
+      await fetchBalance(walletAddress);
+    }
+    await loadTreasury();
+  };
+
   // ── Submit activity ────────────────────────────────────────────────────────
 
   const handleSubmit = async () => {
@@ -377,6 +384,7 @@ export default function App() {
                 onConnect={handleConnect}
                 onDisconnect={handleDisconnectRequest}
                 onFund={handleFund}
+                onRefresh={handleRefresh}
               />
             )}
             {tab === 'profile' && (

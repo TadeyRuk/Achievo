@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { LogOut, ShieldCheck, RefreshCw, Database, TrendingUp } from "lucide-react";
 import { motion } from "motion/react";
 import type { TreasuryInfo } from "./contract";
@@ -12,6 +13,7 @@ interface WalletProfileProps {
   onConnect: (walletId: string) => void;
   onDisconnect: () => void;
   onFund: () => void;
+  onRefresh?: () => Promise<void>;
 }
 
 const REWARD_TABLE = [
@@ -56,9 +58,22 @@ function MiniBarChart({ balance }: { balance: string }) {
 
 export function WalletProfile({
   walletAddress, balance, isFunded, treasuryInfo,
-  isConnecting, onConnect, onDisconnect, onFund
+  isConnecting, onConnect, onDisconnect, onFund, onRefresh
 }: WalletProfileProps) {
   const isMobile = typeof window !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefreshClick = async () => {
+    if (onRefresh) {
+      setIsRefreshing(true);
+      try {
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -69,6 +84,21 @@ export function WalletProfile({
       {walletAddress ? (
         /* ── CONNECTED DASHBOARD STATE ── */
         <>
+          {/* Header with Title and Refresh Button */}
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-[var(--dah-primary)] font-display">
+              My Wallet
+            </h2>
+            <button
+              onClick={handleRefreshClick}
+              disabled={isRefreshing}
+              className="p-2 rounded-full hover:bg-[var(--dah-surface-low)] text-[var(--dah-primary)] transition-all flex items-center justify-center disabled:opacity-50"
+              title="Refresh Balance"
+            >
+              <RefreshCw className={`w-4.5 h-4.5 ${isRefreshing ? "animate-spin" : ""}`} />
+            </button>
+          </div>
+
           {/* Balance Hero Card - 28px/32px corner radius, Level 1 elevation */}
           <div className="bg-[var(--dah-primary-container)] rounded-[28px] p-6 text-white relative overflow-hidden shadow-lg shadow-[var(--dah-primary-container)]/15">
             <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/5 rounded-full pointer-events-none" />
