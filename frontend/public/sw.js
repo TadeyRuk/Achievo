@@ -1,6 +1,6 @@
 // Bump this version any time you deploy new JS/CSS bundles to force
 // the old stale cache to be evicted on all clients (fixes blank screen on mobile).
-const CACHE_NAME = 'achievo-cache-v5';
+const CACHE_NAME = 'achievo-cache-v6';
 
 self.addEventListener('install', () => {
   // Take control immediately without waiting for old SW to finish.
