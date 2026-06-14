@@ -19,10 +19,10 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
 
   const badges = [
     {
-      id: "genesis_pilot",
-      name: "Genesis Pilot",
-      desc: "Linked your Stellar wallet to initiate your rewards stream.",
-      unlocked: walletAddress !== null,
+      id: "first_spark",
+      name: "First Spark",
+      desc: "Earned your first approved academic reward.",
+      unlocked: totalSubmissions >= 1,
       rimColor: "from-slate-400 via-slate-200 to-slate-500",
       innerColor: "from-slate-700 via-slate-800 to-slate-900",
       iconColor: "text-slate-100",
@@ -59,8 +59,8 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       icon: Heart,
     },
     {
-      id: "stellar_brain",
-      name: "Stellar Brain",
+      id: "giga_brain",
+      name: "Giga Brain",
       desc: "Completed 5 tutoring sessions to enlighten your peers.",
       unlocked: tutoredCount >= 5,
       rimColor: "from-sky-400 via-sky-100 to-indigo-600",
@@ -69,8 +69,8 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       icon: Brain,
     },
     {
-      id: "astral_millionaire",
-      name: "Astral Millionaire",
+      id: "apex_achiever",
+      name: "Apex Achiever",
       desc: "Accumulated more than 50 XLM in academic rewards.",
       unlocked: totalEarned >= 50,
       rimColor: "from-purple-400 via-fuchsia-100 to-fuchsia-600",
@@ -80,7 +80,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
     },
   ];
 
-  const [selectedBadgeId, setSelectedBadgeId] = useState<string>("genesis_pilot");
+  const [selectedBadgeId, setSelectedBadgeId] = useState<string>("first_spark");
   const selectedBadge = badges.find(b => b.id === selectedBadgeId) || badges[0];
   const SelectedBadgeIcon = selectedBadge.icon;
 
