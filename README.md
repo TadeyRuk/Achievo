@@ -122,6 +122,14 @@ vault/                      — Design docs (Obsidian)
 
 ---
 
+## Testing
+
+> **Recommended:** Use the live Vercel deployment for evaluation. All environment variables (`ADMIN_SECRET`, `GROQ_API_KEY`, `NONCE_HMAC_SECRET`) are already configured there — the AI pipeline, wallet auth, and on-chain payouts work out of the box with no local setup required.
+
+Running locally requires manually setting env vars and a Vercel CLI session for the serverless API to work (see below).
+
+---
+
 ## Setup — Run Locally
 
 ```bash
