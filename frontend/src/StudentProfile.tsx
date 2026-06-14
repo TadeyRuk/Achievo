@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { User, Flame, ClipboardList, Coins, ShieldAlert, Trophy, Sparkles, BookOpen, Heart, Compass, Lock, Check } from "lucide-react";
+import { User, Flame, ClipboardList, Coins, ShieldAlert, Trophy, Heart, Compass, Lock, Check, Brain, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
 
@@ -19,9 +19,9 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
 
   const badges = [
     {
-      id: "white_belt",
-      name: "White Belt",
-      desc: "Linked wallet and started your journey",
+      id: "genesis_pilot",
+      name: "Genesis Pilot",
+      desc: "Linked your Stellar wallet to initiate your rewards stream.",
       unlocked: walletAddress !== null,
       rimColor: "from-slate-400 via-slate-200 to-slate-500",
       innerColor: "from-slate-700 via-slate-800 to-slate-900",
@@ -29,9 +29,9 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       icon: Compass,
     },
     {
-      id: "yellow_belt",
-      name: "Yellow Belt",
-      desc: "Earned 2 or more academic rewards",
+      id: "double_trouble",
+      name: "Double Trouble",
+      desc: "Earned rewards for 2 or more approved achievements.",
       unlocked: totalSubmissions >= 2,
       rimColor: "from-amber-400 via-yellow-100 to-amber-600",
       innerColor: "from-amber-700 via-amber-800 to-amber-950",
@@ -39,48 +39,48 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       icon: Flame,
     },
     {
-      id: "orange_belt",
-      name: "Orange Belt",
-      desc: "Completed 5 or more academic rewards",
-      unlocked: totalSubmissions >= 5,
+      id: "super_charger",
+      name: "Super Charger",
+      desc: "Completed a total of 10 approved milestones.",
+      unlocked: totalSubmissions >= 10,
       rimColor: "from-orange-400 via-orange-100 to-red-600",
       innerColor: "from-orange-700 via-orange-800 to-red-950",
       iconColor: "text-orange-100",
-      icon: Trophy,
+      icon: Zap,
     },
     {
-      id: "stellar_helper",
-      name: "Stellar Helper",
-      desc: "Completed volunteering work (with 'volunteer' in description)",
-      unlocked: volunteeredCount > 0,
+      id: "community_savior",
+      name: "Community Savior",
+      desc: "Logged 3 volunteering sessions to support your community.",
+      unlocked: volunteeredCount >= 3,
       rimColor: "from-emerald-400 via-emerald-100 to-teal-600",
       innerColor: "from-emerald-700 via-emerald-800 to-teal-950",
       iconColor: "text-emerald-100",
       icon: Heart,
     },
     {
-      id: "peer_tutor",
-      name: "Peer Tutor",
-      desc: "Helped a classmate through tutoring (with 'tutor' in description)",
-      unlocked: tutoredCount > 0,
+      id: "stellar_brain",
+      name: "Stellar Brain",
+      desc: "Completed 5 tutoring sessions to enlighten your peers.",
+      unlocked: tutoredCount >= 5,
       rimColor: "from-sky-400 via-sky-100 to-indigo-600",
       innerColor: "from-sky-700 via-sky-800 to-indigo-950",
       iconColor: "text-sky-100",
-      icon: BookOpen,
+      icon: Brain,
     },
     {
-      id: "honor_roll",
-      name: "Honor Scholar",
-      desc: "Accumulated more than 20 XLM in rewards",
-      unlocked: totalEarned >= 20,
+      id: "astral_millionaire",
+      name: "Astral Millionaire",
+      desc: "Accumulated more than 50 XLM in academic rewards.",
+      unlocked: totalEarned >= 50,
       rimColor: "from-purple-400 via-fuchsia-100 to-fuchsia-600",
       innerColor: "from-purple-700 via-purple-800 to-fuchsia-950",
       iconColor: "text-fuchsia-100",
-      icon: Sparkles,
+      icon: Trophy,
     },
   ];
 
-  const [selectedBadgeId, setSelectedBadgeId] = useState<string>("white_belt");
+  const [selectedBadgeId, setSelectedBadgeId] = useState<string>("genesis_pilot");
   const selectedBadge = badges.find(b => b.id === selectedBadgeId) || badges[0];
   const SelectedBadgeIcon = selectedBadge.icon;
 
