@@ -1,7 +1,17 @@
 import { useState } from "react";
-import { User, Flame, ClipboardList, Coins, ShieldAlert, Trophy, Heart, Compass, Lock, Check, Brain, Zap } from "lucide-react";
+import { ShieldAlert, Lock, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
+import {
+  CustomCompass,
+  CustomStar,
+  CustomBolt,
+  CustomHeart,
+  CustomGraduationHat,
+  CustomTrophy,
+  CustomCircleUser,
+  CustomClipboardList,
+} from "./customIcons";
 
 interface StudentProfileProps {
   walletAddress: string | null;
@@ -26,7 +36,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       rimColor: "from-slate-400 via-slate-200 to-slate-500",
       innerColor: "from-slate-700 via-slate-800 to-slate-900",
       iconColor: "text-slate-100",
-      icon: Compass,
+      icon: CustomCompass,
     },
     {
       id: "double_trouble",
@@ -36,7 +46,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       rimColor: "from-amber-400 via-yellow-100 to-amber-600",
       innerColor: "from-amber-700 via-amber-800 to-amber-950",
       iconColor: "text-amber-100",
-      icon: Flame,
+      icon: CustomStar,
     },
     {
       id: "super_charger",
@@ -46,7 +56,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       rimColor: "from-orange-400 via-orange-100 to-red-600",
       innerColor: "from-orange-700 via-orange-800 to-red-950",
       iconColor: "text-orange-100",
-      icon: Zap,
+      icon: CustomBolt,
     },
     {
       id: "community_savior",
@@ -56,7 +66,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       rimColor: "from-emerald-400 via-emerald-100 to-teal-600",
       innerColor: "from-emerald-700 via-emerald-800 to-teal-950",
       iconColor: "text-emerald-100",
-      icon: Heart,
+      icon: CustomHeart,
     },
     {
       id: "giga_brain",
@@ -66,7 +76,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       rimColor: "from-sky-400 via-sky-100 to-indigo-600",
       innerColor: "from-sky-700 via-sky-800 to-indigo-950",
       iconColor: "text-sky-100",
-      icon: Brain,
+      icon: CustomGraduationHat,
     },
     {
       id: "apex_achiever",
@@ -76,7 +86,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       rimColor: "from-purple-400 via-fuchsia-100 to-fuchsia-600",
       innerColor: "from-purple-700 via-purple-800 to-fuchsia-950",
       iconColor: "text-fuchsia-100",
-      icon: Trophy,
+      icon: CustomTrophy,
     },
   ];
 
@@ -95,7 +105,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 shadow-sm flex items-center gap-4">
         {/* Avatar */}
         <div className="w-16 h-16 rounded-full bg-[var(--dah-primary-container)] flex items-center justify-center text-[var(--dah-secondary-container)] shadow-inner shrink-0">
-          <User className="w-8 h-8" />
+          <CustomCircleUser className="w-8 h-8" />
         </div>
         <div className="min-w-0 space-y-0.5">
           <h2 className="text-[20px] font-extrabold tracking-tight text-[var(--dah-primary)] font-display">
@@ -120,9 +130,9 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       {/* Stats Dashboard */}
       <div className="grid grid-cols-3 gap-2.5">
         {[
-          { label: "Rewards", value: `${totalEarned} XLM`, icon: Coins },
-          { label: "Approved", value: totalSubmissions, icon: ClipboardList },
-          { label: "Streak", value: "3 Days", icon: Flame },
+          { label: "Rewards", value: `${totalEarned} XLM`, icon: CustomTrophy },
+          { label: "Approved", value: totalSubmissions, icon: CustomClipboardList },
+          { label: "Streak", value: "3 Days", icon: CustomStar },
         ].map((stat) => {
           const Icon = stat.icon;
           return (

@@ -1,5 +1,6 @@
-import { CheckCircle2, ExternalLink, Trophy } from "lucide-react";
+import { CheckCircle2, ExternalLink } from "lucide-react";
 import { motion } from "motion/react";
+import { CustomTrophy } from "./customIcons";
 
 interface RewardCardProps {
   reward: number;
@@ -54,7 +55,7 @@ export function RewardCard({ reward, txHash }: RewardCardProps) {
       {/* Transaction details card section */}
       <div className="bg-[var(--dah-primary)] p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-[var(--dah-on-primary-container)]" />
+          <CustomTrophy className="w-4 h-4 text-[var(--dah-on-primary-container)]" />
           <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/50 font-display">
             On-Chain Transaction
           </span>

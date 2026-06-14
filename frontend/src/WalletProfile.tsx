@@ -1,6 +1,7 @@
-import { Wallet, LogOut, ShieldCheck, RefreshCw, Database, TrendingUp, Users, BookOpen, Tent, Presentation } from "lucide-react";
+import { LogOut, ShieldCheck, RefreshCw, Database, TrendingUp } from "lucide-react";
 import { motion } from "motion/react";
 import type { TreasuryInfo } from "./contract";
+import { CustomWallet, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from "./customIcons";
 
 interface WalletProfileProps {
   walletAddress: string | null;
@@ -14,10 +15,10 @@ interface WalletProfileProps {
 }
 
 const REWARD_TABLE = [
-  { icon: Tent,         label: "Volunteering",  xlm: 10 },
-  { icon: Users,        label: "Tutoring",       xlm: 5  },
-  { icon: Presentation, label: "Event / Participation", xlm: 3  },
-  { icon: BookOpen,     label: "Workshop",       xlm: 2  },
+  { icon: CustomUserHeart, label: "Volunteering",  xlm: 10 },
+  { icon: CustomBookUser,  label: "Tutoring",       xlm: 5  },
+  { icon: CustomMedal,     label: "Event / Participation", xlm: 3  },
+  { icon: CustomBookOpen,  label: "Workshop",       xlm: 2  },
 ];
 
 /* Beautiful responsive chart with round bars and secondary accents */
@@ -179,7 +180,7 @@ export function WalletProfile({
             <div className="relative w-36 h-36 rounded-full bg-[#ffe8ab] flex items-center justify-center shadow-inner">
               {/* White rounded-square wallet container */}
               <div className="w-24 h-24 bg-white rounded-[28px] flex items-center justify-center shadow-md relative border border-white/10">
-                <Wallet className="w-12 h-12 text-[#00162b]" strokeWidth={2.2} />
+                <CustomWallet className="w-12 h-12 text-[#00162b]" strokeWidth={2.2} />
                 
                 {/* Overlapping gold pill badge: $ XLM */}
                 <div className="absolute -bottom-1 -right-3.5 bg-[#ffbf21] text-[#6e4f00] text-[10px] font-extrabold px-3 py-1 rounded-full shadow-md whitespace-nowrap border-2 border-white font-display">

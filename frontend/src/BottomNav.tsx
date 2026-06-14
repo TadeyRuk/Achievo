@@ -1,4 +1,5 @@
-import { Home, Gift, Wallet, User } from "lucide-react";
+import { Home, Gift } from "lucide-react";
+import { CustomWallet, CustomCircleUser } from "./customIcons";
 
 interface BottomNavProps {
   activeTab: "home" | "history" | "wallet" | "profile";
@@ -9,8 +10,8 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const tabs = [
     { id: "home",     label: "Home",     icon: Home },
     { id: "history",  label: "Rewards",  icon: Gift },
-    { id: "wallet",   label: "Wallet",   icon: Wallet },
-    { id: "profile",  label: "Profile",  icon: User },
+    { id: "wallet",   label: "Wallet",   icon: CustomWallet },
+    { id: "profile",  label: "Profile",  icon: CustomCircleUser },
   ] as const;
 
   return (

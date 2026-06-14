@@ -12,7 +12,8 @@ import { WalletProfile } from './WalletProfile';
 import { RewardCard } from './RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
 import { StudentProfile } from './StudentProfile';
-import { Wallet, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
+import { CustomWallet } from './customIcons';
 
 
 type Tab = 'home' | 'history' | 'wallet' | 'profile';
@@ -185,21 +186,23 @@ export default function App() {
         "🤖 [Reward Agent] Querying reward table…",
       ]);
 
-      // Step 2 — Reward Agent
+      // Step 2 — Reward Agent (preview — server AI is authoritative)
       setStep(2, { status: 'running' });
       await delay(300);
-      const rwdResult = rewardAgent(actResult.activity);
-      setRewardXlm(rwdResult.reward);
-      setStep(2, { status: 'done', detail: `${rwdResult.reward} XLM assigned` });
+      const rwdPreview = rewardAgent(actResult.activity);
+      setRewardXlm(rwdPreview.reward);
+      setStep(2, { status: 'done', detail: `~${rwdPreview.reward} XLM estimated` });
       setLogs(p => [...p,
-        `✓ [Reward Agent] ${rwdResult.reward} XLM allocated`,
+        `✓ [Reward Agent] ~${rwdPreview.reward} XLM estimated`,
         "🤖 [Stellar Agent] Generating challenge transaction…",
       ]);
 
-      // Step 3 — Stellar Agent
+      // Step 3 — Stellar Agent (nonce → sign → AI evaluate → send reward)
       setStep(3, { status: 'running', detail: 'Requesting wallet ownership proof…' });
       setLogs(p => [...p, "⏳ [Stellar Agent] Fetching nonce…"]);
       let hash: string;
+      let serverReward: number = rwdPreview.reward;
+      let serverActivity: string = actResult.activity;
       try {
         const nonceRes = await fetch(`/api/nonce?wallet=${encodeURIComponent(walletAddress)}`);
         const nonceData = await nonceRes.json() as {
@@ -216,14 +219,14 @@ export default function App() {
           address: walletAddress,
         });
 
-        setStep(3, { detail: 'Submitting reward to Stellar testnet…' });
-        setLogs(p => [...p, "✓ [Stellar Agent] Signature received. Dispatching payout…"]);
+        setStep(3, { detail: 'AI evaluating activity + submitting to Stellar…' });
+        setLogs(p => [...p, "✓ [Stellar Agent] Signature received. AI evaluating + dispatching payout…"]);
 
         const apiRes = await fetch('/api/reward', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            activityType: actResult.activity,
+            activityText: activityText.trim(),
             wallet: walletAddress,
             nonce: nonceData.nonce,
             expiry: nonceData.expiry,
@@ -231,9 +234,12 @@ export default function App() {
             signedXdr: signResult.signedTxXdr,
           }),
         });
-        const data = await apiRes.json() as { txHash?: string; reward?: number; error?: string };
+        const data = await apiRes.json() as { txHash?: string; reward?: number; activity?: string; reason?: string; error?: string };
         if (!apiRes.ok || !data.txHash) throw new Error(data.error ?? `API error ${apiRes.status}`);
         hash = data.txHash;
+        serverReward = data.reward ?? rwdPreview.reward;
+        serverActivity = data.activity ?? actResult.activity;
+        setRewardXlm(serverReward);
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
         setStep(3, { status: 'error', detail: 'Transaction failed.' });
@@ -251,7 +257,7 @@ export default function App() {
       // Step 4 — Feedback Agent
       setStep(4, { status: 'running' });
       await delay(200);
-      const fb = feedbackAgent({ success: true, txHash: hash, reward: rwdResult.reward });
+      const fb = feedbackAgent({ success: true, txHash: hash, reward: serverReward });
       setStep(4, { status: 'done', detail: fb.message });
       setLogs(p => [...p,
         `✓ [Feedback Agent] ${fb.message}`,
@@ -261,8 +267,8 @@ export default function App() {
       // Add successful transaction to local history
       const newHistoryItem: RewardHistoryItem = {
         id: hash,
-        activity: actResult.activity,
-        reward: rwdResult.reward,
+        activity: serverActivity,
+        reward: serverReward,
         txHash: hash,
         timestamp: Date.now(),
       };
@@ -291,7 +297,7 @@ export default function App() {
         <Navbar />
 
         {/* Scrollable tab content */}
-        <div className="flex-1 overflow-y-auto pb-20 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto pt-[84px] pb-20 custom-scrollbar">
           <AnimatePresence mode="wait" initial={false}>
             {tab === 'home' && (
               !walletAddress ? (
@@ -299,7 +305,7 @@ export default function App() {
                   {/* Gold circle with wallet icon */}
                   <div className="relative w-32 h-32 rounded-full bg-[#ffe8ab] flex items-center justify-center shadow-inner">
                     <div className="w-20 h-20 bg-white rounded-[24px] flex items-center justify-center shadow-md border border-white/10">
-                      <Wallet className="w-10 h-10 text-[#00162b]" strokeWidth={2.2} />
+                      <CustomWallet className="w-10 h-10 text-[#00162b]" strokeWidth={2.2} />
                     </div>
                   </div>
                   
@@ -319,7 +325,7 @@ export default function App() {
                     Go to Wallet Tab
                   </button>
                 </div>
-              ) : isRunning || txHash ? (
+              ) : isRunning || txHash || pipeline.some(step => step.status === 'error') ? (
                 <div key="home-running" className="p-5">
                   <PipelineVisualizer steps={pipeline} logs={logs} />
                   {txHash && rewardXlm !== null && (
@@ -336,6 +342,16 @@ export default function App() {
                       className="w-full mt-5 flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
                     >
                       Submit Another Activity
+                    </button>
+                  )}
+                  {!isRunning && pipeline.some(step => step.status === 'error') && (
+                    <button
+                      onClick={() => {
+                        setPipeline(makePipeline());
+                      }}
+                      className="w-full mt-5 flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
+                    >
+                      Back to Form
                     </button>
                   )}
                 </div>

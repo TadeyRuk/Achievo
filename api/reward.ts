@@ -19,7 +19,6 @@ const STROOP_FACTOR = 10_000_000;
 const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
 const horizonServer = new Horizon.Server("https://horizon-testnet.stellar.org");
 
-// In-memory rate limit keyed on verified wallet + IP (defense-in-depth)
 const walletLastReward = new Map<string, number>();
 const ipLastReward = new Map<string, number>();
 const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
@@ -31,7 +30,64 @@ const REWARD_TABLE: Record<string, number> = {
   event: 3,
   participation: 3,
 };
-const WHITELIST = Object.keys(REWARD_TABLE);
+
+interface GroqClassification {
+  activity: string;
+  valid: boolean;
+  reason: string;
+}
+
+async function classifyWithGroq(activityText: string): Promise<GroqClassification> {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) throw new Error('GROQ_API_KEY not configured.');
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are an activity classifier for a student reward system on Stellar blockchain. ' +
+            'Classify the student\'s activity into exactly one of these categories: ' +
+            'tutoring, workshop, volunteering, event, participation. ' +
+            'If it does not fit any category, set valid to false and activity to "unknown". ' +
+            'Respond with valid JSON only — no markdown, no explanation outside the JSON.',
+        },
+        {
+          role: 'user',
+          content:
+            `Student activity submission: "${activityText}"\n\n` +
+            'Respond with: {"activity":"tutoring|workshop|volunteering|event|participation|unknown","valid":true|false,"reason":"one sentence"}',
+        },
+      ],
+      temperature: 0,
+      max_tokens: 120,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Groq API error: ${res.status}`);
+  }
+
+  const data = await res.json() as { choices: { message: { content: string } }[] };
+  const content = data.choices[0]?.message?.content?.trim() ?? '';
+
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('AI returned non-JSON response.');
+
+  const parsed = JSON.parse(jsonMatch[0]) as GroqClassification;
+  if (!parsed.activity || typeof parsed.valid !== 'boolean') {
+    throw new Error('AI response missing required fields.');
+  }
+
+  return parsed;
+}
 
 function getClientIp(req: VercelRequest): string {
   return (
@@ -49,20 +105,13 @@ function verifyChallenge(
   mac: string,
   signedXdr: string,
 ): { ok: boolean; error?: string } {
-  // 1. Verify HMAC — proves server issued this nonce+expiry
   const expectedMac = createHmac('sha256', adminSecret)
     .update(`${nonce}:${expiry}`)
     .digest('hex');
-  if (expectedMac !== mac) {
-    return { ok: false, error: 'Invalid challenge token.' };
-  }
+  if (expectedMac !== mac) return { ok: false, error: 'Invalid challenge token.' };
 
-  // 2. Check expiry
-  if (Date.now() > expiry) {
-    return { ok: false, error: 'Challenge expired. Please try again.' };
-  }
+  if (Date.now() > expiry) return { ok: false, error: 'Challenge expired. Please try again.' };
 
-  // 3. Parse signed tx and verify structure
   let tx: Transaction;
   try {
     tx = TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET) as Transaction;
@@ -70,12 +119,8 @@ function verifyChallenge(
     return { ok: false, error: 'Invalid signed challenge XDR.' };
   }
 
-  // 4. Tx source must be the claimed wallet
-  if (tx.source !== wallet) {
-    return { ok: false, error: 'Challenge was not built for this wallet.' };
-  }
+  if (tx.source !== wallet) return { ok: false, error: 'Challenge was not built for this wallet.' };
 
-  // 5. ManageData op must contain the exact nonce the server issued
   const op = tx.operations[0] as { type: string; name?: string; value?: Buffer };
   if (op?.type !== 'manageData' || op?.name !== 'achievo-challenge') {
     return { ok: false, error: 'Challenge structure invalid.' };
@@ -84,26 +129,21 @@ function verifyChallenge(
     return { ok: false, error: 'Challenge nonce mismatch.' };
   }
 
-  // 6. Verify Ed25519 signature — proves wallet owner signed this specific challenge
   const txHash = tx.hash();
   const keypair = Keypair.fromPublicKey(wallet);
   const signed = tx.signatures.some(sig => {
     try { return keypair.verify(txHash, sig.signature()); } catch { return false; }
   });
-  if (!signed) {
-    return { ok: false, error: 'Wallet ownership could not be verified.' };
-  }
+  if (!signed) return { ok: false, error: 'Wallet ownership could not be verified.' };
 
   return { ok: true };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { activityType, wallet, nonce, expiry, mac, signedXdr } = req.body as {
-    activityType?: string;
+  const { activityText, wallet, nonce, expiry, mac, signedXdr } = req.body as {
+    activityText?: string;
     wallet?: string;
     nonce?: string;
     expiry?: number;
@@ -111,35 +151,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     signedXdr?: string;
   };
 
-  // Error type 1: invalid/missing wallet
   if (!wallet || !StrKey.isValidEd25519PublicKey(wallet)) {
     return res.status(400).json({ error: 'Invalid Stellar wallet address.' });
   }
 
-  // Strict activity enum check — no free-text parsing on server
-  if (!activityType || !WHITELIST.includes(activityType)) {
-    return res.status(400).json({
-      error: `Invalid activity type. Must be one of: ${WHITELIST.join(', ')}.`,
-    });
+  if (!activityText || activityText.trim().length < 5) {
+    return res.status(400).json({ error: 'Activity description too short.' });
   }
 
-  // Validate challenge fields present
   if (!nonce || !expiry || !mac || !signedXdr) {
     return res.status(400).json({ error: 'Missing wallet ownership proof. Please retry.' });
   }
 
   const adminSecret = process.env.ADMIN_SECRET;
-  if (!adminSecret) {
-    return res.status(500).json({ error: 'Server configuration error.' });
-  }
+  if (!adminSecret) return res.status(500).json({ error: 'Server configuration error.' });
 
-  // Verify signed challenge — proves requester controls wallet
   const proof = verifyChallenge(adminSecret, wallet, nonce, expiry, mac, signedXdr);
-  if (!proof.ok) {
-    return res.status(401).json({ error: proof.error });
+  if (!proof.ok) return res.status(401).json({ error: proof.error });
+
+  // AI classification — authoritative decision
+  let classification: GroqClassification;
+  try {
+    classification = await classifyWithGroq(activityText.trim());
+  } catch (err) {
+    return res.status(502).json({ error: `AI evaluation failed: ${(err as Error).message}` });
   }
 
-  // Rate limit (wallet + IP, defense-in-depth after auth)
+  if (!classification.valid || !(classification.activity in REWARD_TABLE)) {
+    return res.status(422).json({
+      error: `Activity not eligible for reward. ${classification.reason}`,
+      activity: classification.activity,
+    });
+  }
+
   const ip = getClientIp(req);
   const now = Date.now();
 
@@ -156,7 +200,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const reward = REWARD_TABLE[activityType];
+  const reward = REWARD_TABLE[classification.activity];
 
   try {
     const adminKeypair = Keypair.fromSecret(adminSecret);
@@ -171,9 +215,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       networkPassphrase: Networks.TESTNET,
     })
       .addOperation(contract.call(
-        "send_reward",
-        nativeToScVal(wallet, { type: "address" }),
-        nativeToScVal(rewardStroops, { type: "i128" }),
+        'send_reward',
+        nativeToScVal(wallet, { type: 'address' }),
+        nativeToScVal(rewardStroops, { type: 'i128' }),
       ))
       .setTimeout(30)
       .build();
@@ -183,8 +227,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const sendResponse = await rpcServer.sendTransaction(preparedTx as Transaction);
 
-    // Error type 2: contract/account not found
-    if (sendResponse.status === "ERROR") {
+    if (sendResponse.status === 'ERROR') {
       const errStr = JSON.stringify(sendResponse.errorResult);
       if (errStr.includes('opNOACCOUNT') || errStr.includes('not found')) {
         return res.status(404).json({ error: 'Contract or account not found on Stellar testnet.' });
@@ -198,13 +241,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       txHash: sendResponse.hash,
       reward,
-      activity: activityType,
+      activity: classification.activity,
+      reason: classification.reason,
     });
 
   } catch (err) {
     const msg = (err as Error).message ?? String(err);
-
-    // Error type 3: insufficient treasury balance
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('balance')) {
       return res.status(402).json({ error: 'Insufficient treasury balance to cover this reward.' });
     }

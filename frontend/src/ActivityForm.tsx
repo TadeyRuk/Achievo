@@ -1,5 +1,6 @@
-import { Send, AlertCircle, Zap, Users, BookOpen, Tent, Presentation } from "lucide-react";
+import { Send, AlertCircle, Zap } from "lucide-react";
 import { motion } from "motion/react";
+import { CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from "./customIcons";
 
 interface ActivityFormProps {
   text: string;
@@ -10,10 +11,10 @@ interface ActivityFormProps {
 }
 
 const ACTIVITIES = [
-  { icon: Tent,         label: "Volunteering",  xlm: 10, hint: "I volunteered at…" },
-  { icon: Users,        label: "Tutoring",       xlm: 5,  hint: "I tutored a classmate in…" },
-  { icon: BookOpen,     label: "Workshop",       xlm: 2,  hint: "I attended a workshop on…" },
-  { icon: Presentation, label: "Event / Participation", xlm: 3,  hint: "I participated in…" },
+  { icon: CustomUserHeart, label: "Volunteering",  xlm: 10, hint: "I volunteered at…" },
+  { icon: CustomBookUser,  label: "Tutoring",       xlm: 5,  hint: "I tutored a classmate in…" },
+  { icon: CustomBookOpen,  label: "Workshop",       xlm: 2,  hint: "I attended a workshop on…" },
+  { icon: CustomMedal,     label: "Event / Participation", xlm: 3,  hint: "I participated in…" },
 ];
 
 export function ActivityForm({ text, onChange, onSubmit, isWalletConnected, isSubmitting }: ActivityFormProps) {

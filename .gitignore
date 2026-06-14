@@ -16,6 +16,7 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+secrets/
 
 # Build outputs
 dist/
@@ -32,3 +33,5 @@ vault/
 assets/
 .playwright-mcp/
 achievo-ui.png
+.vercel
+.env*

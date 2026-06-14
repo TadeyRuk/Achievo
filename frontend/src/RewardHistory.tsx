@@ -1,5 +1,6 @@
-import { Trophy, ExternalLink, Calendar, Tent, Users, BookOpen, Presentation, CheckCircle, type LucideIcon } from "lucide-react";
+import { ExternalLink, Calendar, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
+import { CustomTrophy, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from "./customIcons";
 
 export interface RewardHistoryItem {
   id: string;
@@ -13,19 +14,19 @@ interface RewardHistoryProps {
   history: RewardHistoryItem[];
 }
 
-const ACTIVITY_ICONS: Record<string, LucideIcon> = {
-  volunteering: Tent,
-  tutoring: Users,
-  workshop: BookOpen,
-  event: Presentation,
-  participation: Presentation,
+const ACTIVITY_ICONS: Record<string, React.ComponentType<any>> = {
+  volunteering: CustomUserHeart,
+  tutoring: CustomBookUser,
+  workshop: CustomBookOpen,
+  event: CustomMedal,
+  participation: CustomMedal,
 };
 
 export function RewardHistory({ history }: RewardHistoryProps) {
   const sortedHistory = [...history].sort((a, b) => b.timestamp - a.timestamp);
 
   const getIcon = (act: string) => {
-    return ACTIVITY_ICONS[act.toLowerCase()] || Trophy;
+    return ACTIVITY_ICONS[act.toLowerCase()] || CustomTrophy;
   };
 
   const formatDate = (timestamp: number) => {
@@ -58,7 +59,7 @@ export function RewardHistory({ history }: RewardHistoryProps) {
         /* Empty State */
         <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-8 text-center space-y-4">
           <div className="w-16 h-16 bg-[var(--dah-surface-low)] rounded-full flex items-center justify-center mx-auto text-[var(--dah-outline)]">
-            <Trophy className="w-8 h-8" />
+            <CustomTrophy className="w-8 h-8" />
           </div>
           <div className="space-y-1">
             <p className="text-[16px] font-bold text-[var(--dah-on-surface)]">
