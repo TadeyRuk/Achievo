@@ -3,11 +3,11 @@ import { CustomCircleInformation } from "./customIcons";
 export function Navbar() {
   return (
     <header 
-      className="px-9 pt-8 pb-4 flex items-center justify-between absolute top-0 left-0 right-0 z-50 border-b border-[var(--dah-outline-variant)]/10"
+      className="px-9 pt-8 pb-4 flex items-center justify-between absolute top-0 left-0 right-0 z-50 border-b border-[var(--dah-outline-variant)]/25"
       style={{
-        backgroundColor: "rgba(250, 249, 255, 0.6)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        backgroundColor: "rgba(210, 208, 228, 0.82)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
       }}
     >
       {/* Achievo logo image */}
