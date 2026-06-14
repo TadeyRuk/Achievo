@@ -247,7 +247,7 @@ function App() {
         const apiRes = await fetch('/api/reward', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ activity: activityText, wallet: walletAddress }),
+          body: JSON.stringify({ activityType: actResult.activity, wallet: walletAddress }),
         });
         const data = await apiRes.json() as { txHash?: string; reward?: number; error?: string };
         if (!apiRes.ok || !data.txHash) {

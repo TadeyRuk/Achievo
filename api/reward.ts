@@ -9,6 +9,7 @@ import {
   Keypair,
   Transaction,
   Horizon,
+  StrKey,
 } from '@stellar/stellar-sdk';
 
 const CONTRACT_ID = "CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ";
@@ -17,11 +18,12 @@ const STROOP_FACTOR = 10_000_000;
 const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
 const horizonServer = new Horizon.Server("https://horizon-testnet.stellar.org");
 
-// In-memory rate limit: 1 reward per wallet per day (resets on cold start)
-const lastRewardTime = new Map<string, number>();
+// In-memory rate limit keyed on both wallet AND IP (resets on cold start)
+const walletLastReward = new Map<string, number>();
+const ipLastReward = new Map<string, number>();
 const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
 
-// Reward table — mirrors frontend/src/agents.ts
+// Reward table — strict enum, mirrors frontend/src/agents.ts
 const REWARD_TABLE: Record<string, number> = {
   tutoring: 5,
   workshop: 2,
@@ -31,12 +33,12 @@ const REWARD_TABLE: Record<string, number> = {
 };
 const WHITELIST = Object.keys(REWARD_TABLE);
 
-function classifyActivity(text: string): { activity: string; valid: boolean; reward: number } {
-  const lower = text.toLowerCase();
-  const matched = WHITELIST.find(k => lower.includes(k));
-  return matched
-    ? { activity: matched, valid: true, reward: REWARD_TABLE[matched] }
-    : { activity: 'unknown', valid: false, reward: 0 };
+function getClientIp(req: VercelRequest): string {
+  return (
+    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+    req.socket?.remoteAddress ??
+    'unknown'
+  );
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -44,30 +46,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { activity, wallet } = req.body as { activity?: string; wallet?: string };
+  const { activityType, wallet } = req.body as { activityType?: string; wallet?: string };
 
-  // Error type 1: invalid/missing wallet
-  if (!wallet || typeof wallet !== 'string' || !wallet.startsWith('G') || wallet.length !== 56) {
+  // Error type 1: invalid/missing wallet — use proper StrKey validation
+  if (!wallet || !StrKey.isValidEd25519PublicKey(wallet)) {
     return res.status(400).json({ error: 'Invalid Stellar wallet address.' });
   }
 
-  if (!activity || typeof activity !== 'string' || activity.trim().length === 0) {
-    return res.status(400).json({ error: 'Missing activity description.' });
+  // Strict equality check — no free-text parsing on the server
+  if (!activityType || !WHITELIST.includes(activityType)) {
+    return res.status(400).json({
+      error: `Invalid activity type. Must be one of: ${WHITELIST.join(', ')}.`,
+    });
   }
 
-  // Rate limit
-  const lastTime = lastRewardTime.get(wallet);
-  if (lastTime && Date.now() - lastTime < RATE_LIMIT_MS) {
-    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (Date.now() - lastTime)) / 3_600_000);
+  const reward = REWARD_TABLE[activityType];
+  const ip = getClientIp(req);
+
+  // Rate limit: check both wallet and IP
+  const walletTs = walletLastReward.get(wallet);
+  const ipTs = ipLastReward.get(ip);
+  const now = Date.now();
+
+  if (walletTs && now - walletTs < RATE_LIMIT_MS) {
+    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - walletTs)) / 3_600_000);
     return res.status(429).json({ error: `Rate limit: 1 reward per day. Try again in ${hoursLeft}h.` });
   }
-
-  // Agent pipeline (server-side validation)
-  const result = classifyActivity(activity);
-  if (!result.valid) {
-    return res.status(400).json({
-      error: `Activity not recognized. Allowed: ${WHITELIST.join(', ')}.`,
-    });
+  if (ip !== 'unknown' && ipTs && now - ipTs < RATE_LIMIT_MS) {
+    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - ipTs)) / 3_600_000);
+    return res.status(429).json({ error: `Rate limit reached for your IP. Try again in ${hoursLeft}h.` });
   }
 
   const adminSecret = process.env.ADMIN_SECRET;
@@ -78,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const adminKeypair = Keypair.fromSecret(adminSecret);
     const adminAddress = adminKeypair.publicKey();
-    const rewardStroops = BigInt(Math.round(result.reward * STROOP_FACTOR));
+    const rewardStroops = BigInt(Math.round(reward * STROOP_FACTOR));
 
     const sourceAccount = await horizonServer.loadAccount(adminAddress);
 
@@ -109,13 +116,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`Transaction rejected: ${errStr}`);
     }
 
-    // Mark rate limit immediately on successful submission
-    lastRewardTime.set(wallet, Date.now());
+    // Lock rate limit on successful submission
+    walletLastReward.set(wallet, now);
+    if (ip !== 'unknown') ipLastReward.set(ip, now);
 
     return res.status(200).json({
       txHash: sendResponse.hash,
-      reward: result.reward,
-      activity: result.activity,
+      reward,
+      activity: activityType,
     });
 
   } catch (err) {
