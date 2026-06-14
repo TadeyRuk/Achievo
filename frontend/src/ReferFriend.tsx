@@ -123,16 +123,10 @@ export function ReferFriend({ onBack, userName }: ReferFriendProps) {
             Invite your friends to Achievo. When they join and complete their first verified activity, you both earn 150 XLM directly to your wallets.
           </p>
 
-          {/* Round Illustration */}
-          <div className="relative mt-6 w-44 h-44 shrink-0 rounded-full border-4 border-white/95 shadow-md overflow-hidden bg-white/5">
-            <img
-              src="/refer_illustration.jpg"
-              alt="Friends High Fiving"
-              className="w-full h-full object-cover"
-            />
-            {/* Gold Gift Badge overlay */}
-            <div className="absolute bottom-1 right-1 w-11 h-11 bg-[#ffbe42] rounded-full flex items-center justify-center text-[#00162b] border-2 border-white shadow-md">
-              <Gift className="w-5.5 h-5.5" strokeWidth={2.2} />
+          {/* Gift Icon Circle */}
+          <div className="mt-6 w-36 h-36 shrink-0 rounded-full bg-[#ffbe42]/20 border-4 border-white/90 shadow-md flex items-center justify-center">
+            <div className="w-20 h-20 bg-[#ffbe42] rounded-full flex items-center justify-center shadow-lg">
+              <Gift className="w-10 h-10 text-[#00162b]" strokeWidth={2} />
             </div>
           </div>
         </div>
