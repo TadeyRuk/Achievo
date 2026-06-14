@@ -1,4 +1,4 @@
-import { Rewind } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { CustomCircleInformation } from "./customIcons";
 
 interface NavbarProps {
@@ -49,7 +49,7 @@ export function Navbar({ onInfoClick }: NavbarProps) {
           className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all"
           disabled
         >
-          <Rewind className="w-4.5 h-4.5" />
+          <RefreshCw className="w-4.5 h-4.5" />
         </button>
       </div>
     </header>
