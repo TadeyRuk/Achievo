@@ -9,6 +9,7 @@ interface DashboardProps {
   walletAddress: string | null;
   onSubmitActivityClick: () => void;
   onConnectWalletClick: () => void;
+  onInviteClick?: () => void;
   userAvatar: string;
 }
 
@@ -101,6 +102,7 @@ export function Dashboard({
   walletAddress,
   onSubmitActivityClick,
   onConnectWalletClick,
+  onInviteClick,
   userAvatar,
 }: DashboardProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -319,7 +321,7 @@ export function Dashboard({
       <motion.button
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
-        onClick={handleInviteClick}
+        onClick={onInviteClick || handleInviteClick}
         className="w-full bg-[#f3f5fa] hover:bg-[#ebedf2] border border-[#e1e3e8]/40 px-5 py-4 rounded-[24px] flex items-center justify-between text-[13px] font-bold text-[#00162b] transition-all cursor-pointer"
       >
         <div className="flex items-center gap-3">

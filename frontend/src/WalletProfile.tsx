@@ -392,7 +392,7 @@ export function WalletProfile({
           {/* Disconnect Button - Fully Rounded Pill */}
           <button
             onClick={onDisconnect}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-transparent border border-[var(--dah-outline-variant)] text-[var(--dah-on-surface-variant)] font-bold text-[14px] hover:border-[var(--dah-outline)] hover:text-[var(--dah-on-surface)] hover:bg-[var(--dah-surface-low)] transition-all font-display uppercase tracking-[0.02em]"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-transparent border border-[var(--dah-error)] text-[var(--dah-error)] font-bold text-[14px] hover:bg-[var(--dah-error-container)] transition-all font-display uppercase tracking-[0.02em]"
           >
             <LogOut className="w-4 h-4" />
             Disconnect Wallet

@@ -14,6 +14,7 @@ import { RewardCard } from './RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
 import { StudentProfile } from './StudentProfile';
 import { Dashboard } from './Dashboard';
+import { ReferFriend } from './ReferFriend';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 
@@ -57,6 +58,7 @@ export default function App() {
   // Form
   const [activityText, setActivityText] = useState<string>("");
   const [showForm, setShowForm]         = useState<boolean>(false);
+  const [showRefer, setShowRefer]       = useState<boolean>(false);
 
   // Pipeline
   const [pipeline, setPipeline]   = useState<PipelineStep[]>(makePipeline());
@@ -453,6 +455,7 @@ export default function App() {
                     }
                   }}
                   onConnectWalletClick={() => setTab('wallet')}
+                  onInviteClick={() => setShowRefer(true)}
                 />
               )
             )}
@@ -490,6 +493,18 @@ export default function App() {
         </div>
 
         <BottomNav activeTab={tab} onTabChange={setTab} />
+
+        {/* Refer Friend Overlay Page */}
+        <AnimatePresence>
+          {showRefer && (
+            <div className="absolute inset-0 z-50 overflow-hidden">
+              <ReferFriend
+                userName="Xander"
+                onBack={() => setShowRefer(false)}
+              />
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* Reward Modal */}
         <AnimatePresence>
