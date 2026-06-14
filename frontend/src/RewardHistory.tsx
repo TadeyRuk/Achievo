@@ -218,10 +218,10 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       className="space-y-6"
     >
       {/* 1. Current Rank Card */}
-      <div className="bg-gradient-to-br from-[#1b2a7a] via-[#101b5a] to-[#0a103c] rounded-[28px] p-5 shadow-lg shadow-[#0b1240]/20 text-white relative overflow-hidden">
+      <div className="bg-[var(--dah-primary-container)] rounded-[28px] p-5 shadow-lg shadow-[var(--dah-primary-container)]/15 text-white relative overflow-hidden">
         {/* Decorative background glow */}
-        <div className="absolute -right-10 -top-10 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl" />
-        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-500/15 rounded-full blur-2xl" />
+        <div className="absolute -top-10 -right-10 w-36 h-36 bg-[var(--dah-secondary-container)]/10 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-white/5 rounded-full pointer-events-none" />
 
         <div className="flex justify-between items-start relative z-10">
           <div className="space-y-0.5">
