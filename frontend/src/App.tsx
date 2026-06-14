@@ -4,6 +4,7 @@ import {
   fundWithFriendbot,
   StellarWalletsKit
 } from './wallet';
+import { Networks } from '@stellar/stellar-sdk';
 import {
   CONTRACT_ID,
   getTreasuryInfo,
@@ -239,15 +240,41 @@ function App() {
       setRewardXlm(rwdResult.reward);
       updateStep(2, { status: 'done', detail: `Reward assigned: ${rwdResult.reward} XLM` });
 
-      // ── Step 3: Stellar Agent (server-side via Vercel API) ───────────────────
-      updateStep(3, { status: 'running', detail: 'Sending reward via secure API...' });
-      setStatusMessage("Submitting to Stellar testnet...");
+      // ── Step 3: Stellar Agent — verify wallet + send reward ──────────────────
+      updateStep(3, { status: 'running', detail: 'Requesting wallet ownership proof...' });
+      setStatusMessage("Sign the challenge to verify wallet ownership...");
       let hash: string;
       try {
+        // 3a. Fetch nonce + challenge tx from server
+        const nonceRes = await fetch(`/api/nonce?wallet=${encodeURIComponent(walletAddress)}`);
+        const nonceData = await nonceRes.json() as {
+          nonce?: string; expiry?: number; mac?: string; challengeXdr?: string; error?: string;
+        };
+        if (!nonceRes.ok || !nonceData.challengeXdr) {
+          throw new Error(nonceData.error ?? 'Failed to get wallet challenge');
+        }
+
+        // 3b. Student signs challenge tx — proves they control their wallet
+        updateStep(3, { detail: 'Sign the challenge in your wallet...' });
+        const signResult = await StellarWalletsKit.signTransaction(nonceData.challengeXdr, {
+          networkPassphrase: Networks.TESTNET,
+          address: walletAddress,
+        });
+
+        // 3c. POST proof + activity to API — server signs the actual reward tx
+        updateStep(3, { detail: 'Submitting reward to Stellar testnet...' });
+        setStatusMessage("Sending reward on-chain...");
         const apiRes = await fetch('/api/reward', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ activityType: actResult.activity, wallet: walletAddress }),
+          body: JSON.stringify({
+            activityType: actResult.activity,
+            wallet: walletAddress,
+            nonce: nonceData.nonce,
+            expiry: nonceData.expiry,
+            mac: nonceData.mac,
+            signedXdr: signResult.signedTxXdr,
+          }),
         });
         const data = await apiRes.json() as { txHash?: string; reward?: number; error?: string };
         if (!apiRes.ok || !data.txHash) {

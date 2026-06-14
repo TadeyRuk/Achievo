@@ -11,6 +11,7 @@ import {
   Horizon,
   StrKey,
 } from '@stellar/stellar-sdk';
+import { createHmac } from 'crypto';
 
 const CONTRACT_ID = "CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ";
 const STROOP_FACTOR = 10_000_000;
@@ -18,12 +19,11 @@ const STROOP_FACTOR = 10_000_000;
 const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
 const horizonServer = new Horizon.Server("https://horizon-testnet.stellar.org");
 
-// In-memory rate limit keyed on both wallet AND IP (resets on cold start)
+// In-memory rate limit keyed on verified wallet + IP (defense-in-depth)
 const walletLastReward = new Map<string, number>();
 const ipLastReward = new Map<string, number>();
 const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
 
-// Reward table — strict enum, mirrors frontend/src/agents.ts
 const REWARD_TABLE: Record<string, number> = {
   tutoring: 5,
   workshop: 2,
@@ -41,40 +41,91 @@ function getClientIp(req: VercelRequest): string {
   );
 }
 
+function verifyChallenge(
+  adminSecret: string,
+  wallet: string,
+  nonce: string,
+  expiry: number,
+  mac: string,
+  signedXdr: string,
+): { ok: boolean; error?: string } {
+  // 1. Verify HMAC — proves server issued this nonce+expiry
+  const expectedMac = createHmac('sha256', adminSecret)
+    .update(`${nonce}:${expiry}`)
+    .digest('hex');
+  if (expectedMac !== mac) {
+    return { ok: false, error: 'Invalid challenge token.' };
+  }
+
+  // 2. Check expiry
+  if (Date.now() > expiry) {
+    return { ok: false, error: 'Challenge expired. Please try again.' };
+  }
+
+  // 3. Parse signed tx and verify structure
+  let tx: Transaction;
+  try {
+    tx = TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET) as Transaction;
+  } catch {
+    return { ok: false, error: 'Invalid signed challenge XDR.' };
+  }
+
+  // 4. Tx source must be the claimed wallet
+  if (tx.source !== wallet) {
+    return { ok: false, error: 'Challenge was not built for this wallet.' };
+  }
+
+  // 5. ManageData op must contain the exact nonce the server issued
+  const op = tx.operations[0] as { type: string; name?: string; value?: Buffer };
+  if (op?.type !== 'manageData' || op?.name !== 'achievo-challenge') {
+    return { ok: false, error: 'Challenge structure invalid.' };
+  }
+  if (!op.value || op.value.toString('hex') !== nonce) {
+    return { ok: false, error: 'Challenge nonce mismatch.' };
+  }
+
+  // 6. Verify Ed25519 signature — proves wallet owner signed this specific challenge
+  const txHash = tx.hash();
+  const keypair = Keypair.fromPublicKey(wallet);
+  const signed = tx.signatures.some(sig => {
+    try { return keypair.verify(txHash, sig.signature()); } catch { return false; }
+  });
+  if (!signed) {
+    return { ok: false, error: 'Wallet ownership could not be verified.' };
+  }
+
+  return { ok: true };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { activityType, wallet } = req.body as { activityType?: string; wallet?: string };
+  const { activityType, wallet, nonce, expiry, mac, signedXdr } = req.body as {
+    activityType?: string;
+    wallet?: string;
+    nonce?: string;
+    expiry?: number;
+    mac?: string;
+    signedXdr?: string;
+  };
 
-  // Error type 1: invalid/missing wallet — use proper StrKey validation
+  // Error type 1: invalid/missing wallet
   if (!wallet || !StrKey.isValidEd25519PublicKey(wallet)) {
     return res.status(400).json({ error: 'Invalid Stellar wallet address.' });
   }
 
-  // Strict equality check — no free-text parsing on the server
+  // Strict activity enum check — no free-text parsing on server
   if (!activityType || !WHITELIST.includes(activityType)) {
     return res.status(400).json({
       error: `Invalid activity type. Must be one of: ${WHITELIST.join(', ')}.`,
     });
   }
 
-  const reward = REWARD_TABLE[activityType];
-  const ip = getClientIp(req);
-
-  // Rate limit: check both wallet and IP
-  const walletTs = walletLastReward.get(wallet);
-  const ipTs = ipLastReward.get(ip);
-  const now = Date.now();
-
-  if (walletTs && now - walletTs < RATE_LIMIT_MS) {
-    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - walletTs)) / 3_600_000);
-    return res.status(429).json({ error: `Rate limit: 1 reward per day. Try again in ${hoursLeft}h.` });
-  }
-  if (ip !== 'unknown' && ipTs && now - ipTs < RATE_LIMIT_MS) {
-    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - ipTs)) / 3_600_000);
-    return res.status(429).json({ error: `Rate limit reached for your IP. Try again in ${hoursLeft}h.` });
+  // Validate challenge fields present
+  if (!nonce || !expiry || !mac || !signedXdr) {
+    return res.status(400).json({ error: 'Missing wallet ownership proof. Please retry.' });
   }
 
   const adminSecret = process.env.ADMIN_SECRET;
@@ -82,14 +133,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Server configuration error.' });
   }
 
+  // Verify signed challenge — proves requester controls wallet
+  const proof = verifyChallenge(adminSecret, wallet, nonce, expiry, mac, signedXdr);
+  if (!proof.ok) {
+    return res.status(401).json({ error: proof.error });
+  }
+
+  // Rate limit (wallet + IP, defense-in-depth after auth)
+  const ip = getClientIp(req);
+  const now = Date.now();
+
+  const walletTs = walletLastReward.get(wallet);
+  if (walletTs && now - walletTs < RATE_LIMIT_MS) {
+    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - walletTs)) / 3_600_000);
+    return res.status(429).json({ error: `Rate limit: 1 reward per day. Try again in ${hoursLeft}h.` });
+  }
+  if (ip !== 'unknown') {
+    const ipTs = ipLastReward.get(ip);
+    if (ipTs && now - ipTs < RATE_LIMIT_MS) {
+      const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - ipTs)) / 3_600_000);
+      return res.status(429).json({ error: `Rate limit reached for your IP. Try again in ${hoursLeft}h.` });
+    }
+  }
+
+  const reward = REWARD_TABLE[activityType];
+
   try {
     const adminKeypair = Keypair.fromSecret(adminSecret);
     const adminAddress = adminKeypair.publicKey();
     const rewardStroops = BigInt(Math.round(reward * STROOP_FACTOR));
 
     const sourceAccount = await horizonServer.loadAccount(adminAddress);
-
     const contract = new Contract(CONTRACT_ID);
+
     const tx = new TransactionBuilder(sourceAccount, {
       fee: BASE_FEE,
       networkPassphrase: Networks.TESTNET,
@@ -116,7 +192,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`Transaction rejected: ${errStr}`);
     }
 
-    // Lock rate limit on successful submission
     walletLastReward.set(wallet, now);
     if (ip !== 'unknown') ipLastReward.set(ip, now);
 
