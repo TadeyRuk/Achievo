@@ -23,6 +23,7 @@ dist/
 build/
 out/
 .next/
+contract/target/
 
 # Ignore all markdown files except README.md
 **/*.md
