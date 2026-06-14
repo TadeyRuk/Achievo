@@ -12,7 +12,7 @@ import { WalletProfile } from './components/WalletProfile';
 import { RewardCard } from './components/RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './components/RewardHistory';
 import { StudentProfile } from './components/StudentProfile';
-import { Wallet, CheckCircle2 } from 'lucide-react';
+import { Wallet, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 
 type Tab = 'home' | 'history' | 'wallet' | 'profile';
@@ -64,6 +64,7 @@ export default function App() {
 
   // Success modal states for wallet actions
   const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState<boolean>(false);
   const [showDisconnectSuccess, setShowDisconnectSuccess] = useState<boolean>(false);
 
 
@@ -114,7 +115,12 @@ export default function App() {
     } catch { /* user cancelled */ } finally { setIsConnecting(false); }
   };
 
-  const handleDisconnect = async () => {
+  const handleDisconnectRequest = () => {
+    setShowDisconnectConfirm(true);
+  };
+
+  const handleDisconnectConfirm = async () => {
+    setShowDisconnectConfirm(false);
     try { await StellarWalletsKit.disconnect(); } catch { /* ignore */ }
     setWalletAddress(null);
     setXlmBalance("0");
@@ -357,7 +363,7 @@ export default function App() {
                 treasuryInfo={treasuryInfo}
                 isConnecting={isConnecting}
                 onConnect={handleConnect}
-                onDisconnect={handleDisconnect}
+                onDisconnect={handleDisconnectRequest}
                 onFund={handleFund}
               />
             )}
@@ -418,6 +424,61 @@ export default function App() {
                 >
                   Got it
                 </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Wallet Disconnection Confirmation Prompt Modal Overlay */}
+        <AnimatePresence>
+          {showDisconnectConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#00162b]/40 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className="bg-white rounded-[32px] p-6 text-center max-w-[300px] shadow-2xl space-y-4.5 border border-slate-100"
+              >
+                {/* Warning icon */}
+                <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-amber-500">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
+                  >
+                    <AlertTriangle className="w-9 h-9" />
+                  </motion.div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-[20px] font-extrabold text-[#00162b] font-display">
+                    Disconnect Wallet?
+                  </h3>
+                  <p className="text-[12.5px] text-[var(--dah-on-surface-variant)] leading-relaxed font-semibold">
+                    Are you sure you want to disconnect your Stellar wallet? Academic reward payouts will be paused.
+                  </p>
+                </div>
+
+                <div className="flex flex-col space-y-2 pt-2">
+                  <button
+                    onClick={handleDisconnectConfirm}
+                    className="w-full py-3 bg-red-600 hover:bg-red-700 text-white rounded-full font-extrabold text-[13px] font-display uppercase tracking-wider transition-all shadow-md active:scale-95"
+                  >
+                    Yes, Disconnect
+                  </button>
+                  <button
+                    onClick={() => setShowDisconnectConfirm(false)}
+                    className="w-full py-3 bg-[var(--dah-surface-low)] hover:bg-[var(--dah-surface-medium)] text-[var(--dah-primary)] rounded-full font-extrabold text-[13px] font-display uppercase tracking-wider transition-all border border-[var(--dah-outline-variant)]/30 active:scale-95"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </motion.div>
             </motion.div>
           )}
