@@ -13,8 +13,8 @@ import { WalletProfile } from './WalletProfile';
 import { RewardCard } from './RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
 import { StudentProfile } from './StudentProfile';
+import { Dashboard } from './Dashboard';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
-import { CustomWallet } from './customIcons';
 
 
 type Tab = 'home' | 'history' | 'wallet' | 'profile';
@@ -44,6 +44,7 @@ export default function App() {
 
   // Form
   const [activityText, setActivityText] = useState<string>("");
+  const [showForm, setShowForm]         = useState<boolean>(false);
 
   // Pipeline
   const [pipeline, setPipeline]   = useState<PipelineStep[]>(makePipeline());
@@ -72,15 +73,25 @@ export default function App() {
 
   // Scroll reference for auto-scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  // Auto-scroll to bottom as logs update
+  // Auto-scroll to bottom only when the pipeline is actively running
   useEffect(() => {
-    if (scrollContainerRef.current && !txHash) {
+    if (isRunning && scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
         behavior: "smooth"
       });
     }
-  }, [logs, txHash]);
+  }, [logs, isRunning]);
+
+  // Reset scroll to top when changing tabs or toggling the submission form
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: 0,
+        behavior: "auto"
+      });
+    }
+  }, [tab, showForm]);
 
 
 
@@ -164,8 +175,9 @@ export default function App() {
 
   // ── Submit activity ────────────────────────────────────────────────────────
 
-  const handleSubmit = async () => {
-    if (!walletAddress || !activityText.trim() || isRunning) return;
+  const handleSubmit = async (overrideText?: string) => {
+    const textToSubmit = overrideText ? overrideText.trim() : activityText.trim();
+    if (!walletAddress || !textToSubmit || isRunning) return;
 
     setIsRunning(true);
     setTxHash(null);
@@ -180,7 +192,7 @@ export default function App() {
       // Step 0 — Activity Agent (keyword hint only; Groq AI is authoritative)
       setStep(0, { status: 'running' });
       await delay(400);
-      const actResult = activityAgent(activityText);
+      const actResult = activityAgent(textToSubmit);
       const hintLabel = actResult.valid
         ? `Hint: ${actResult.activity} · ${actResult.suggestedReward} XLM`
         : 'AI will classify';
@@ -243,7 +255,7 @@ export default function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            activityText: activityText.trim(),
+            activityText: textToSubmit,
             wallet: walletAddress,
             nonce: nonceData.nonce,
             expiry: nonceData.expiry,
@@ -320,69 +332,86 @@ export default function App() {
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-[84px] pb-28 custom-scrollbar">
           <AnimatePresence mode="wait" initial={false}>
             {tab === 'home' && (
-              !walletAddress ? (
-                <div key="home-disconnected" className="flex flex-col items-center justify-center h-full min-h-[500px] p-8 text-center space-y-6">
-                  {/* Gold circle with wallet icon */}
-                  <div className="relative w-32 h-32 rounded-full bg-[#ffe8ab] flex items-center justify-center shadow-inner">
-                    <div className="w-20 h-20 bg-white rounded-[24px] flex items-center justify-center shadow-md border border-white/10">
-                      <CustomWallet className="w-10 h-10 text-[#00162b]" strokeWidth={2.2} />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2 max-w-[280px]">
-                    <h2 className="text-[22px] font-extrabold tracking-tight text-[var(--dah-primary)] font-display">
-                      Wallet Disconnected
-                    </h2>
-                    <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed font-semibold">
-                      To submit academic activities and earn on-chain rewards, you need to connect your wallet first.
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setTab('wallet')}
-                    className="px-6 py-3.5 bg-[var(--dah-primary)] text-white hover:bg-[var(--dah-primary-container)] rounded-full font-extrabold text-[14px] shadow-md shadow-[var(--dah-primary)]/20 transition-all font-display uppercase tracking-wider active:scale-95"
-                  >
-                    Go to Wallet Tab
-                  </button>
-                </div>
-              ) : isRunning || txHash || pipeline.some(step => step.status === 'error') ? (
+              isRunning || txHash || pipeline.some(step => step.status === 'error') ? (
                 <div key="home-running" className="p-5 space-y-5">
                   <PipelineVisualizer steps={pipeline} logs={logs} />
                   
-                  
                   {txHash && !isRunning && (
-                    <button
-                      onClick={() => {
-                        setTxHash(null);
-                        setRewardXlm(null);
-                        setPipeline(makePipeline());
-                        setActivityText("");
-                      }}
-                      className="w-full flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
-                    >
-                      Submit Another Activity
-                    </button>
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => {
+                          setTxHash(null);
+                          setRewardXlm(null);
+                          setPipeline(makePipeline());
+                          setActivityText("");
+                          setShowForm(true);
+                        }}
+                        className="w-full flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98 cursor-pointer"
+                      >
+                        Submit Another Activity
+                      </button>
+                      <button
+                        onClick={() => {
+                          setTxHash(null);
+                          setRewardXlm(null);
+                          setPipeline(makePipeline());
+                          setActivityText("");
+                          setShowForm(false);
+                        }}
+                        className="w-full flex items-center justify-center py-4 bg-[#f3f5fa] hover:bg-[#ebedf2] border border-[#e1e3e8]/40 text-[#00162b] rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all active:scale-98 cursor-pointer"
+                      >
+                        Go to Dashboard
+                      </button>
+                    </div>
                   )}
                   
                   {!isRunning && pipeline.some(step => step.status === 'error') && (
-                    <button
-                      onClick={() => {
-                        setPipeline(makePipeline());
-                      }}
-                      className="w-full flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98"
-                    >
-                      Back to Form
-                    </button>
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => {
+                          setPipeline(makePipeline());
+                          setShowForm(true);
+                        }}
+                        className="w-full flex items-center justify-center py-4 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all shadow-md shadow-[var(--dah-primary)]/15 active:scale-98 cursor-pointer"
+                      >
+                        Back to Form
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPipeline(makePipeline());
+                          setShowForm(false);
+                        }}
+                        className="w-full flex items-center justify-center py-4 bg-[#f3f5fa] hover:bg-[#ebedf2] border border-[#e1e3e8]/40 text-[#00162b] rounded-full font-extrabold text-[14px] font-display uppercase tracking-wider transition-all active:scale-98 cursor-pointer"
+                      >
+                        Go to Dashboard
+                      </button>
+                    </div>
                   )}
                 </div>
-              ) : (
+              ) : showForm && walletAddress ? (
                 <ActivityForm
-                  key="home"
+                  key="home-form"
                   text={activityText}
                   onChange={setActivityText}
                   onSubmit={handleSubmit}
                   isWalletConnected={!!walletAddress}
                   isSubmitting={isRunning}
+                  onBack={() => setShowForm(false)}
+                />
+              ) : (
+                <Dashboard
+                  key="home-dashboard"
+                  userName="Xander"
+                  history={history}
+                  walletAddress={walletAddress}
+                  onSubmitActivityClick={() => {
+                    if (!walletAddress) {
+                      setTab('wallet');
+                    } else {
+                      setShowForm(true);
+                    }
+                  }}
+                  onConnectWalletClick={() => setTab('wallet')}
                 />
               )
             )}

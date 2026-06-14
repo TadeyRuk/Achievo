@@ -31,7 +31,7 @@ export interface FeedbackResult {
 
 const REWARD_TABLE: Record<string, number> = {
   tutoring:      5,
-  workshop:      2,
+  workshop:      8,
   volunteering:  10,
   event:         3,
   participation: 3,

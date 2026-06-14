@@ -452,10 +452,7 @@ export function WalletProfile({
             </div>
 
             {/* Albedo Card */}
-            <button
-              onClick={() => onConnect("albedo")}
-              className="w-full flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm"
-            >
+            <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 text-blue-600 border border-slate-100">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -467,16 +464,27 @@ export function WalletProfile({
                   <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold">Web-based signer</p>
                 </div>
               </div>
-              <svg className="w-5 h-5 text-[var(--dah-outline)] shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href="https://albedo.link"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2 text-[11px] font-extrabold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-full transition-all font-display uppercase tracking-wider"
+                >
+                  Open
+                </a>
+                <button
+                  onClick={() => onConnect("albedo")}
+                  disabled={isConnecting}
+                  className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shadow-sm font-display cursor-pointer"
+                >
+                  Connect
+                </button>
+              </div>
+            </div>
 
             {/* xBull Card */}
-            <button
-              onClick={() => onConnect("xbull")}
-              className="w-full flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm"
-            >
+            <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 text-emerald-600 border border-slate-100">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -488,16 +496,27 @@ export function WalletProfile({
                   <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold">Secure mobile & desktop</p>
                 </div>
               </div>
-              <svg className="w-5 h-5 text-[var(--dah-outline)] shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href="https://xbull.app"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2 text-[11px] font-extrabold text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-full transition-all font-display uppercase tracking-wider"
+                >
+                  Get
+                </a>
+                <button
+                  onClick={() => onConnect("xbull")}
+                  disabled={isConnecting}
+                  className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shadow-sm font-display cursor-pointer"
+                >
+                  Connect
+                </button>
+              </div>
+            </div>
 
             {/* Lobstr Card */}
-            <button
-              onClick={() => onConnect("lobstr")}
-              className="w-full flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm"
-            >
+            <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 text-indigo-700 border border-slate-100">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -511,10 +530,24 @@ export function WalletProfile({
                   <p className="text-[10px] text-[var(--dah-on-surface-variant)] font-semibold">Popular mobile wallet</p>
                 </div>
               </div>
-              <svg className="w-5 h-5 text-[var(--dah-outline)] shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href="https://lobstr.co"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2 text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded-full transition-all font-display uppercase tracking-wider"
+                >
+                  Get
+                </a>
+                <button
+                  onClick={() => onConnect("lobstr")}
+                  disabled={isConnecting}
+                  className="px-4.5 py-2.5 text-[13px] font-extrabold rounded-full transition-all bg-[#00162b] hover:bg-[#061d32] text-white shadow-sm font-display cursor-pointer"
+                >
+                  Connect
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Promotion Card (New to Stellar?) */}

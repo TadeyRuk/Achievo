@@ -9,7 +9,6 @@ import {
   CustomHeart,
   CustomGraduationHat,
   CustomTrophy,
-  CustomCircleUser,
   CustomClipboardList,
   CustomMedal,
 } from "./customIcons";
@@ -193,8 +192,15 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
       {/* Profile Header Card */}
       <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 shadow-sm flex items-center gap-4">
         {/* Avatar */}
-        <div className="w-16 h-16 rounded-full bg-[var(--dah-primary-container)] flex items-center justify-center text-[var(--dah-secondary-container)] shadow-inner shrink-0">
-          <CustomCircleUser className="w-8 h-8" />
+        <div className="w-16 h-16 rounded-full overflow-hidden shrink-0 border border-gray-100 shadow-sm bg-[var(--dah-surface-low)]">
+          <img
+            src="/xander_avatar.webp"
+            className="w-full h-full object-cover"
+            alt="Xander Dacillo"
+            onError={e => {
+              (e.target as HTMLImageElement).src = "https://api.dicebear.com/7.x/initials/svg?seed=Xander Dacillo";
+            }}
+          />
         </div>
         <div className="min-w-0 space-y-0.5">
           <h2 className="text-[20px] font-extrabold tracking-tight text-[var(--dah-primary)] font-display">
