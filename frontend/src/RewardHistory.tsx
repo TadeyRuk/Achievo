@@ -8,8 +8,6 @@ import {
   Brain, 
   Plane, 
   Gem, 
-  BookOpen, 
-  Calculator, 
   Sparkles, 
   Award 
 } from "lucide-react";
@@ -26,7 +24,6 @@ export interface RewardHistoryItem {
 
 interface RewardHistoryProps {
   history: RewardHistoryItem[];
-  onSelectQuest?: (questText: string) => void;
 }
 
 const ACTIVITY_ICONS: Record<string, React.ComponentType<any>> = {
@@ -37,7 +34,7 @@ const ACTIVITY_ICONS: Record<string, React.ComponentType<any>> = {
   participation: CustomMedal,
 };
 
-export function RewardHistory({ history, onSelectQuest }: RewardHistoryProps) {
+export function RewardHistory({ history }: RewardHistoryProps) {
   const sortedHistory = [...history].sort((a, b) => b.timestamp - a.timestamp);
 
   const getIcon = (act: string) => {
@@ -86,7 +83,7 @@ export function RewardHistory({ history, onSelectQuest }: RewardHistoryProps) {
 
   // Rank calculations
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
-  const baseXP = 3250;
+  const baseXP = 0;
   const totalXP = baseXP + Math.round(totalEarned * 100);
   
   const getRankInfo = (xp: number, streakVal: number) => {
@@ -265,96 +262,7 @@ export function RewardHistory({ history, onSelectQuest }: RewardHistoryProps) {
         </div>
       </div>
 
-      {/* 2. Available Quests */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h3 className="text-[18px] font-display font-extrabold tracking-tight text-[var(--dah-primary)]">
-            Available Quests
-          </h3>
-          <button 
-            onClick={() => alert("All quests are listed below! Click the buttons to log/solve them.")}
-            className="text-[12px] font-bold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
-          >
-            View All
-          </button>
-        </div>
 
-        {/* Horizontal scroll container */}
-        <div className="flex overflow-x-auto gap-4 pb-3 -mx-5 px-5 custom-scrollbar snap-x snap-mandatory">
-          {[
-            {
-              id: "reading",
-              title: "Reading Marathon",
-              desc: "Log 120 minutes of reading time this week.",
-              progressText: "45 / 120 mins",
-              reward: "+50 XLM",
-              actionLabel: "Log Time",
-              icon: BookOpen,
-              activityText: "Reading Marathon: logged 75 minutes of reading time."
-            },
-            {
-              id: "math",
-              title: "Math Wizardry",
-              desc: "Complete 3 math problem sets this week.",
-              progressText: "1 / 3 sets",
-              reward: "+50 XLM",
-              actionLabel: "Solve",
-              icon: Calculator,
-              activityText: "Math Wizardry: completed 2 math problem sets."
-            },
-            {
-              id: "science",
-              title: "Science Lab",
-              desc: "Write and submit your biology lab report.",
-              progressText: "0 / 1 report",
-              reward: "+40 XLM",
-              actionLabel: "Submit",
-              icon: Award,
-              activityText: "Science Lab: submitted biology lab report."
-            }
-          ].map((quest) => {
-            const QuestIcon = quest.icon;
-            return (
-              <div
-                key={quest.id}
-                className="w-[260px] shrink-0 snap-start bg-white border border-[var(--dah-outline-variant)]/60 rounded-[24px] p-4 flex flex-col justify-between shadow-sm hover:border-[var(--dah-primary)] transition-all duration-250"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-full bg-[var(--dah-surface-low)] flex items-center justify-center text-[var(--dah-primary)] shrink-0">
-                      <QuestIcon className="w-5 h-5" />
-                    </div>
-                    {/* Golden reward badge */}
-                    <div className="bg-amber-50 border border-amber-200/60 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 font-display">
-                      <Sparkles className="w-2.5 h-2.5 text-amber-500" />
-                      {quest.reward}
-                    </div>
-                  </div>
-
-                  <h4 className="text-[14.5px] font-display font-extrabold text-[var(--dah-on-surface)] mt-3.5 tracking-tight">
-                    {quest.title}
-                  </h4>
-                  <p className="text-[11.5px] text-[var(--dah-on-surface-variant)] leading-normal mt-1 min-h-[36px] font-medium">
-                    {quest.desc}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between mt-4 pt-1 border-t border-slate-50">
-                  <span className="text-[11px] font-bold text-[var(--dah-outline)] font-display">
-                    {quest.progressText}
-                  </span>
-                  <button
-                    onClick={() => onSelectQuest?.(quest.activityText)}
-                    className="px-4 py-1.5 bg-[#00162b] hover:bg-[#061d32] text-white rounded-full font-display font-bold text-[11px] transition-all active:scale-95 shadow-sm hover:shadow"
-                  >
-                    {quest.actionLabel}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
       {/* 3. Milestones */}
       <div className="space-y-3">

@@ -58,7 +58,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
   const workshopCount = history.filter(h => h.activity.toLowerCase().includes("workshop")).length;
   const scienceCount = history.filter(h => h.activity.toLowerCase().includes("science")).length;
 
-  const baseXP = 3250;
+  const baseXP = 0;
   const totalXP = baseXP + Math.round(totalEarned * 100);
 
   const isSilverUnlocked = totalXP >= 1000 && volunteeredCount >= 1;
