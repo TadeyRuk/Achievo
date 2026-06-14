@@ -10,8 +10,9 @@ import { ActivityForm } from './components/ActivityForm';
 import { PipelineVisualizer, type PipelineStep } from './components/PipelineVisualizer';
 import { WalletProfile } from './components/WalletProfile';
 import { RewardCard } from './components/RewardCard';
+import { RewardHistory, type RewardHistoryItem } from './components/RewardHistory';
 
-type Tab = 'home' | 'pipeline' | 'wallet';
+type Tab = 'home' | 'pipeline' | 'history' | 'wallet';
 
 const makePipeline = (): PipelineStep[] => [
   { name: 'Activity Agent',     desc: 'Parsing your submission…',        status: 'idle' },
@@ -47,6 +48,16 @@ export default function App() {
   const [rewardXlm, setRewardXlm] = useState<number | null>(null);
   const [txHash, setTxHash]       = useState<string | null>(null);
 
+  // Reward History Local Storage - Lazy State Initialization
+  const [history, setHistory] = useState<RewardHistoryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem("achievo_reward_history");
+      return saved ? (JSON.parse(saved) as RewardHistoryItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   const fetchBalance = useCallback(async (address: string) => {
@@ -68,13 +79,14 @@ export default function App() {
   // ── Bootstrap ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    // 1. Auto-connect wallet
     (async () => {
       try {
         const { address } = await StellarWalletsKit.getAddress();
         if (address) { setWalletAddress(address); fetchBalance(address); }
       } catch { /* not connected */ }
+      void loadTreasury();
     })();
-    void loadTreasury();
   }, [fetchBalance, loadTreasury]);
 
   // ── Wallet actions ─────────────────────────────────────────────────────────
@@ -228,6 +240,20 @@ export default function App() {
         "🎉 [System] Payout complete.",
       ]);
 
+      // Add successful transaction to local history
+      const newHistoryItem: RewardHistoryItem = {
+        id: hash,
+        activity: actResult.activity,
+        reward: rwdResult.reward,
+        txHash: hash,
+        timestamp: Date.now(),
+      };
+      setHistory(prev => {
+        const next = [newHistoryItem, ...prev];
+        try { localStorage.setItem("achievo_reward_history", JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
+
       await fetchBalance(walletAddress);
       void loadTreasury();
       setActivityText("");
@@ -242,7 +268,7 @@ export default function App() {
   return (
     <div className="min-h-[100dvh] bg-[var(--dah-surface-highest)] flex items-center justify-center">
       {/* Phone frame — navy bezel on desktop, full-bleed on mobile */}
-      <div className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[10px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#00162b]/50">
+      <div className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[10px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#000666]/35">
 
         <Navbar />
 
@@ -260,11 +286,16 @@ export default function App() {
               />
             )}
             {tab === 'pipeline' && (
-              <div key="pipeline" className="p-4 sm:p-6">
+              <div key="pipeline" className="p-5">
                 <PipelineVisualizer steps={pipeline} logs={logs} />
                 {txHash && rewardXlm !== null && (
                   <RewardCard reward={rewardXlm} txHash={txHash} />
                 )}
+              </div>
+            )}
+            {tab === 'history' && (
+              <div key="history" className="p-5">
+                <RewardHistory history={history} />
               </div>
             )}
             {tab === 'wallet' && (

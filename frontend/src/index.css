@@ -1,36 +1,51 @@
 @import "tailwindcss";
 
+@theme {
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, sans-serif;
+}
+
 :root {
-  /* ── High Performance Achievement — DAH Design System ── */
+  /* ── ACHIEVO Performance — Design System Tokens ── */
   --dah-primary:              #00162b;
-  --dah-primary-container:    #162b40;
+  --dah-primary-container:    #061d32;
   --dah-on-primary:           #ffffff;
   --dah-on-primary-container: #7e93ac;
+  
   --dah-secondary:            #7a5900;
   --dah-secondary-container:  #ffbf21;
   --dah-on-secondary:         #ffffff;
   --dah-on-secondary-container: #6e4f00;
-  --dah-bg:                   #f9f9ff;
-  --dah-surface:              #f9f9ff;
+  
+  --dah-bg:                   #faf9ff;
+  --dah-surface:              #faf9ff;
   --dah-surface-low:          #f1f3ff;
   --dah-surface-container:    #e9edff;
   --dah-surface-high:         #e1e8fd;
-  --dah-surface-highest:      #dce2f7;
+  --dah-surface-highest:      #dce2f9;
+  
   --dah-on-surface:           #141b2b;
   --dah-on-surface-variant:   #43474d;
   --dah-outline:              #74777d;
   --dah-outline-variant:      #c4c6cd;
+  
   --dah-error:                #ba1a1a;
   --dah-error-container:      #ffdad6;
-  --font: 'Hanken Grotesk', system-ui, sans-serif;
+  
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Be Vietnam Pro', system-ui, sans-serif;
 }
 
 *, *::before, *::after {
-  font-family: var(--font);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display) !important;
 }
 
 body {
-  background-color: var(--dah-bg);
+  background-color: var(--dah-surface-highest);
   color: var(--dah-on-surface);
   -webkit-font-smoothing: antialiased;
 }
@@ -40,29 +55,29 @@ body {
     scrollbar-width: thin;
     scrollbar-color: var(--dah-outline-variant) transparent;
   }
-  .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background-color: var(--dah-outline-variant);
     border-radius: 9999px;
   }
 
-  /* Gold shimmer for reward card */
+  /* Premium gold shimmer for reward card */
   @keyframes gold-shimmer {
     0%   { background-position: -200% center; }
     100% { background-position: 200% center; }
   }
   .gold-shimmer {
-    background: linear-gradient(90deg, #ffbf21 0%, #ffd96a 40%, #ffbf21 60%, #e6a800 100%);
+    background: linear-gradient(90deg, #fdc003 0%, #ffe07d 40%, #fdc003 60%, #c49100 100%);
     background-size: 200% auto;
     animation: gold-shimmer 3s linear infinite;
   }
 
   /* Pulse ring for active pipeline step */
   @keyframes pulse-ring {
-    0%   { box-shadow: 0 0 0 0 rgba(255,191,33,0.4); }
-    70%  { box-shadow: 0 0 0 8px rgba(255,191,33,0); }
-    100% { box-shadow: 0 0 0 0 rgba(255,191,33,0); }
+    0%   { box-shadow: 0 0 0 0 rgba(253,192,3,0.5); }
+    70%  { box-shadow: 0 0 0 10px rgba(253,192,3,0); }
+    100% { box-shadow: 0 0 0 0 rgba(253,192,3,0); }
   }
-  .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+  .pulse-ring { animation: pulse-ring 1.8s cubic-bezier(0.25, 0, 0, 1) infinite; }
 }

@@ -9,68 +9,70 @@ interface RewardCardProps {
 export function RewardCard({ reward, txHash }: RewardCardProps) {
   return (
     <motion.div
-      initial={{ scale: 0.95, opacity: 0, y: 12 }}
+      initial={{ scale: 0.93, opacity: 0, y: 16 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 280, damping: 22 }}
-      className="rounded-[12px] overflow-hidden mt-6 shadow-xl shadow-[var(--dah-secondary-container)]/25"
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="rounded-[24px] overflow-hidden mt-6 shadow-lg shadow-[var(--dah-secondary-container)]/25"
     >
-      {/* Gold shimmer hero */}
-      <div className="gold-shimmer p-5 relative overflow-hidden">
-        <div className="absolute -top-8 -right-8 w-32 h-32 bg-white/15 rounded-full pointer-events-none" />
-        <div className="absolute -bottom-6 -left-6 w-24 h-24 bg-[var(--dah-primary)]/10 rounded-full pointer-events-none" />
+      {/* Gold shimmer hero card */}
+      <div className="gold-shimmer p-6 relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-36 h-36 bg-white/20 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-[var(--dah-primary)]/10 rounded-full pointer-events-none" />
 
         <div className="relative">
           <div className="flex items-center gap-2 mb-4">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: 0.15, type: "spring", stiffness: 320 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 350 }}
             >
-              <CheckCircle2 className="w-5 h-5 text-[var(--dah-primary)]" />
+              <CheckCircle2 className="w-5.5 h-5.5 text-[var(--dah-primary)]" />
             </motion.div>
-            <span className="text-[13px] font-bold text-[var(--dah-primary)] uppercase tracking-[0.06em]">
+            <span className="text-[12px] font-extrabold text-[var(--dah-primary)] uppercase tracking-[0.08em] font-display">
               Reward Distributed
             </span>
           </div>
 
-          <div className="flex items-end gap-2">
+          <div className="flex items-baseline gap-1">
             <motion.span
-              initial={{ opacity: 0, x: -8 }}
+              initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-[52px] font-extrabold leading-none tracking-[-0.025em] text-[var(--dah-primary)]"
+              transition={{ delay: 0.15 }}
+              className="text-[54px] font-extrabold leading-none tracking-tight text-[var(--dah-primary)] font-display"
             >
               {reward}
             </motion.span>
-            <span className="text-[20px] font-bold text-[var(--dah-secondary)] pb-1.5">XLM</span>
+            <span className="text-[20px] font-extrabold text-[var(--dah-secondary)] font-display">XLM</span>
           </div>
 
-          <p className="text-[12px] text-[var(--dah-primary)]/70 font-medium mt-1.5">
-            Sent directly to your wallet
+          <p className="text-[12px] text-[var(--dah-primary)]/75 font-semibold mt-1">
+            Transferred directly to your connected wallet
           </p>
         </div>
       </div>
 
-      {/* Transaction details — navy */}
-      <div className="bg-[var(--dah-primary)] p-4">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Trophy className="w-3.5 h-3.5 text-[var(--dah-on-primary-container)]" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.07em] text-white/50">
-            Transaction Hash
+      {/* Transaction details card section */}
+      <div className="bg-[var(--dah-primary)] p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-[var(--dah-on-primary-container)]" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-white/50 font-display">
+            On-Chain Transaction
           </span>
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <code className="text-[12px] font-mono text-white/80 truncate">
-            {txHash.slice(0, 24)}…
+        
+        <div className="flex items-center justify-between gap-4">
+          <code className="text-[12px] font-mono text-white/90 truncate font-semibold">
+            {txHash.slice(0, 26)}…
           </code>
+          
           <a
             href={`https://stellar.expert/explorer/testnet/tx/${txHash}`}
             target="_blank"
             rel="noreferrer"
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-[var(--dah-secondary-container)] text-[var(--dah-on-secondary-container)] text-[11px] font-bold hover:brightness-105 transition-all"
+            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--dah-secondary-container)] text-[var(--dah-on-secondary-container)] text-[12px] font-extrabold hover:brightness-105 transition-all shadow-sm font-display uppercase tracking-wider"
           >
-            <ExternalLink className="w-3 h-3" />
-            View
+            <span>View</span>
+            <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
       </div>

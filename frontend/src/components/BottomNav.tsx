@@ -1,23 +1,24 @@
-import { Home, ActivitySquare, Wallet } from "lucide-react";
+import { Home, Gift, Wallet, User } from "lucide-react";
 
 interface BottomNavProps {
-  activeTab: "home" | "pipeline" | "wallet";
-  onTabChange: (tab: "home" | "pipeline" | "wallet") => void;
+  activeTab: "home" | "pipeline" | "history" | "wallet";
+  onTabChange: (tab: "home" | "pipeline" | "history" | "wallet") => void;
 }
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const tabs = [
     { id: "home",     label: "Home",     icon: Home },
-    { id: "pipeline", label: "Pipeline", icon: ActivitySquare },
-    { id: "wallet",   label: "Profile",  icon: Wallet },
+    { id: "history",  label: "Rewards",  icon: Gift },
+    { id: "wallet",   label: "Wallet",   icon: Wallet },
+    { id: "pipeline", label: "Profile",  icon: User },
   ] as const;
 
   return (
     <div
-      className="absolute bottom-0 w-full bg-white border-t border-[var(--dah-outline-variant)] z-50"
+      className="absolute bottom-0 w-full bg-[var(--dah-surface)] border-t border-[var(--dah-outline-variant)] z-50 shrink-0"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="flex items-center justify-around h-16 sm:h-18 px-4">
+      <div className="flex items-center justify-around h-16 sm:h-20 px-2">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -25,36 +26,30 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="flex flex-col items-center gap-1 px-4 py-1.5 relative transition-all"
+              className="flex-1 flex flex-col items-center gap-1 py-1 relative transition-all"
             >
+              {/* Icon Container with M3 gold active pill indicator behind */}
               <div
-                className={`p-2 rounded-[8px] transition-colors ${
+                className={`relative px-6 py-1.5 rounded-full transition-all duration-300 ${
                   isActive
-                    ? "bg-[var(--dah-surface-container)]"
-                    : "bg-transparent"
+                    ? "bg-[#ffbf21] text-[#00162b] scale-105 shadow-sm"
+                    : "bg-transparent text-[var(--dah-on-surface-variant)] hover:bg-[var(--dah-surface-low)]"
                 }`}
               >
                 <Icon
-                  className={`w-5 h-5 transition-colors ${
-                    isActive
-                      ? "text-[var(--dah-primary)]"
-                      : "text-[var(--dah-outline)]"
-                  }`}
+                  className="w-5.5 h-5.5 transition-colors duration-250"
                   strokeWidth={isActive ? 2.5 : 2}
                 />
               </div>
               <span
-                className={`text-[10px] font-semibold uppercase tracking-[0.05em] transition-colors ${
+                className={`text-[11px] font-bold tracking-[0.01em] transition-colors duration-300 ${
                   isActive
-                    ? "text-[var(--dah-primary)]"
+                    ? "text-[#00162b] font-extrabold"
                     : "text-[var(--dah-outline)]"
                 }`}
               >
                 {tab.label}
               </span>
-              {isActive && (
-                <span className="absolute -top-px left-1/2 -translate-x-1/2 w-6 h-[2px] bg-[var(--dah-secondary-container)] rounded-full" />
-              )}
             </button>
           );
         })}
