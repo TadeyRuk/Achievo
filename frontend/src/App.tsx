@@ -4,14 +4,14 @@ import { Networks } from '@stellar/stellar-sdk';
 import { getXlmBalance, fundWithFriendbot, StellarWalletsKit } from './wallet';
 import { CONTRACT_ID, getTreasuryInfo, type TreasuryInfo } from './contract';
 import { activityAgent, verificationAgent, rewardAgent, feedbackAgent } from './agents';
-import { Navbar } from './components/Navbar';
-import { BottomNav } from './components/BottomNav';
-import { ActivityForm } from './components/ActivityForm';
-import { PipelineVisualizer, type PipelineStep } from './components/PipelineVisualizer';
-import { WalletProfile } from './components/WalletProfile';
-import { RewardCard } from './components/RewardCard';
-import { RewardHistory, type RewardHistoryItem } from './components/RewardHistory';
-import { StudentProfile } from './components/StudentProfile';
+import { Navbar } from './Navbar';
+import { BottomNav } from './BottomNav';
+import { ActivityForm } from './ActivityForm';
+import { PipelineVisualizer, type PipelineStep } from './PipelineVisualizer';
+import { WalletProfile } from './WalletProfile';
+import { RewardCard } from './RewardCard';
+import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
+import { StudentProfile } from './StudentProfile';
 import { Wallet, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 

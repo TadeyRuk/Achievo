@@ -1,6 +1,6 @@
 import { Wallet, LogOut, ShieldCheck, RefreshCw, Database, TrendingUp, Users, BookOpen, Tent, Presentation } from "lucide-react";
 import { motion } from "motion/react";
-import type { TreasuryInfo } from "../contract";
+import type { TreasuryInfo } from "./contract";
 
 interface WalletProfileProps {
   walletAddress: string | null;
