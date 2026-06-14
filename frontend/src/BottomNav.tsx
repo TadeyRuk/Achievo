@@ -16,7 +16,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
 
   return (
     <div
-      className="absolute bottom-6 left-4 right-4 bg-white border-2 border-[#c8c8d0] rounded-[28px] z-50 shadow-lg shadow-black/10"
+      className="absolute bottom-6 left-4 right-4 bg-[var(--dah-primary-container)] border border-white/10 rounded-[28px] z-50 shadow-xl shadow-black/20"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex items-center justify-around h-16 px-2">
@@ -34,7 +34,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 className={`relative px-5 py-1.5 rounded-full transition-all duration-300 ${
                   isActive
                     ? "bg-[#ffbf21] text-[#00162b] scale-105 shadow-sm"
-                    : "bg-transparent text-[var(--dah-on-surface-variant)] hover:bg-[var(--dah-surface-low)]"
+                    : "bg-transparent text-[var(--dah-on-primary-container)] hover:bg-white/5"
                 }`}
               >
                 <Icon
