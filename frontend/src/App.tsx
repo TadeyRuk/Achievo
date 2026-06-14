@@ -585,6 +585,12 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Powered by Stellar */}
+                  <div className="flex items-center justify-center gap-1.5 py-1 text-[11px] font-bold text-slate-400 font-display">
+                    <span>Powered by</span>
+                    <span className="text-[var(--dah-primary)] font-black uppercase tracking-wider">Stellar</span>
+                  </div>
+
                   <button
                     onClick={() => setShowInfo(false)}
                     className="w-full py-3.5 rounded-full bg-[var(--dah-primary)] text-white font-extrabold text-[14px] font-display"
