@@ -154,12 +154,9 @@ export function ActivityForm({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [evidenceLink, setEvidenceLink] = useState<string>("");
 
-  const handleCategorySelect = (catId: string, hint: string) => {
+  const handleCategorySelect = (catId: string) => {
     setSelectedCategory(catId);
-    // Fill the description text template if it is currently empty or has a different category hint
-    if (!text.trim() || CATEGORIES.some(c => c.hint === text)) {
-      onChange(hint);
-    }
+    onChange("");
     setCurrentStep(2);
   };
 
@@ -244,7 +241,7 @@ export function ActivityForm({
                       key={cat.id}
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.99 }}
-                      onClick={() => handleCategorySelect(cat.id, cat.hint)}
+                      onClick={() => handleCategorySelect(cat.id)}
                       className={`bg-white rounded-[28px] p-5 border flex flex-col gap-4 shadow-sm hover:shadow-md cursor-pointer transition-all duration-300 ${
                         isSelected ? "border-[#001540] ring-2 ring-[#001540]/5 bg-[#fcfdff]" : "border-[#e5e7eb] hover:border-gray-300"
                       }`}
