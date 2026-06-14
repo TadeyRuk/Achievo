@@ -88,7 +88,7 @@ export function ReferFriend({ onBack, userName }: ReferFriendProps) {
       </header>
 
       {/* Scrollable Content */}
-      <div className="flex-1 p-5 space-y-6 overflow-y-auto pb-12 custom-scrollbar">
+      <div className="flex-1 p-5 space-y-6 pb-12">
         {/* Toast Notification */}
         <AnimatePresence>
           {toastMessage && (
@@ -105,10 +105,10 @@ export function ReferFriend({ onBack, userName }: ReferFriendProps) {
         </AnimatePresence>
 
         {/* Hero Banner Card */}
-        <div className="bg-gradient-to-br from-[#0c2774] via-[#0f3b8c] to-[#061d32] rounded-[32px] p-6 text-white relative overflow-hidden shadow-lg flex flex-col items-center text-center">
+        <div className="bg-[var(--dah-primary-container)] rounded-[32px] p-6 text-white relative overflow-hidden shadow-lg flex flex-col items-center text-center shadow-[var(--dah-primary-container)]/15">
           {/* Background Decorative Blobs */}
-          <div className="absolute -top-12 -right-12 w-44 h-44 bg-blue-400/15 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
+          <div className="absolute -top-12 -right-12 w-44 h-44 bg-white/5 rounded-full pointer-events-none" />
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full pointer-events-none" />
 
           {/* Double Rewards Pill Badge */}
           <div className="bg-[#ffbe42] text-[#00162b] text-[10px] font-black uppercase tracking-[0.1em] px-3.5 py-1.5 rounded-full flex items-center gap-1 shadow-sm">

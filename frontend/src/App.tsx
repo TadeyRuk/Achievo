@@ -366,7 +366,7 @@ export default function App() {
   return (
     <div className="min-h-[100dvh] bg-[var(--dah-surface-highest)] flex items-center justify-center">
       {/* Phone frame — navy bezel on desktop, full-bleed on mobile */}
-      <div className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[10px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#000666]/35">
+      <div className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[4px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#000666]/35">
 
         <Navbar onInfoClick={() => setShowInfo(true)} />
 
@@ -497,7 +497,7 @@ export default function App() {
         {/* Refer Friend Overlay Page */}
         <AnimatePresence>
           {showRefer && (
-            <div className="absolute inset-0 z-50 overflow-hidden">
+            <div className="absolute inset-0 z-50 overflow-y-auto">
               <ReferFriend
                 userName="Xander"
                 onBack={() => setShowRefer(false)}
