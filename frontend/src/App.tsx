@@ -492,8 +492,6 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        <BottomNav activeTab={tab} onTabChange={setTab} />
-
         {/* Refer Friend Overlay Page */}
         <AnimatePresence>
           {showRefer && (
@@ -505,6 +503,8 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
+
+        <BottomNav activeTab={tab} onTabChange={(t) => { setShowRefer(false); setTab(t); }} />
 
         {/* Reward Modal */}
         <AnimatePresence>

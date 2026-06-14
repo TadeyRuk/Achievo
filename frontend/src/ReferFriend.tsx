@@ -88,7 +88,7 @@ export function ReferFriend({ onBack, userName }: ReferFriendProps) {
       </header>
 
       {/* Scrollable Content */}
-      <div className="flex-1 p-5 space-y-6 pb-12">
+      <div className="flex-1 p-5 space-y-6 pb-32">
         {/* Toast Notification */}
         <AnimatePresence>
           {toastMessage && (
