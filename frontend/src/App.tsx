@@ -1,3 +1,4 @@
+// This project is dedicated for Belle 🤍
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Networks } from '@stellar/stellar-sdk';

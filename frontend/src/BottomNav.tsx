@@ -38,7 +38,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                 }`}
               >
                 <Icon
-                  className="w-5 h-5 transition-colors duration-250"
+                  className="w-6 h-6 transition-colors duration-250"
                   strokeWidth={isActive ? 2.5 : 2}
                 />
               </div>
