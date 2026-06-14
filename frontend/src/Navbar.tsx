@@ -3,7 +3,7 @@ import { CustomCircleInformation } from "./customIcons";
 export function Navbar() {
   return (
     <header 
-      className="px-9 pt-8 pb-4 flex items-center justify-between absolute top-0 left-0 right-0 z-50 border-b border-[var(--dah-outline-variant)]/25"
+      className="px-9 pt-4 pb-3 flex items-center justify-between absolute top-0 left-0 right-0 z-50 border-b border-[var(--dah-outline-variant)]/25"
       style={{
         backgroundColor: "rgba(255, 255, 255, 0.92)",
         backdropFilter: "blur(16px)",
