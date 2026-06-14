@@ -480,39 +480,48 @@ export default function App() {
                   </div>
 
                   {/* Effort Scoring */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--dah-outline)]">Effort-Based Scoring</p>
-                    <div className="p-4 rounded-[16px] bg-[#fff8e6] border border-[#ffbf21]/30 space-y-2">
-                      <p className="text-[13px] font-extrabold text-[#6e4f00]">reward = base + (effort × max bonus)</p>
-                      <p className="text-[12px] text-[#8a6200] leading-relaxed">
-                        The AI scores your description from 0.0 to 1.0 based on specificity, duration, scope, and impact. A vague one-liner scores low; a detailed account with context scores high.
+
+                    {/* Formula card */}
+                    <div className="relative rounded-[20px] bg-[var(--dah-primary)] p-5 overflow-hidden">
+                      <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
+                      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/50 mb-2">Formula</p>
+                      <p className="text-[15px] font-extrabold text-white font-display">
+                        reward = base + (effort × bonus)
+                      </p>
+                      <p className="text-[12px] text-white/65 mt-2 leading-relaxed">
+                        AI scores 0.0–1.0 on specificity, duration, scope, and impact. Vague = low. Detailed + context = high.
                       </p>
                     </div>
-                    <div className="rounded-[16px] overflow-hidden border border-[var(--dah-outline-variant)]/40">
-                      <table className="w-full text-[12px]">
-                        <thead>
-                          <tr className="bg-[var(--dah-surface-low)]">
-                            <th className="text-left px-3 py-2 font-extrabold text-[var(--dah-on-surface)]">Activity</th>
-                            <th className="text-center px-2 py-2 font-extrabold text-[var(--dah-on-surface)]">Base</th>
-                            <th className="text-center px-2 py-2 font-extrabold text-[var(--dah-on-surface)]">Max</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            { a: "Volunteering",  base: "10", max: "15" },
-                            { a: "Tutoring",      base: "5",  max: "10" },
-                            { a: "Workshop",      base: "2",  max: "5"  },
-                            { a: "Event",         base: "3",  max: "5"  },
-                            { a: "Participation", base: "3",  max: "5"  },
-                          ].map((r, i) => (
-                            <tr key={r.a} className={i % 2 === 0 ? "bg-white" : "bg-[var(--dah-surface-low)]/40"}>
-                              <td className="px-3 py-2 font-semibold text-[var(--dah-on-surface)]">{r.a}</td>
-                              <td className="px-2 py-2 text-center text-[var(--dah-outline)]">{r.base} XLM</td>
-                              <td className="px-2 py-2 text-center font-extrabold text-[var(--dah-primary)]">{r.max} XLM</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+
+                    {/* Activity cards */}
+                    <div className="space-y-2">
+                      {[
+                        { a: "Volunteering",  emoji: "🤝", base: 10, max: 15, color: "bg-emerald-50 border-emerald-100" },
+                        { a: "Tutoring",      emoji: "📚", base: 5,  max: 10, color: "bg-blue-50 border-blue-100"    },
+                        { a: "Workshop",      emoji: "🛠️", base: 2,  max: 5,  color: "bg-purple-50 border-purple-100" },
+                        { a: "Event",         emoji: "🎖️", base: 3,  max: 5,  color: "bg-orange-50 border-orange-100" },
+                        { a: "Participation", emoji: "⭐", base: 3,  max: 5,  color: "bg-yellow-50 border-yellow-100" },
+                      ].map(r => {
+                        const pct = (r.base / r.max) * 100;
+                        return (
+                          <div key={r.a} className={`flex items-center gap-3 px-4 py-3 rounded-[16px] border ${r.color}`}>
+                            <span className="text-lg shrink-0">{r.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[13px] font-extrabold text-[var(--dah-on-surface)]">{r.a}</p>
+                              {/* Progress bar: base vs max */}
+                              <div className="mt-1 h-1.5 rounded-full bg-black/8 overflow-hidden">
+                                <div className="h-full rounded-full bg-[var(--dah-primary)]" style={{ width: `${pct}%` }} />
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-[11px] text-[var(--dah-outline)]">{r.base} base</p>
+                              <p className="text-[13px] font-extrabold text-[var(--dah-primary)]">↑{r.max} XLM</p>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
