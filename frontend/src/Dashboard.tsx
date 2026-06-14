@@ -9,6 +9,7 @@ interface DashboardProps {
   walletAddress: string | null;
   onSubmitActivityClick: () => void;
   onConnectWalletClick: () => void;
+  userAvatar: string;
 }
 
 interface FeedItem {
@@ -100,6 +101,7 @@ export function Dashboard({
   walletAddress,
   onSubmitActivityClick,
   onConnectWalletClick,
+  userAvatar,
 }: DashboardProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -183,7 +185,7 @@ export function Dashboard({
       id: item.id,
       type: "user",
       name: "You",
-      avatar: "/xander_avatar.webp",
+      avatar: userAvatar,
       content: (
         <span>
           <strong className="text-[13px] font-bold text-[#00162b]">You</strong>
@@ -299,10 +301,15 @@ export function Dashboard({
 
       {/* Submit Activity Button (Golden/Yellow) */}
       <motion.button
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={!walletAddress ? {} : { scale: 1.01 }}
+        whileTap={!walletAddress ? {} : { scale: 0.98 }}
         onClick={onSubmitActivityClick}
-        className="w-full bg-[#ffbe42] text-[#00162b] font-extrabold py-4 rounded-[24px] flex items-center justify-center gap-3 hover:brightness-105 transition-all shadow-lg shadow-[#ffbe42]/15 text-[15px] font-display uppercase tracking-wide cursor-pointer"
+        disabled={!walletAddress}
+        className={`w-full font-extrabold py-4 rounded-[24px] flex items-center justify-center gap-3 transition-all text-[15px] font-display uppercase tracking-wide ${
+          !walletAddress
+            ? "bg-slate-200 text-slate-400 border border-slate-300/50 cursor-not-allowed shadow-none"
+            : "bg-[#ffbe42] text-[#00162b] hover:brightness-105 shadow-lg shadow-[#ffbe42]/15 cursor-pointer"
+        }`}
       >
         <SubmitIcon />
         <span>Submit Activity</span>

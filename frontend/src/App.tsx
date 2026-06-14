@@ -33,6 +33,16 @@ function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 export default function App() {
   const [tab, setTab] = useState<Tab>('home');
 
+  // User Avatar
+  const [userAvatar, setUserAvatar] = useState<string>(() => {
+    return localStorage.getItem("achievo_user_avatar") || "/xander_avatar.webp";
+  });
+
+  const handleAvatarChange = (newAvatar: string) => {
+    setUserAvatar(newAvatar);
+    localStorage.setItem("achievo_user_avatar", newAvatar);
+  };
+
   // Wallet
   const [walletAddress, setWalletAddress]     = useState<string | null>(null);
   const [walletId, setWalletId]               = useState<string | null>(null);
@@ -124,6 +134,19 @@ export default function App() {
       void loadTreasury();
     })();
   }, [fetchBalance, loadTreasury]);
+
+  // Flush submission states when wallet is disconnected
+  useEffect(() => {
+    if (!walletAddress) {
+      setActivityText("");
+      setShowForm(false);
+      setIsRunning(false);
+      setPipeline(makePipeline());
+      setLogs([]);
+      setTxHash(null);
+      setRewardXlm(null);
+    }
+  }, [walletAddress]);
 
   // ── Wallet actions ─────────────────────────────────────────────────────────
 
@@ -404,6 +427,7 @@ export default function App() {
                   userName="Xander"
                   history={history}
                   walletAddress={walletAddress}
+                  userAvatar={userAvatar}
                   onSubmitActivityClick={() => {
                     if (!walletAddress) {
                       setTab('wallet');
@@ -437,7 +461,12 @@ export default function App() {
             )}
             {tab === 'profile' && (
               <div key="profile" className="p-5">
-                <StudentProfile walletAddress={walletAddress} history={history} />
+                <StudentProfile
+                  walletAddress={walletAddress}
+                  history={history}
+                  userAvatar={userAvatar}
+                  onAvatarChange={handleAvatarChange}
+                />
               </div>
             )}
           </AnimatePresence>
