@@ -7,7 +7,6 @@ import {
 import {
   CONTRACT_ID,
   getTreasuryInfo,
-  sendRewardOnChain,
   type TreasuryInfo
 } from './contract';
 import {
@@ -74,8 +73,7 @@ function App() {
   const isAdmin = walletAddress !== null && treasuryInfo !== null && walletAddress === treasuryInfo.admin;
 
   // Activity submission form
-  const [activityText, setActivityText]         = useState<string>("");
-  const [recipientAddress, setRecipientAddress] = useState<string>("");
+  const [activityText, setActivityText] = useState<string>("");
 
   // Pipeline state
   const [pipeline, setPipeline]   = useState<PipelineStep[]>(INITIAL_PIPELINE);
@@ -200,13 +198,8 @@ function App() {
 
   const handleSubmitActivity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!walletAddress)    { setErrorMessage("Connect your wallet first."); return; }
-    if (!isAdmin)          { setErrorMessage("Only the treasury admin can send rewards."); return; }
+    if (!walletAddress)       { setErrorMessage("Connect your wallet first."); return; }
     if (!activityText.trim()) { setErrorMessage("Enter an activity description."); return; }
-    if (!recipientAddress.trim() || !recipientAddress.startsWith("G") || recipientAddress.length !== 56) {
-      setErrorMessage("Enter a valid student Stellar public key (G... 56 chars).");
-      return;
-    }
 
     setIsRunning(true);
     setErrorMessage(null);
@@ -246,32 +239,32 @@ function App() {
       setRewardXlm(rwdResult.reward);
       updateStep(2, { status: 'done', detail: `Reward assigned: ${rwdResult.reward} XLM` });
 
-      // ── Step 3: Stellar Agent (on-chain) ──────────────────────────────────────
-      updateStep(3, { status: 'running', detail: 'Sending XLM on Stellar testnet...' });
+      // ── Step 3: Stellar Agent (server-side via Vercel API) ───────────────────
+      updateStep(3, { status: 'running', detail: 'Sending reward via secure API...' });
+      setStatusMessage("Submitting to Stellar testnet...");
       let hash: string;
       try {
-        hash = await sendRewardOnChain(
-          walletAddress,
-          recipientAddress,
-          rwdResult.reward,
-          (msg) => {
-            updateStep(3, { detail: msg });
-            setStatusMessage(msg);
-          },
-          currentContractId
-        );
+        const apiRes = await fetch('/api/reward', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ activity: activityText, wallet: walletAddress }),
+        });
+        const data = await apiRes.json() as { txHash?: string; reward?: number; error?: string };
+        if (!apiRes.ok || !data.txHash) {
+          throw new Error(data.error ?? `API error ${apiRes.status}`);
+        }
+        hash = data.txHash;
       } catch (err) {
         updateStep(3, { status: 'error', detail: 'Transaction failed.' });
         const msg = (err as Error).message ?? String(err);
-        // Level 2: 3 error types handled
-        if (msg.includes("User declined")) {
-          setErrorMessage("Wallet Error: Signature request rejected by user.");
-        } else if (msg.toLowerCase().includes("insufficient")) {
+        if (msg.toLowerCase().includes("insufficient")) {
           setErrorMessage("Transaction Error: Insufficient treasury balance to cover this reward.");
-        } else if (msg.includes("404") || msg.includes("not found")) {
+        } else if (msg.includes("404") || msg.toLowerCase().includes("not found")) {
           setErrorMessage("Network Error: Contract or account not found on Stellar testnet.");
+        } else if (msg.includes("429") || msg.toLowerCase().includes("rate limit")) {
+          setErrorMessage(`Rate Limit: ${msg}`);
         } else {
-          setErrorMessage(`Contract Error: ${msg}`);
+          setErrorMessage(`API Error: ${msg}`);
         }
         setIsRunning(false);
         return;
@@ -290,7 +283,6 @@ function App() {
       await fetchBalance(walletAddress);
       void loadTreasuryInfo(currentContractId);
       setActivityText("");
-      setRecipientAddress("");
 
     } catch (err) {
       setErrorMessage(`Unexpected error: ${(err as Error).message ?? String(err)}`);
@@ -439,13 +431,13 @@ function App() {
           {/* ── Column 1: Activity Submission ── */}
           <section className="dashboard-section">
             <div className="section-header">
-              <h2>Submit Student Activity</h2>
-              <span className="badge">{isAdmin ? 'Admin Mode' : 'Read-Only'}</span>
+              <h2>Submit Your Activity</h2>
+              <span className="badge">{walletAddress ? 'Ready' : 'Connect Wallet'}</span>
             </div>
 
             <form onSubmit={handleSubmitActivity} className="bill-setup-form">
               <div className="form-group">
-                <label>What did the student do?</label>
+                <label>What did you do?</label>
                 <textarea
                   className="text-input"
                   rows={3}
@@ -460,22 +452,10 @@ function App() {
                 </span>
               </div>
 
-              <div className="form-group">
-                <label>Student Wallet Address (recipient)</label>
-                <input
-                  type="text"
-                  className="text-input"
-                  required
-                  placeholder="G... (56 chars)"
-                  value={recipientAddress}
-                  onChange={(e) => setRecipientAddress(e.target.value)}
-                />
-              </div>
-
               <button
                 type="submit"
                 className="btn-submit-bill"
-                disabled={!walletAddress || !isAdmin || isRunning}
+                disabled={!walletAddress || isRunning}
               >
                 {isRunning
                   ? <><RefreshCw className="btn-icon spin-icon" /> Processing...</>
@@ -485,12 +465,7 @@ function App() {
 
               {!walletAddress && (
                 <p className="info-text" style={{ textAlign: 'center', marginTop: 8 }}>
-                  Connect wallet to submit rewards.
-                </p>
-              )}
-              {walletAddress && !isAdmin && (
-                <p className="info-text" style={{ textAlign: 'center', marginTop: 8 }}>
-                  Only the treasury admin can send rewards.
+                  Connect your wallet to submit activities and earn XLM.
                 </p>
               )}
             </form>
@@ -542,7 +517,7 @@ function App() {
                 <div className="card-splits">
                   <div className="split-item">
                     <span className="lbl">Recipient</span>
-                    <span className="val">{recipientAddress.slice(0, 8)}...{recipientAddress.slice(-8)}</span>
+                    <span className="val">{walletAddress ? `${walletAddress.slice(0, 8)}...${walletAddress.slice(-8)}` : '—'}</span>
                   </div>
                   <div className="split-item">
                     <span className="lbl">Amount</span>

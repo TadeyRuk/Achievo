@@ -1,0 +1,15 @@
+{
+  "name": "achievo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "vercel-build": "cd frontend && npm install && npm run build"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^13.3.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^5.1.5",
+    "typescript": "~6.0.2"
+  }
+}
