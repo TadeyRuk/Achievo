@@ -68,6 +68,7 @@ export default function App() {
   const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState<boolean>(false);
   const [showDisconnectSuccess, setShowDisconnectSuccess] = useState<boolean>(false);
+  const [showInfo, setShowInfo] = useState<boolean>(false);
 
   // Scroll reference for auto-scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -321,7 +322,7 @@ export default function App() {
       {/* Phone frame — navy bezel on desktop, full-bleed on mobile */}
       <div className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[10px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#000666]/35">
 
-        <Navbar />
+        <Navbar onInfoClick={() => setShowInfo(true)} />
 
         {/* Scrollable tab content */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-[84px] pb-28 custom-scrollbar">
@@ -427,6 +428,105 @@ export default function App() {
         </div>
 
         <BottomNav activeTab={tab} onTabChange={setTab} />
+
+        {/* Info Bottom Sheet */}
+        <AnimatePresence>
+          {showInfo && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#00162b]/40 backdrop-blur-sm z-50 flex items-end"
+              onClick={() => setShowInfo(false)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 260 }}
+                className="w-full bg-white rounded-t-[28px] overflow-hidden max-h-[85%] flex flex-col"
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Handle bar */}
+                <div className="flex justify-center pt-3 pb-1 shrink-0">
+                  <div className="w-10 h-1 rounded-full bg-[var(--dah-outline-variant)]" />
+                </div>
+
+                <div className="overflow-y-auto px-6 pb-8 pt-2 space-y-6">
+                  {/* Title */}
+                  <div>
+                    <h2 className="text-[22px] font-extrabold text-[var(--dah-primary)] tracking-tight font-display">How Achievo Works</h2>
+                    <p className="text-[13px] text-[var(--dah-on-surface-variant)] mt-1">AI pipeline + effort-based XLM rewards</p>
+                  </div>
+
+                  {/* Pipeline Steps */}
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--dah-outline)]">5-Agent Pipeline</p>
+                    {[
+                      { num: "1", name: "Activity Agent",     desc: "Keyword pre-scan of your submission for a fast category hint." },
+                      { num: "2", name: "Verification Agent", desc: "Confirms the activity is on the approved whitelist." },
+                      { num: "3", name: "Reward Agent",       desc: "Groq AI classifies the activity and scores your effort (0–1) to calculate final XLM." },
+                      { num: "4", name: "Stellar Agent",      desc: "Admin key signs and submits send_reward() to the Soroban treasury contract on-chain." },
+                      { num: "5", name: "Feedback Agent",     desc: "Returns your tx hash and reward amount for display." },
+                    ].map(s => (
+                      <div key={s.num} className="flex gap-3 items-start p-3 rounded-[16px] bg-[var(--dah-surface-low)]">
+                        <div className="w-7 h-7 rounded-full bg-[var(--dah-primary)] text-white text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">{s.num}</div>
+                        <div>
+                          <p className="text-[13px] font-extrabold text-[var(--dah-on-surface)]">{s.name}</p>
+                          <p className="text-[12px] text-[var(--dah-on-surface-variant)] leading-snug">{s.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Effort Scoring */}
+                  <div className="space-y-2">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--dah-outline)]">Effort-Based Scoring</p>
+                    <div className="p-4 rounded-[16px] bg-[#fff8e6] border border-[#ffbf21]/30 space-y-2">
+                      <p className="text-[13px] font-extrabold text-[#6e4f00]">reward = base + (effort × max bonus)</p>
+                      <p className="text-[12px] text-[#8a6200] leading-relaxed">
+                        The AI scores your description from 0.0 to 1.0 based on specificity, duration, scope, and impact. A vague one-liner scores low; a detailed account with context scores high.
+                      </p>
+                    </div>
+                    <div className="rounded-[16px] overflow-hidden border border-[var(--dah-outline-variant)]/40">
+                      <table className="w-full text-[12px]">
+                        <thead>
+                          <tr className="bg-[var(--dah-surface-low)]">
+                            <th className="text-left px-3 py-2 font-extrabold text-[var(--dah-on-surface)]">Activity</th>
+                            <th className="text-center px-2 py-2 font-extrabold text-[var(--dah-on-surface)]">Base</th>
+                            <th className="text-center px-2 py-2 font-extrabold text-[var(--dah-on-surface)]">Max</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { a: "Volunteering",  base: "10", max: "15" },
+                            { a: "Tutoring",      base: "5",  max: "10" },
+                            { a: "Workshop",      base: "2",  max: "5"  },
+                            { a: "Event",         base: "3",  max: "5"  },
+                            { a: "Participation", base: "3",  max: "5"  },
+                          ].map((r, i) => (
+                            <tr key={r.a} className={i % 2 === 0 ? "bg-white" : "bg-[var(--dah-surface-low)]/40"}>
+                              <td className="px-3 py-2 font-semibold text-[var(--dah-on-surface)]">{r.a}</td>
+                              <td className="px-2 py-2 text-center text-[var(--dah-outline)]">{r.base} XLM</td>
+                              <td className="px-2 py-2 text-center font-extrabold text-[var(--dah-primary)]">{r.max} XLM</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setShowInfo(false)}
+                    className="w-full py-3.5 rounded-full bg-[var(--dah-primary)] text-white font-extrabold text-[14px] font-display"
+                  >
+                    Got it
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Wallet Connection Success Prompt Modal Overlay */}
         <AnimatePresence>
