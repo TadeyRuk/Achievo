@@ -62,8 +62,10 @@ export default function App() {
     }
   });
 
-  // Success modal state for wallet connections
+  // Success modal states for wallet actions
   const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
+  const [showDisconnectSuccess, setShowDisconnectSuccess] = useState<boolean>(false);
+
 
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -120,6 +122,7 @@ export default function App() {
     setTreasuryInfo(null);
     setTxHash(null);
     setRewardXlm(null);
+    setShowDisconnectSuccess(true);
   };
 
   const handleFund = async () => {
@@ -411,6 +414,53 @@ export default function App() {
 
                 <button
                   onClick={() => setShowConnectSuccess(false)}
+                  className="w-full py-3 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[13px] font-display uppercase tracking-wider transition-all shadow-md active:scale-95"
+                >
+                  Got it
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Wallet Disconnection Success Prompt Modal Overlay */}
+        <AnimatePresence>
+          {showDisconnectSuccess && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#00162b]/40 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                animate={{ scale: 1, y: 0, opacity: 1 }}
+                exit={{ scale: 0.9, y: 20, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className="bg-white rounded-[32px] p-6 text-center max-w-[300px] shadow-2xl space-y-4.5 border border-slate-100"
+              >
+                {/* Animated checkmark circle */}
+                <div className="w-16 h-16 bg-slate-500/10 rounded-full flex items-center justify-center mx-auto text-slate-500">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -45 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
+                  >
+                    <CheckCircle2 className="w-9 h-9" />
+                  </motion.div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-[20px] font-extrabold text-[#00162b] font-display">
+                    Wallet Disconnected
+                  </h3>
+                  <p className="text-[12.5px] text-[var(--dah-on-surface-variant)] leading-relaxed font-semibold">
+                    Your Stellar wallet has been safely disconnected. Academic reward payouts are paused until linked again.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowDisconnectSuccess(false)}
                   className="w-full py-3 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[13px] font-display uppercase tracking-wider transition-all shadow-md active:scale-95"
                 >
                   Got it
