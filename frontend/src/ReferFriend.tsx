@@ -236,45 +236,39 @@ export function ReferFriend({ onBack, userName }: ReferFriendProps) {
           <div className="grid grid-cols-3 gap-3">
 
             {/* Step 1 */}
-            <div className="relative flex flex-col items-center text-center bg-white rounded-[24px] p-4 border border-[#eef1f6] shadow-sm overflow-hidden">
-              {/* Subtle bg accent */}
-              <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-[#ffbe42]/10 pointer-events-none" />
-              {/* Number badge */}
-              <div className="w-7 h-7 rounded-full bg-[#001540] text-white text-[11px] font-black flex items-center justify-center mb-3 shadow-md">
+            <div className="flex flex-col items-center text-center bg-white rounded-[24px] p-4 border border-gray-100 shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-gray-900 text-white text-[11px] font-black flex items-center justify-center mb-3">
                 1
               </div>
-              {/* Icon */}
-              <div className="w-12 h-12 rounded-2xl bg-[#fff4d6] flex items-center justify-center mb-3">
-                <Users className="w-6 h-6 text-[#f5a623]" strokeWidth={1.8} />
+              <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                <Users className="w-6 h-6 text-gray-500" strokeWidth={1.8} />
               </div>
-              <p className="text-[11px] font-bold text-[#00162b] leading-snug">Invite a friend</p>
-              <p className="text-[10px] text-gray-400 font-semibold mt-1 leading-snug">Share your link or code</p>
+              <p className="text-[11px] font-bold text-gray-900 leading-snug">Invite a friend</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-1 leading-snug">Share your link or code</p>
             </div>
 
             {/* Step 2 */}
-            <div className="relative flex flex-col items-center text-center bg-white rounded-[24px] p-4 border border-[#eef1f6] shadow-sm overflow-hidden">
-              <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-blue-500/10 pointer-events-none" />
-              <div className="w-7 h-7 rounded-full bg-[#0f3b8c] text-white text-[11px] font-black flex items-center justify-center mb-3 shadow-md">
+            <div className="flex flex-col items-center text-center bg-white rounded-[24px] p-4 border border-gray-100 shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-gray-900 text-white text-[11px] font-black flex items-center justify-center mb-3">
                 2
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-[#eff4ff] flex items-center justify-center mb-3">
-                <UserCheck className="w-6 h-6 text-[#3b6fd4]" strokeWidth={1.8} />
+              <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                <UserCheck className="w-6 h-6 text-gray-500" strokeWidth={1.8} />
               </div>
-              <p className="text-[11px] font-bold text-[#00162b] leading-snug">They join & complete</p>
-              <p className="text-[10px] text-gray-400 font-semibold mt-1 leading-snug">First verified activity</p>
+              <p className="text-[11px] font-bold text-gray-900 leading-snug">They join & complete</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-1 leading-snug">First verified activity</p>
             </div>
 
             {/* Step 3 */}
-            <div className="relative flex flex-col items-center text-center bg-gradient-to-b from-[#001e4d] to-[#001040] rounded-[24px] p-4 shadow-md overflow-hidden">
-              <div className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-[#ffbe42]/20 pointer-events-none" />
-              <div className="w-7 h-7 rounded-full bg-[#ffbe42] text-[#001040] text-[11px] font-black flex items-center justify-center mb-3 shadow-md">
+            <div className="flex flex-col items-center text-center bg-white rounded-[24px] p-4 border border-gray-100 shadow-sm">
+              <div className="w-7 h-7 rounded-full bg-gray-900 text-white text-[11px] font-black flex items-center justify-center mb-3">
                 3
               </div>
-              <div className="w-12 h-12 rounded-2xl bg-[#ffbe42]/20 flex items-center justify-center mb-3">
-                <Gift className="w-6 h-6 text-[#ffbe42]" strokeWidth={1.8} />
+              <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                <Gift className="w-6 h-6 text-gray-500" strokeWidth={1.8} />
               </div>
-              <p className="text-[11px] font-bold text-white leading-snug">Both get rewarded</p>
-              <p className="text-[10px] text-[#ffbe42] font-bold mt-1 leading-snug">150 XLM each!</p>
+              <p className="text-[11px] font-bold text-gray-900 leading-snug">Both get rewarded</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-1 leading-snug">150 XLM each!</p>
             </div>
 
           </div>
