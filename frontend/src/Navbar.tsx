@@ -1,11 +1,31 @@
 import { RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { CustomCircleInformation } from "./customIcons";
 
 interface NavbarProps {
   onInfoClick?: () => void;
 }
 
+async function hardRefresh() {
+  if (!navigator.onLine) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg?.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+  } catch {}
+  window.location.reload();
+}
+
 export function Navbar({ onInfoClick }: NavbarProps) {
+  const [spinning, setSpinning] = useState(false);
+
+  const handleRefresh = async () => {
+    if (spinning) return;
+    setSpinning(true);
+    await hardRefresh();
+  };
+
   return (
     <header className="px-4 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-[60]">
       {/* Gradual blur layer — sits behind all navbar content */}
@@ -46,10 +66,11 @@ export function Navbar({ onInfoClick }: NavbarProps) {
         style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
       >
         <button
-          className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all"
-          disabled
+          onClick={handleRefresh}
+          disabled={spinning}
+          className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all disabled:opacity-60"
         >
-          <RefreshCw className="w-4.5 h-4.5" />
+          <RefreshCw className={`w-4.5 h-4.5 ${spinning ? "animate-spin" : ""}`} />
         </button>
       </div>
     </header>
