@@ -2,13 +2,13 @@ import { HelpCircle } from "lucide-react";
 
 export function Navbar() {
   return (
-    <header className="px-6 py-4 flex items-center justify-between bg-[var(--dah-surface)] sticky top-0 z-50 shrink-0">
+    <header className="px-6 py-1.5 flex items-center justify-between bg-[var(--dah-surface)] sticky top-0 z-50 shrink-0">
       {/* Achievo logo image */}
       <div className="flex items-center gap-2">
         <img
           src="/logo.png"
           alt="Achievo Logo"
-          className="w-18 h-18 object-contain"
+          className="h-13 w-auto object-contain"
         />
         <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[var(--dah-primary)] hidden">Achievo</span>
       </div>
