@@ -20,16 +20,77 @@ interface WalletProfileProps {
 
 
 /* Smooth bezier curve line chart for weekly earnings trend */
-function WeeklyEarningsTrendChart() {
+function WeeklyEarningsTrendChart({ history }: { history: RewardHistoryItem[] }) {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  // 1. Get day index from Monday (0) to Sunday (6)
+  const getDayIndex = (date: Date) => {
+    const day = date.getDay();
+    return day === 0 ? 6 : day - 1;
+  };
+
+  const today = new Date();
+  const currentDayIndex = getDayIndex(today);
+
+  // 2. Monday of the current week at 00:00:00 local time
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - currentDayIndex);
+  startOfWeek.setHours(0, 0, 0, 0);
+  const startOfWeekMs = startOfWeek.getTime();
+
+  // 3. Populate daily earnings
+  const dailyEarnings = [0, 0, 0, 0, 0, 0, 0];
+  if (history && history.length > 0) {
+    history.forEach(item => {
+      const itemDate = new Date(item.timestamp);
+      if (item.timestamp >= startOfWeekMs) {
+        const idx = getDayIndex(itemDate);
+        if (idx >= 0 && idx < 7) {
+          dailyEarnings[idx] += item.reward;
+        }
+      }
+    });
+  }
+
+  // 4. Calculate scaling values (minimum max value of 10 XLM)
+  const maxVal = Math.max(...dailyEarnings, 10);
+  const midVal = maxVal / 2;
+
+  // 5. Generate coordinates
+  const points = dailyEarnings.map((val, i) => {
+    const x = 10 + i * (280 / 6);
+    const y = 110 - (val / maxVal) * 100;
+    return { x, y };
+  });
+
+  // 6. Generate cubic bezier spline path
+  const getBezierPath = (pts: { x: number; y: number }[]) => {
+    if (pts.length === 0) return "";
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i];
+      const p1 = pts[i + 1];
+      const cp1x = p0.x + (p1.x - p0.x) / 3;
+      const cp1y = p0.y;
+      const cp2x = p0.x + 2 * (p1.x - p0.x) / 3;
+      const cp2y = p1.y;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`;
+    }
+    return d;
+  };
+
+  const linePath = getBezierPath(points);
+  const fillPath = `${linePath} L ${points[points.length - 1].x} 110 L ${points[0].x} 110 Z`;
+  const todayPoint = points[currentDayIndex];
+
   return (
     <div className="space-y-4">
       {/* Chart container */}
       <div className="relative flex items-stretch h-36">
         {/* Y Axis Labels */}
         <div className="w-12 flex flex-col justify-between text-[10px] font-bold text-[var(--dah-outline)] pr-2 py-1 select-none text-right">
-          <span>10 XLM</span>
-          <span>5 XLM</span>
+          <span>{maxVal.toFixed(0)} XLM</span>
+          <span>{midVal.toFixed(0)} XLM</span>
           <span className="mt-auto">0 XLM</span>
         </div>
         
@@ -50,19 +111,19 @@ function WeeklyEarningsTrendChart() {
             
             {/* Area under the curve */}
             <path
-              d="M 10 105 C 40 90, 60 70, 90 62 C 120 54, 150 50, 185 85 C 220 120, 240 45, 270 25 C 285 15, 290 20, 300 30 L 300 110 L 10 110 Z"
+              d={fillPath}
               fill="url(#chart-fill-gradient)"
             />
             {/* Smooth Bezier Line Stroke */}
             <path
-              d="M 10 105 C 40 90, 60 70, 90 62 C 120 54, 150 50, 185 85 C 220 120, 240 45, 270 25 C 285 15, 290 20, 300 30"
+              d={linePath}
               fill="none"
               stroke="#ffbf21"
               strokeWidth="3.5"
               strokeLinecap="round"
             />
             {/* Highlight point on the peak */}
-            <circle cx="270" cy="25" r="4.5" fill="var(--dah-primary)" stroke="#ffbf21" strokeWidth="2" />
+            <circle cx={todayPoint.x} cy={todayPoint.y} r="4.5" fill="var(--dah-primary)" stroke="#ffbf21" strokeWidth="2" />
           </svg>
         </div>
       </div>
@@ -166,7 +227,7 @@ export function WalletProfile({
                 +12% vs last week
               </span>
             </div>
-            <WeeklyEarningsTrendChart />
+            <WeeklyEarningsTrendChart history={history} />
           </div>
 
           {/* Funding Prompt for fresh testnet accounts */}
