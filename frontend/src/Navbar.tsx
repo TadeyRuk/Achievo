@@ -1,3 +1,4 @@
+import { Rewind } from "lucide-react";
 import { CustomCircleInformation } from "./customIcons";
 
 interface NavbarProps {
@@ -7,28 +8,45 @@ interface NavbarProps {
 export function Navbar({ onInfoClick }: NavbarProps) {
   return (
     <header
-      className="px-9 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-[60] border-b border-[var(--dah-outline-variant)]/25"
+      className="px-4 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-[60] border-b border-[var(--dah-outline-variant)]/25"
       style={{
         backgroundColor: "rgba(255, 255, 255, 0.15)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
       }}
     >
-      <div className="flex items-center gap-2">
-        <img
-          src="/only_name.png"
-          alt="Achievo Logo"
-          className="h-8 w-auto object-contain"
-        />
-        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-[var(--dah-primary)] hidden">Achievo</span>
+      {/* Left — info icon in pill cutout */}
+      <div
+        className="flex items-center px-2 py-1 rounded-full border border-[var(--dah-outline-variant)]/40"
+        style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
+      >
+        <button
+          onClick={onInfoClick}
+          className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all"
+        >
+          <CustomCircleInformation className="w-5.5 h-5.5" />
+        </button>
       </div>
 
-      <button
-        onClick={onInfoClick}
-        className="w-9 h-9 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:bg-[var(--dah-surface-low)] hover:text-[var(--dah-primary)] transition-all"
+      {/* Center — logo */}
+      <img
+        src="/only_name.png"
+        alt="Achievo"
+        className="h-8 w-auto object-contain absolute left-1/2 -translate-x-1/2"
+      />
+
+      {/* Right — rewind icon in pill cutout */}
+      <div
+        className="flex items-center px-2 py-1 rounded-full border border-[var(--dah-outline-variant)]/40"
+        style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
       >
-        <CustomCircleInformation className="w-5.5 h-5.5" />
-      </button>
+        <button
+          className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all"
+          disabled
+        >
+          <Rewind className="w-4.5 h-4.5" />
+        </button>
+      </div>
     </header>
   );
 }
