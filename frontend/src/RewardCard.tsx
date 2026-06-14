@@ -13,7 +13,7 @@ export function RewardCard({ reward, txHash }: RewardCardProps) {
       initial={{ scale: 0.93, opacity: 0, y: 16 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="rounded-[24px] overflow-hidden mt-6 shadow-lg shadow-[var(--dah-secondary-container)]/25"
+      className="rounded-[28px] overflow-hidden shadow-2xl w-full border border-white/10"
     >
       {/* Gold shimmer hero card */}
       <div className="gold-shimmer p-6 relative overflow-hidden">
