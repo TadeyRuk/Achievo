@@ -233,11 +233,12 @@ export default function App() {
       let serverActivity: string = actResult.activity;
       try {
         const nonceRes = await fetch(`/api/nonce?wallet=${encodeURIComponent(walletAddress)}`);
-        const nonceData = await nonceRes.json() as {
-          nonce?: string; expiry?: number; mac?: string; challengeXdr?: string; error?: string;
-        };
+        const nonceRaw = await nonceRes.text();
+        let nonceData: { nonce?: string; expiry?: number; mac?: string; challengeXdr?: string; error?: string };
+        try { nonceData = JSON.parse(nonceRaw); }
+        catch { throw new Error(`Nonce API error ${nonceRes.status}: server returned non-JSON`); }
         if (!nonceRes.ok || !nonceData.challengeXdr) {
-          throw new Error(nonceData.error ?? 'Failed to get wallet challenge');
+          throw new Error(nonceData.error ?? `Nonce API error ${nonceRes.status}`);
         }
 
         setStep(3, { detail: 'Sign the challenge in your wallet…' });
@@ -262,8 +263,11 @@ export default function App() {
             signedXdr: signResult.signedTxXdr,
           }),
         });
-        const data = await apiRes.json() as { txHash?: string; reward?: number; activity?: string; reason?: string; error?: string };
-        if (!apiRes.ok || !data.txHash) throw new Error(data.error ?? `API error ${apiRes.status}`);
+        const rewardRaw = await apiRes.text();
+        let data: { txHash?: string; reward?: number; base?: number; bonus?: number; effortScore?: number; activity?: string; reason?: string; error?: string };
+        try { data = JSON.parse(rewardRaw); }
+        catch { throw new Error(`Reward API error ${apiRes.status}: server returned non-JSON`); }
+        if (!apiRes.ok || !data.txHash) throw new Error(data.error ?? `Reward API error ${apiRes.status}`);
         hash = data.txHash;
         serverReward = data.reward ?? rwdPreview.reward;
         serverActivity = data.activity ?? actResult.activity;
