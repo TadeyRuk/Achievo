@@ -231,10 +231,10 @@ export function Dashboard({
       </AnimatePresence>
 
       {/* Welcome Hero Card */}
-      <div className="bg-gradient-to-br from-[#061e38] via-[#0f3b8c] to-[#0a2752] rounded-[32px] p-6 text-white relative overflow-hidden shadow-xl shadow-[#0a2752]/20">
+      <div className="bg-[var(--dah-primary-container)] rounded-[32px] p-6 text-white relative overflow-hidden shadow-xl shadow-[var(--dah-primary-container)]/15">
         {/* Glowing backdrop decorative accents */}
-        <div className="absolute -top-12 -right-12 w-44 h-44 bg-blue-400/20 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
+        <div className="absolute -top-12 -right-12 w-44 h-44 bg-white/5 rounded-full pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full pointer-events-none" />
 
         <div className="relative">
           <h2 className="text-[24px] font-extrabold tracking-tight leading-tight font-display">
@@ -267,7 +267,7 @@ export function Dashboard({
               <ProgressCircle value={todayCount} max={3} />
               <div className="flex flex-col">
                 <span className="text-[12px] font-bold text-white leading-none">Goal</span>
-                <span className="text-[9px] font-extrabold text-[#9ab0e5] tracking-wider uppercase mt-1.5 leading-none">
+                <span className="text-[9px] font-extrabold text-white/50 tracking-wider uppercase mt-1.5 leading-none">
                   ACTIVITIES
                 </span>
               </div>

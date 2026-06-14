@@ -9,7 +9,7 @@ export function Navbar({ onInfoClick }: NavbarProps) {
     <header
       className="px-9 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-50 border-b border-[var(--dah-outline-variant)]/25"
       style={{
-        backgroundColor: "rgba(255, 255, 255, 0.92)",
+        backgroundColor: "rgba(255, 255, 255, 0.15)",
         backdropFilter: "blur(16px)",
         WebkitBackdropFilter: "blur(16px)",
       }}
