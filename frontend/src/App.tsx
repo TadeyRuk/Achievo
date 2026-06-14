@@ -70,16 +70,27 @@ export default function App() {
 
   // Scroll reference for auto-scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // Ref for the RewardCard to auto-scroll into view when XLM is received
+  const rewardCardRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom as logs update or on completion
+  // Auto-scroll to bottom as logs update
   useEffect(() => {
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && !txHash) {
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
         behavior: "smooth"
       });
     }
   }, [logs, txHash]);
+
+  // Auto-scroll to RewardCard when XLM reward arrives
+  useEffect(() => {
+    if (txHash && rewardXlm !== null && rewardCardRef.current) {
+      setTimeout(() => {
+        rewardCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 350);
+    }
+  }, [txHash, rewardXlm]);
 
 
 
@@ -345,7 +356,9 @@ export default function App() {
                   <PipelineVisualizer steps={pipeline} logs={logs} />
                   
                   {txHash && rewardXlm !== null && (
-                    <RewardCard reward={rewardXlm} txHash={txHash} />
+                    <div ref={rewardCardRef}>
+                      <RewardCard reward={rewardXlm} txHash={txHash} />
+                    </div>
                   )}
                   
                   {txHash && !isRunning && (

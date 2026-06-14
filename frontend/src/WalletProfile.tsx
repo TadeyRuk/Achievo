@@ -164,6 +164,35 @@ export function WalletProfile({
     }
   };
 
+  // ── Weekly earnings trend vs last week ───────────────────────────────────
+  const weeklyTrendLabel = (() => {
+    const getDayIndex = (d: Date) => { const day = d.getDay(); return day === 0 ? 6 : day - 1; };
+    const today = new Date();
+    const currentDayIndex = getDayIndex(today);
+
+    const startOfThisWeek = new Date(today);
+    startOfThisWeek.setDate(today.getDate() - currentDayIndex);
+    startOfThisWeek.setHours(0, 0, 0, 0);
+
+    const startOfLastWeek = new Date(startOfThisWeek);
+    startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+
+    const startOfThisWeekMs = startOfThisWeek.getTime();
+    const startOfLastWeekMs = startOfLastWeek.getTime();
+
+    let thisWeek = 0, lastWeek = 0;
+    (history ?? []).forEach(item => {
+      if (item.timestamp >= startOfThisWeekMs) thisWeek += item.reward;
+      else if (item.timestamp >= startOfLastWeekMs) lastWeek += item.reward;
+    });
+
+    if (lastWeek === 0) {
+      return thisWeek > 0 ? "New this week" : "No data yet";
+    }
+    const pct = Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+    return pct >= 0 ? `+${pct}% vs last week` : `${pct}% vs last week`;
+  })();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -224,7 +253,7 @@ export function WalletProfile({
               <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)] font-display">Weekly Earnings Trend</span>
               <span className="flex items-center gap-1 text-[11.5px] text-[var(--dah-primary)] font-bold font-display">
                 <TrendingUp className="w-3.5 h-3.5" />
-                +12% vs last week
+                {weeklyTrendLabel}
               </span>
             </div>
             <WeeklyEarningsTrendChart history={history} />

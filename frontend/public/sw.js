@@ -1,86 +1,49 @@
-const CACHE_NAME = 'achievo-cache-v3';
-const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/favicon.svg'
-];
+// Bump this version any time you deploy new JS/CSS bundles to force
+// the old stale cache to be evicted on all clients (fixes blank screen on mobile).
+const CACHE_NAME = 'achievo-cache-v5';
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+self.addEventListener('install', () => {
+  // Take control immediately without waiting for old SW to finish.
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
+  // Delete ALL caches from previous versions.
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+    )
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests and skip API calls, Stellar network requests, etc.
+  // Only intercept GET requests. Let API, Stellar, and horizon pass through.
   if (
     event.request.method !== 'GET' ||
     event.request.url.includes('/api/') ||
     event.request.url.includes('stellar') ||
-    event.request.url.includes('horizon')
+    event.request.url.includes('horizon') ||
+    event.request.url.includes('fonts.googleapis') ||
+    event.request.url.includes('fonts.gstatic')
   ) {
     return;
   }
 
-  // Network-First strategy for page navigations (prevents blank screen due to stale index.html pointing to dead JS assets)
-  if (event.request.mode === 'navigate' || event.request.url.endsWith('/') || event.request.url.endsWith('/index.html')) {
-    event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return caches.match('/');
-        })
-    );
-    return;
-  }
-  
-  // Cache-First strategy for static assets
+  // Network-First for EVERYTHING (navigations + JS/CSS/images).
+  // This guarantees fresh JS chunks after a new deploy, preventing blank screens.
+  // Falls back to the cache only when truly offline.
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.ok) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
         }
-        const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
         return networkResponse;
-      }).catch(() => {
-        return caches.match('/');
-      });
-    })
+      })
+      .catch(() => caches.match(event.request).then(r => r || caches.match('/')))
   );
 });
