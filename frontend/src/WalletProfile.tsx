@@ -91,7 +91,7 @@ function WeeklyEarningsTrendChart({ history }: { history: RewardHistoryItem[] })
         <div className="w-12 flex flex-col justify-between text-[10px] font-bold text-[var(--dah-outline)] pr-2 py-1 select-none text-right">
           <span>{maxVal.toFixed(0)} XLM</span>
           <span>{midVal.toFixed(0)} XLM</span>
-          <span className="mt-auto">0 XLM</span>
+          <span>0 XLM</span>
         </div>
         
         {/* SVG Curve Line Chart */}
@@ -256,7 +256,7 @@ export function WalletProfile({
                 </div>
                 <div className="flex items-baseline gap-1 mt-1.5 font-display">
                   <span className="text-[26px] font-extrabold text-[var(--dah-primary)] leading-none">
-                    {totalEarned > 0 ? totalEarned.toFixed(1) : "124.0"}
+                    {totalEarned.toFixed(1)}
                   </span>
                   <span className="text-[12px] font-bold text-[var(--dah-outline)]">XLM</span>
                 </div>
@@ -270,7 +270,7 @@ export function WalletProfile({
                 </div>
                 <div className="flex items-baseline gap-1 mt-1.5 font-display">
                   <span className="text-[26px] font-extrabold text-[var(--dah-secondary)] leading-none">
-                    4.2
+                    0.0
                   </span>
                   <span className="text-[12px] font-bold text-[var(--dah-outline)]">XLM</span>
                 </div>
