@@ -27,7 +27,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="flex-1 flex flex-col items-center gap-1 py-1 relative transition-all"
+              className="flex-1 flex flex-col items-center justify-center py-1 relative transition-all"
             >
               {/* Icon Container with M3 gold active pill indicator behind */}
               <div
@@ -42,15 +42,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
                   strokeWidth={isActive ? 2.5 : 2}
                 />
               </div>
-              <span
-                className={`text-[10px] font-bold tracking-[0.01em] transition-colors duration-300 ${
-                  isActive
-                    ? "text-[#00162b] font-extrabold"
-                    : "text-[var(--dah-outline)]"
-                }`}
-              >
-                {tab.label}
-              </span>
+
             </button>
           );
         })}
