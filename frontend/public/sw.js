@@ -1,4 +1,4 @@
-const CACHE_NAME = 'achievo-cache-v2';
+const CACHE_NAME = 'achievo-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -42,7 +42,28 @@ self.addEventListener('fetch', (event) => {
   ) {
     return;
   }
+
+  // Network-First strategy for page navigations (prevents blank screen due to stale index.html pointing to dead JS assets)
+  if (event.request.mode === 'navigate' || event.request.url.endsWith('/') || event.request.url.endsWith('/index.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match('/');
+        })
+    );
+    return;
+  }
   
+  // Cache-First strategy for static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -58,7 +79,6 @@ self.addEventListener('fetch', (event) => {
         });
         return networkResponse;
       }).catch(() => {
-        // Simple offline fallback
         return caches.match('/');
       });
     })
