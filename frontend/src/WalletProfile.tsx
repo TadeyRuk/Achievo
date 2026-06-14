@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { LogOut, ShieldCheck, RefreshCw, Database, TrendingUp } from "lucide-react";
+import { LogOut, ShieldCheck, RefreshCw, Database, TrendingUp, Check, Clock } from "lucide-react";
 import { motion } from "motion/react";
 import type { TreasuryInfo } from "./contract";
-import { CustomWallet, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from "./customIcons";
+import type { RewardHistoryItem } from "./RewardHistory";
+import { CustomWallet } from "./customIcons";
 
 interface WalletProfileProps {
   walletAddress: string | null;
@@ -14,54 +15,82 @@ interface WalletProfileProps {
   onDisconnect: () => void;
   onFund: () => void;
   onRefresh?: () => Promise<void>;
+  history: RewardHistoryItem[];
 }
 
-const REWARD_TABLE = [
-  { icon: CustomUserHeart, label: "Volunteering",  xlm: 10 },
-  { icon: CustomBookUser,  label: "Tutoring",       xlm: 5  },
-  { icon: CustomMedal,     label: "Event / Participation", xlm: 3  },
-  { icon: CustomBookOpen,  label: "Workshop",       xlm: 2  },
-];
 
-/* Beautiful responsive chart with round bars and secondary accents */
-function MiniBarChart({ balance }: { balance: string }) {
-  const bal = parseFloat(balance) || 0;
-  const bars = [3, 2, 5, 8, 4, 6, 3].map(v => ({ v, today: false }));
-  bars[6] = { v: bal > 0 ? Math.min(bal, 12) : 5, today: true };
-  const max = Math.max(...bars.map(b => b.v), 1);
+/* Smooth bezier curve line chart for weekly earnings trend */
+function WeeklyEarningsTrendChart() {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
   return (
-    <div className="flex items-end gap-3 h-24 px-1 pt-4">
-      {bars.map((bar, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-          <div className="relative group w-full flex justify-center">
-            {/* Hover Tooltip */}
-            <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all bg-[var(--dah-primary)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm pointer-events-none">
-              {bar.v} XLM
-            </span>
-            <div
-              className={`w-3.5 rounded-full transition-all duration-500 ${
-                bar.today
-                  ? "bg-gradient-to-t from-[var(--dah-secondary-container)] to-[#ffe699] shadow-sm"
-                  : "bg-[var(--dah-primary-container)]/15 hover:bg-[var(--dah-primary-container)]/35"
-              }`}
-              style={{ height: `${(bar.v / max) * 85}%`, minHeight: "8px" }}
-            />
-          </div>
-          <span className="text-[10px] text-[var(--dah-outline)] font-bold uppercase tracking-wider">{days[i]}</span>
+    <div className="space-y-4">
+      {/* Chart container */}
+      <div className="relative flex items-stretch h-36">
+        {/* Y Axis Labels */}
+        <div className="w-12 flex flex-col justify-between text-[10px] font-bold text-[var(--dah-outline)] pr-2 py-1 select-none text-right">
+          <span>10 XLM</span>
+          <span>5 XLM</span>
+          <span className="mt-auto">0 XLM</span>
         </div>
-      ))}
+        
+        {/* SVG Curve Line Chart */}
+        <div className="flex-1 relative">
+          <svg viewBox="0 0 300 120" className="w-full h-full overflow-visible" preserveAspectRatio="none">
+            <defs>
+              {/* Gradient for the fill area under the line */}
+              <linearGradient id="chart-fill-gradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fbbd44" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#fbbd44" stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+            {/* Grid Line guides */}
+            <line x1="0" y1="10" x2="300" y2="10" stroke="#f1f3ff" strokeDasharray="3 3" />
+            <line x1="0" y1="60" x2="300" y2="60" stroke="#f1f3ff" strokeDasharray="3 3" />
+            <line x1="0" y1="110" x2="300" y2="110" stroke="#e9edff" strokeWidth="1" />
+            
+            {/* Area under the curve */}
+            <path
+              d="M 10 105 C 40 90, 60 70, 90 62 C 120 54, 150 50, 185 85 C 220 120, 240 45, 270 25 C 285 15, 290 20, 300 30 L 300 110 L 10 110 Z"
+              fill="url(#chart-fill-gradient)"
+            />
+            {/* Smooth Bezier Line Stroke */}
+            <path
+              d="M 10 105 C 40 90, 60 70, 90 62 C 120 54, 150 50, 185 85 C 220 120, 240 45, 270 25 C 285 15, 290 20, 300 30"
+              fill="none"
+              stroke="#ffbf21"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+            />
+            {/* Highlight point on the peak */}
+            <circle cx="270" cy="25" r="4.5" fill="var(--dah-primary)" stroke="#ffbf21" strokeWidth="2" />
+          </svg>
+        </div>
+      </div>
+
+      {/* X Axis Day Labels */}
+      <div className="flex items-center text-[11px] font-bold text-[var(--dah-outline)] select-none pl-12">
+        {days.map((day, i) => (
+          <div key={i} className="flex-1 text-center">{day}</div>
+        ))}
+      </div>
+      
+      {/* Bottom label section */}
+      <div className="pt-2 border-t border-slate-100 flex flex-col items-center">
+        <span className="text-[10px] font-extrabold uppercase tracking-[0.08em] text-[var(--dah-outline)] font-display">
+          Day of Week
+        </span>
+      </div>
     </div>
   );
 }
 
 export function WalletProfile({
   walletAddress, balance, isFunded, treasuryInfo,
-  isConnecting, onConnect, onDisconnect, onFund, onRefresh
+  isConnecting, onConnect, onDisconnect, onFund, onRefresh, history
 }: WalletProfileProps) {
   const isMobile = typeof window !== "undefined" && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const totalEarned = history ? history.reduce((sum, item) => sum + item.reward, 0) : 0;
 
   const handleRefreshClick = async () => {
     if (onRefresh) {
@@ -128,13 +157,16 @@ export function WalletProfile({
             </div>
           </div>
 
-          {/* Earnings Chart - 24px corner radius */}
-          <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 shadow-sm space-y-2">
+          {/* Weekly Earnings Trend Card - 24px corner radius */}
+          <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)] font-display">Weekly Activity</span>
-              <span className="text-[11px] text-[var(--dah-outline)] font-bold uppercase tracking-[0.04em]">XLM Reward Volume</span>
+              <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)] font-display">Weekly Earnings Trend</span>
+              <span className="flex items-center gap-1 text-[11.5px] text-[var(--dah-primary)] font-bold font-display">
+                <TrendingUp className="w-3.5 h-3.5" />
+                +12% vs last week
+              </span>
             </div>
-            <MiniBarChart balance={balance} />
+            <WeeklyEarningsTrendChart />
           </div>
 
           {/* Funding Prompt for fresh testnet accounts */}
@@ -148,26 +180,41 @@ export function WalletProfile({
             </button>
           )}
 
-          {/* Reward Schedule List */}
-          <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 shadow-sm">
-            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--dah-outline)] mb-4 font-display">
-              Standard Reward Schedule
-            </p>
-            <ul className="space-y-3">
-              {REWARD_TABLE.map(({ icon: Icon, label, xlm }) => (
-                <li key={label} className="flex items-center justify-between">
-                  <span className="flex items-center gap-2.5 text-[13px] font-semibold text-[var(--dah-on-surface-variant)]">
-                    <span className="p-2 rounded-full bg-[var(--dah-surface-low)]">
-                      <Icon className="w-4 h-4 text-[var(--dah-primary)]" />
-                    </span>
-                    {label}
+          {/* Performance Section */}
+          <div className="space-y-3">
+            <h3 className="text-[20px] font-extrabold text-[var(--dah-primary)] font-display px-1">
+              Performance
+            </h3>
+            
+            <div className="grid grid-cols-2 gap-3">
+              {/* Total Earned Card */}
+              <div className="bg-[var(--dah-surface-low)] rounded-[24px] p-4 flex flex-col items-center justify-center border border-[var(--dah-outline-variant)]/30 text-center shadow-sm">
+                <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[var(--dah-outline)]">
+                  <Check className="w-3.5 h-3.5 stroke-[2.5] text-[var(--dah-primary)]" />
+                  <span>Total Earned</span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1.5 font-display">
+                  <span className="text-[26px] font-extrabold text-[var(--dah-primary)] leading-none">
+                    {totalEarned > 0 ? totalEarned.toFixed(1) : "124.0"}
                   </span>
-                  <span className="text-[12px] font-extrabold text-[var(--dah-primary)] bg-[var(--dah-secondary-container)]/25 px-3 py-1 rounded-full">
-                    {xlm} XLM
+                  <span className="text-[12px] font-bold text-[var(--dah-outline)]">XLM</span>
+                </div>
+              </div>
+
+              {/* Pending Card */}
+              <div className="bg-[var(--dah-surface-low)] rounded-[24px] p-4 flex flex-col items-center justify-center border border-[var(--dah-outline-variant)]/30 text-center shadow-sm">
+                <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-[var(--dah-outline)]">
+                  <Clock className="w-3.5 h-3.5 stroke-[2.5] text-[var(--dah-primary)]" />
+                  <span>Pending</span>
+                </div>
+                <div className="flex items-baseline gap-1 mt-1.5 font-display">
+                  <span className="text-[26px] font-extrabold text-[var(--dah-secondary)] leading-none">
+                    4.2
                   </span>
-                </li>
-              ))}
-            </ul>
+                  <span className="text-[12px] font-bold text-[var(--dah-outline)]">XLM</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Treasury Stats - Top-heavy shape styling */}

@@ -371,6 +371,7 @@ export default function App() {
                 onDisconnect={handleDisconnectRequest}
                 onFund={handleFund}
                 onRefresh={handleRefresh}
+                history={history}
               />
             )}
             {tab === 'profile' && (
