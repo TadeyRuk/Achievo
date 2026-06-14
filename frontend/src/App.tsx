@@ -498,7 +498,6 @@ export default function App() {
             <div className="absolute inset-0 z-50 overflow-y-auto">
               <ReferFriend
                 userName="Xander"
-                onBack={() => setShowRefer(false)}
               />
             </div>
           )}

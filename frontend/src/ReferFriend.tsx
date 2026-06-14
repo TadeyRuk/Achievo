@@ -1,13 +1,12 @@
 import { useState } from "react";
-import { ArrowLeft, Copy, Share2, Mail, MessageCircle, HelpCircle, Users, UserCheck, Gift, Check } from "lucide-react";
+import { Copy, Share2, Mail, MessageCircle, HelpCircle, Users, UserCheck, Gift, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 interface ReferFriendProps {
-  onBack: () => void;
   userName: string;
 }
 
-export function ReferFriend({ onBack, userName }: ReferFriendProps) {
+export function ReferFriend({ userName }: ReferFriendProps) {
   const [copied, setCopied] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -59,36 +58,8 @@ export function ReferFriend({ onBack, userName }: ReferFriendProps) {
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="flex flex-col min-h-full bg-[#faf9ff]"
     >
-      {/* Sticky Header */}
-      <header
-        className="px-6 py-4 flex items-center justify-between sticky top-0 z-50 border-b border-[var(--dah-outline-variant)]/25"
-        style={{
-          backgroundColor: "rgba(255, 255, 255, 0.92)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer text-[#00162b] active:scale-95"
-          >
-            <ArrowLeft className="w-6 h-6" strokeWidth={2.5} />
-          </button>
-          <h2 className="text-[18px] font-extrabold text-[#00162b] font-display">
-            Refer a Friend
-          </h2>
-        </div>
-
-        <img
-          src="/only_logo.png"
-          alt="Achievo Logo"
-          className="h-7 w-7 object-contain rounded-full border border-slate-100 shadow-sm"
-        />
-      </header>
-
-      {/* Scrollable Content */}
-      <div className="flex-1 p-5 space-y-6 pb-32">
+      {/* Scrollable Content — pt clears the persistent app Navbar (~64px) */}
+      <div className="flex-1 p-5 pt-20 space-y-6 pb-32">
         {/* Toast Notification */}
         <AnimatePresence>
           {toastMessage && (
