@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShieldAlert, Lock, Check, Pencil, X } from "lucide-react";
+import { ShieldAlert, Lock, Check, Pencil, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
 import {
@@ -204,8 +204,31 @@ export function StudentProfile({
 
   const [selectedBadgeId, setSelectedBadgeId] = useState<string>("rank_bronze");
   const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [direction, setDirection] = useState<number>(1);
   const selectedBadge = badges.find(b => b.id === selectedBadgeId) || badges[0];
   const SelectedBadgeIcon = selectedBadge.icon;
+
+  const itemsPerPage = 9;
+  const totalPages = Math.ceil(AVATAR_OPTIONS.length / itemsPerPage);
+  const paginatedAvatars = AVATAR_OPTIONS.slice(
+    currentPage * itemsPerPage,
+    (currentPage + 1) * itemsPerPage
+  );
+  
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      setDirection(-1);
+      setCurrentPage(p => p - 1);
+    }
+  };
+  
+  const handleNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setDirection(1);
+      setCurrentPage(p => p + 1);
+    }
+  };
 
   return (
     <motion.div
@@ -219,7 +242,7 @@ export function StudentProfile({
         {/* Avatar with edit button */}
         <div className="relative shrink-0">
           <div 
-            onClick={() => setShowAvatarModal(true)}
+            onClick={() => { setCurrentPage(0); setShowAvatarModal(true); }}
             className="w-16 h-16 rounded-full overflow-hidden border border-gray-100 shadow-sm bg-[var(--dah-surface-low)] cursor-pointer relative group"
           >
             <img
@@ -235,7 +258,7 @@ export function StudentProfile({
           </div>
           {/* Pen Icon Badge in the bottom-right corner */}
           <button 
-            onClick={() => setShowAvatarModal(true)}
+            onClick={() => { setCurrentPage(0); setShowAvatarModal(true); }}
             className="absolute -bottom-1 -right-1 w-6 h-6 bg-[var(--dah-primary)] text-white hover:bg-[var(--dah-primary-container)] active:scale-90 transition-all rounded-full flex items-center justify-center border border-white shadow-sm cursor-pointer animate-none"
           >
             <Pencil className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -459,7 +482,7 @@ export function StudentProfile({
               animate={{ scale: 1, y: 0, opacity: 1 }}
               exit={{ scale: 0.95, y: 15, opacity: 0 }}
               transition={{ type: "spring", stiffness: 350, damping: 26 }}
-              className="bg-white rounded-[32px] w-full max-w-[380px] p-6 shadow-2xl relative border border-slate-100 flex flex-col max-h-[85vh]"
+              className="bg-white rounded-[32px] w-full max-w-[360px] p-6 shadow-2xl relative border border-slate-100 flex flex-col"
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
@@ -474,38 +497,100 @@ export function StudentProfile({
                 </button>
               </div>
 
-              {/* Grid Container (Scrollable) */}
-              <div className="overflow-y-auto py-4 pr-1 grid grid-cols-4 gap-3.5 custom-scrollbar min-h-0 flex-1">
-                {AVATAR_OPTIONS.map((avatar, idx) => {
-                  const isSelected = userAvatar === avatar.path;
-                  return (
-                    <motion.button
-                      key={idx}
-                      whileHover={{ scale: 1.08 }}
-                      whileTap={{ scale: 0.94 }}
-                      onClick={() => {
-                        onAvatarChange(avatar.path);
-                        setShowAvatarModal(false);
-                      }}
-                      className={`relative aspect-square rounded-[20px] overflow-hidden border bg-[var(--dah-surface-low)] cursor-pointer transition-all ${
-                        isSelected 
-                          ? "border-[var(--dah-primary)] ring-2 ring-[var(--dah-primary)]/30 ring-offset-1" 
-                          : "border-slate-100 hover:border-slate-300"
-                      }`}
-                    >
-                      <img
-                        src={avatar.path}
-                        alt={avatar.label}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </motion.button>
-                  );
-                })}
+              {/* Paginated Grid Container (Animated) */}
+              <div className="relative overflow-hidden py-5 min-h-[300px] flex items-center justify-center shrink-0">
+                <AnimatePresence initial={false} custom={direction} mode="wait">
+                  <motion.div
+                    key={currentPage}
+                    custom={direction}
+                    variants={{
+                      enter: (dir: number) => ({
+                        x: dir > 0 ? 120 : -120,
+                        opacity: 0,
+                      }),
+                      center: {
+                        x: 0,
+                        opacity: 1,
+                      },
+                      exit: (dir: number) => ({
+                        x: dir > 0 ? -120 : 120,
+                        opacity: 0,
+                      }),
+                    }}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{
+                      x: { type: "spring", stiffness: 300, damping: 30 },
+                      opacity: { duration: 0.15 },
+                    }}
+                    className="grid grid-cols-3 gap-4 w-full"
+                  >
+                    {paginatedAvatars.map((avatar) => {
+                      const isSelected = userAvatar === avatar.path;
+                      return (
+                        <motion.button
+                          key={avatar.path}
+                          whileHover={{ scale: 1.06 }}
+                          whileTap={{ scale: 0.94 }}
+                          onClick={() => {
+                            onAvatarChange(avatar.path);
+                            setShowAvatarModal(false);
+                          }}
+                          className={`relative w-full aspect-square rounded-[20px] overflow-hidden border bg-[var(--dah-surface-low)] cursor-pointer transition-all p-2.5 flex items-center justify-center ${
+                            isSelected 
+                              ? "border-[var(--dah-primary)] ring-2 ring-[var(--dah-primary)]/30 ring-offset-1" 
+                              : "border-slate-100 hover:border-slate-300"
+                          }`}
+                        >
+                          <img
+                            src={avatar.path}
+                            alt={avatar.label}
+                            className="w-full h-full object-contain block"
+                            loading="lazy"
+                          />
+                        </motion.button>
+                      );
+                    })}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center justify-between px-1 py-3 border-t border-b border-slate-100 shrink-0">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 0}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
+                    currentPage === 0
+                      ? "border-slate-100 text-slate-300 cursor-not-allowed"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <ChevronLeft className="w-4.5 h-4.5" strokeWidth={2.5} />
+                </motion.button>
+
+                <span className="text-[12.5px] font-bold text-slate-500 font-display">
+                  Page <span className="text-[#00162b] font-extrabold">{currentPage + 1}</span> of {totalPages}
+                </span>
+
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages - 1}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
+                    currentPage === totalPages - 1
+                      ? "border-slate-100 text-slate-300 cursor-not-allowed"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <ChevronRight className="w-4.5 h-4.5" strokeWidth={2.5} />
+                </motion.button>
               </div>
 
               {/* Footer */}
-              <div className="pt-4 border-t border-slate-100 shrink-0">
+              <div className="pt-4 shrink-0">
                 <button
                   onClick={() => setShowAvatarModal(false)}
                   className="w-full py-3 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[13px] font-display uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
