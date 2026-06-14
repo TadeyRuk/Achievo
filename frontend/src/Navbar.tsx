@@ -8,11 +8,12 @@ interface NavbarProps {
 export function Navbar({ onInfoClick }: NavbarProps) {
   return (
     <header className="px-4 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-[60]">
-      {/* Gradual blur layer — taller than header so blur fades further down */}
+      {/* Gradual blur layer — sits behind all navbar content */}
       <div
         className="absolute top-0 left-0 right-0 pointer-events-none"
         style={{
           height: "160px",
+          zIndex: -1,
           backdropFilter: "blur(14px)",
           WebkitBackdropFilter: "blur(14px)",
           maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
