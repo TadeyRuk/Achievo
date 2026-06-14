@@ -32,21 +32,21 @@ export function RewardCard({ reward, txHash, onClose }: RewardCardProps) {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 16 }}
         transition={{ type: "spring", stiffness: 320, damping: 22 }}
-        className="w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl"
+        className="w-full max-w-sm rounded-[28px] overflow-hidden shadow-2xl relative"
         onClick={e => e.stopPropagation()}
       >
+        {/* Close — card level so overflow-hidden can't clip it */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/15 hover:bg-black/25 transition-colors"
+        >
+          <X className="w-4 h-4 text-[var(--dah-primary)]" />
+        </button>
+
         {/* Gold hero */}
         <div className="gold-shimmer p-7 relative overflow-hidden text-center">
           <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/20 rounded-full pointer-events-none" />
           <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-[var(--dah-primary)]/10 rounded-full pointer-events-none" />
-
-          {/* Close */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 transition-colors"
-          >
-            <X className="w-4 h-4 text-[var(--dah-primary)]" />
-          </button>
 
           <div className="relative space-y-3">
             {/* Big XLM number */}
