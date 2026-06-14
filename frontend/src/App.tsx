@@ -11,6 +11,8 @@ import { PipelineVisualizer, type PipelineStep } from './components/PipelineVisu
 import { WalletProfile } from './components/WalletProfile';
 import { RewardCard } from './components/RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './components/RewardHistory';
+import { Wallet } from 'lucide-react';
+
 
 type Tab = 'home' | 'pipeline' | 'history' | 'wallet';
 
@@ -276,14 +278,41 @@ export default function App() {
         <div className="flex-1 overflow-y-auto pb-20 custom-scrollbar">
           <AnimatePresence mode="wait" initial={false}>
             {tab === 'home' && (
-              <ActivityForm
-                key="home"
-                text={activityText}
-                onChange={setActivityText}
-                onSubmit={handleSubmit}
-                isWalletConnected={!!walletAddress}
-                isSubmitting={isRunning}
-              />
+              !walletAddress ? (
+                <div key="home-disconnected" className="flex flex-col items-center justify-center h-full min-h-[500px] p-8 text-center space-y-6">
+                  {/* Gold circle with wallet icon */}
+                  <div className="relative w-32 h-32 rounded-full bg-[#ffe8ab] flex items-center justify-center shadow-inner">
+                    <div className="w-20 h-20 bg-white rounded-[24px] flex items-center justify-center shadow-md border border-white/10">
+                      <Wallet className="w-10 h-10 text-[#00162b]" strokeWidth={2.2} />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 max-w-[280px]">
+                    <h2 className="text-[22px] font-extrabold tracking-tight text-[var(--dah-primary)] font-display">
+                      Wallet Disconnected
+                    </h2>
+                    <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed font-semibold">
+                      To submit academic activities and earn on-chain rewards, you need to connect your wallet first.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setTab('wallet')}
+                    className="px-6 py-3.5 bg-[var(--dah-primary)] text-white hover:bg-[var(--dah-primary-container)] rounded-full font-extrabold text-[14px] shadow-md shadow-[var(--dah-primary)]/20 transition-all font-display uppercase tracking-wider active:scale-95"
+                  >
+                    Go to Wallet Tab
+                  </button>
+                </div>
+              ) : (
+                <ActivityForm
+                  key="home"
+                  text={activityText}
+                  onChange={setActivityText}
+                  onSubmit={handleSubmit}
+                  isWalletConnected={!!walletAddress}
+                  isSubmitting={isRunning}
+                />
+              )
             )}
             {tab === 'pipeline' && (
               <div key="pipeline" className="p-5">
