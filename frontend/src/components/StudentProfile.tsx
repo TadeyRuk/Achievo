@@ -76,7 +76,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
         </div>
         <div className="min-w-0 space-y-0.5">
           <h2 className="text-[20px] font-extrabold tracking-tight text-[var(--dah-primary)] font-display">
-            Alex Carter
+            Xander Dacillo
           </h2>
           <p className="text-[12px] text-[var(--dah-outline)] font-bold uppercase tracking-wider">
             Academic Explorer
