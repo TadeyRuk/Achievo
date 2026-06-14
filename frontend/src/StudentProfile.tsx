@@ -22,6 +22,29 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
   // Calculations
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
   const totalSubmissions = history.length;
+
+  // Dynamic streak — consecutive days with at least one reward (going back from today)
+  const streak = (() => {
+    if (history.length === 0) return 0;
+    // Get unique day strings "YYYY-MM-DD" that have rewards
+    const daySet = new Set(
+      history.map(item => new Date(item.timestamp).toLocaleDateString("en-CA"))
+    );
+    let count = 0;
+    const today = new Date();
+    // Allow streak to still be active if today has no entry yet (check from yesterday)
+    const startOffset = daySet.has(today.toLocaleDateString("en-CA")) ? 0 : 1;
+    for (let i = startOffset; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      if (daySet.has(d.toLocaleDateString("en-CA"))) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  })();
   
   // Dynamic Badge Unlocking
   const volunteeredCount = history.filter(h => h.activity.toLowerCase().includes("volunteer")).length;
@@ -132,7 +155,7 @@ export function StudentProfile({ walletAddress, history }: StudentProfileProps) 
         {[
           { label: "Rewards", value: `${totalEarned} XLM`, icon: CustomTrophy },
           { label: "Approved", value: totalSubmissions, icon: CustomClipboardList },
-          { label: "Streak", value: "3 Days", icon: CustomStar },
+          { label: "Streak", value: streak === 0 ? "No streak" : `${streak} Day${streak === 1 ? "" : "s"}`, icon: CustomStar },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
