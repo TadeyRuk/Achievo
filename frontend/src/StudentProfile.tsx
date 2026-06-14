@@ -309,6 +309,81 @@ export function StudentProfile({
         })}
       </div>
 
+      {/* Selected Badge Detail Card (Apple Fitness Style) */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={selectedBadge.id}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="bg-white rounded-[28px] border border-[var(--dah-outline-variant)] p-5 shadow-md flex items-center gap-4.5 relative overflow-hidden"
+        >
+          {/* Animated Floating Badge representation */}
+          <div className="relative shrink-0 w-20 h-20 flex items-center justify-center">
+            {selectedBadge.unlocked && (
+              <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${selectedBadge.rimColor} opacity-20 blur-xl`} />
+            )}
+            
+            <motion.div
+              animate={{ rotateY: 360 }}
+              transition={{ repeat: Infinity, duration: 9, ease: "linear" }}
+              style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+              className={`w-16 h-16 rounded-full p-[3px] shadow-xl flex items-center justify-center relative ${
+                selectedBadge.unlocked
+                  ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
+                  : "bg-gradient-to-tr from-slate-700/50 via-slate-600/50 to-slate-800/50"
+              }`}
+            >
+              <div className={`w-full h-full rounded-full flex items-center justify-center relative ${
+                selectedBadge.unlocked
+                  ? `bg-gradient-to-tr ${selectedBadge.innerColor}`
+                  : "bg-gradient-to-tr from-slate-800 to-slate-900"
+              }`}>
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-45 translate-y-[-30%]" />
+                <SelectedBadgeIcon className={`w-7 h-7 ${
+                  selectedBadge.unlocked
+                    ? `${selectedBadge.iconColor} filter drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.5)]`
+                    : "text-slate-600"
+                }`} />
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Badge details */}
+          <div className="space-y-1 min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h4 className="text-[16px] font-extrabold text-[var(--dah-primary)] font-display">
+                {selectedBadge.name}
+              </h4>
+              <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                selectedBadge.unlocked
+                  ? "bg-emerald-500/10 text-emerald-600"
+                  : "bg-slate-100 text-slate-500"
+              }`}>
+                {selectedBadge.unlocked ? "Earned" : "Locked"}
+              </span>
+            </div>
+            
+            <p className="text-[12.5px] text-[var(--dah-on-surface-variant)] leading-normal font-semibold">
+              {selectedBadge.desc}
+            </p>
+            
+            {selectedBadge.unlocked ? (
+              <p className="text-[10px] text-emerald-600 font-extrabold flex items-center gap-1 pt-0.5">
+                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                Unlocked & On-Chain Confirmed
+              </p>
+            ) : (
+              <p className="text-[10px] text-slate-500 font-extrabold flex items-center gap-1 pt-0.5">
+                <Lock className="w-3.5 h-3.5" />
+                Complete challenges to earn this badge
+              </p>
+            )}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
       {/* Badges / Achievements section */}
       <div className="space-y-4">
         <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--dah-outline)] px-1 font-display">
@@ -391,81 +466,6 @@ export function StudentProfile({
           })}
         </div>
       </div>
-
-      {/* Selected Badge Detail Card (Apple Fitness Style) */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={selectedBadge.id}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-white rounded-[28px] border border-[var(--dah-outline-variant)] p-5 shadow-md flex items-center gap-4.5 relative overflow-hidden"
-        >
-          {/* Animated Floating Badge representation */}
-          <div className="relative shrink-0 w-20 h-20 flex items-center justify-center">
-            {selectedBadge.unlocked && (
-              <div className={`absolute inset-0 rounded-full bg-gradient-to-tr ${selectedBadge.rimColor} opacity-20 blur-xl`} />
-            )}
-            
-            <motion.div
-              animate={{ rotateY: 360 }}
-              transition={{ repeat: Infinity, duration: 9, ease: "linear" }}
-              style={{ perspective: 1000, transformStyle: "preserve-3d" }}
-              className={`w-16 h-16 rounded-full p-[3px] shadow-xl flex items-center justify-center relative ${
-                selectedBadge.unlocked
-                  ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
-                  : "bg-gradient-to-tr from-slate-700/50 via-slate-600/50 to-slate-800/50"
-              }`}
-            >
-              <div className={`w-full h-full rounded-full flex items-center justify-center relative ${
-                selectedBadge.unlocked
-                  ? `bg-gradient-to-tr ${selectedBadge.innerColor}`
-                  : "bg-gradient-to-tr from-slate-800 to-slate-900"
-              }`}>
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-45 translate-y-[-30%]" />
-                <SelectedBadgeIcon className={`w-7 h-7 ${
-                  selectedBadge.unlocked
-                    ? `${selectedBadge.iconColor} filter drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.5)]`
-                    : "text-slate-600"
-                }`} />
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Badge details */}
-          <div className="space-y-1 min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h4 className="text-[16px] font-extrabold text-[var(--dah-primary)] font-display">
-                {selectedBadge.name}
-              </h4>
-              <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                selectedBadge.unlocked
-                  ? "bg-emerald-500/10 text-emerald-600"
-                  : "bg-slate-100 text-slate-500"
-              }`}>
-                {selectedBadge.unlocked ? "Earned" : "Locked"}
-              </span>
-            </div>
-            
-            <p className="text-[12.5px] text-[var(--dah-on-surface-variant)] leading-normal font-semibold">
-              {selectedBadge.desc}
-            </p>
-            
-            {selectedBadge.unlocked ? (
-              <p className="text-[10px] text-emerald-600 font-extrabold flex items-center gap-1 pt-0.5">
-                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                Unlocked & On-Chain Confirmed
-              </p>
-            ) : (
-              <p className="text-[10px] text-slate-500 font-extrabold flex items-center gap-1 pt-0.5">
-                <Lock className="w-3.5 h-3.5" />
-                Complete challenges to earn this badge
-              </p>
-            )}
-          </div>
-        </motion.div>
-      </AnimatePresence>
 
       {/* Avatar Selection Modal */}
       <AnimatePresence>
