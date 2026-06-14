@@ -13,7 +13,7 @@ import {
 } from '@stellar/stellar-sdk';
 import { createHmac } from 'crypto';
 
-const CONTRACT_ID = "CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ";
+const CONTRACT_ID = "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM";
 const STROOP_FACTOR = 10_000_000;
 
 const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
@@ -23,17 +23,26 @@ const walletLastReward = new Map<string, number>();
 const ipLastReward = new Map<string, number>();
 const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
 
-const REWARD_TABLE: Record<string, number> = {
-  tutoring: 5,
-  workshop: 2,
-  volunteering: 10,
-  event: 3,
+const BASE_REWARD: Record<string, number> = {
+  tutoring:      5,
+  workshop:      2,
+  volunteering:  10,
+  event:         3,
   participation: 3,
+};
+
+const MAX_BONUS: Record<string, number> = {
+  tutoring:      5,
+  workshop:      3,
+  volunteering:  5,
+  event:         2,
+  participation: 2,
 };
 
 interface GroqClassification {
   activity: string;
   valid: boolean;
+  effort_score: number; // 0.0–1.0
   reason: string;
 }
 
@@ -53,17 +62,20 @@ async function classifyWithGroq(activityText: string): Promise<GroqClassificatio
         {
           role: 'system',
           content:
-            'You are an activity classifier for a student reward system on Stellar blockchain. ' +
-            'Classify the student\'s activity into exactly one of these categories: ' +
-            'tutoring, workshop, volunteering, event, participation. ' +
-            'If it does not fit any category, set valid to false and activity to "unknown". ' +
-            'Respond with valid JSON only — no markdown, no explanation outside the JSON.',
+            'You are an AI evaluator for a student reward system on the Stellar blockchain. ' +
+            'Your job has two parts:\n' +
+            '1. Classify the activity into exactly one of: tutoring, workshop, volunteering, event, participation. ' +
+            'If it fits none, set valid=false and activity="unknown".\n' +
+            '2. Score the student\'s effort from 0.0 to 1.0 based on: specificity of description, ' +
+            'duration or scope mentioned, impact or outcomes described, and number of people helped. ' +
+            'A vague one-liner scores 0.1–0.3. A detailed account with context scores 0.7–1.0.\n' +
+            'Respond with valid JSON only — no markdown, no text outside the JSON.',
         },
         {
           role: 'user',
           content:
             `Student activity submission: "${activityText}"\n\n` +
-            'Respond with: {"activity":"tutoring|workshop|volunteering|event|participation|unknown","valid":true|false,"reason":"one sentence"}',
+            'Respond with: {"activity":"tutoring|workshop|volunteering|event|participation|unknown","valid":true|false,"effort_score":0.0-1.0,"reason":"one sentence"}',
         },
       ],
       temperature: 0,
@@ -177,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(502).json({ error: `AI evaluation failed: ${(err as Error).message}` });
   }
 
-  if (!classification.valid || !(classification.activity in REWARD_TABLE)) {
+  if (!classification.valid || !(classification.activity in BASE_REWARD)) {
     return res.status(422).json({
       error: `Activity not eligible for reward. ${classification.reason}`,
       activity: classification.activity,
@@ -200,7 +212,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const reward = REWARD_TABLE[classification.activity];
+  const effortScore = Math.min(1, Math.max(0, classification.effort_score ?? 0));
+  const base = BASE_REWARD[classification.activity];
+  const bonus = Math.round(effortScore * MAX_BONUS[classification.activity] * 10) / 10;
+  const reward = Math.round((base + bonus) * 10) / 10;
 
   try {
     const adminKeypair = Keypair.fromSecret(adminSecret);
@@ -241,6 +256,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       txHash: sendResponse.hash,
       reward,
+      base,
+      bonus,
+      effortScore,
       activity: classification.activity,
       reason: classification.reason,
     });

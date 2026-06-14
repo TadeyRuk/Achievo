@@ -26,7 +26,7 @@ Student connects wallet + submits activity description
          Vercel Serverless API (api/reward.ts)
          ├── Activity Agent    — classifies activity type via Groq AI
          ├── Verification Agent — checks against activity whitelist
-         ├── Reward Agent      — assigns XLM amount
+         ├── Reward Agent      — base reward + AI effort bonus (0.0–1.0 score)
          ├── Stellar Agent     — verifies wallet signature + calls send_reward() on Soroban
          └── Feedback Agent    — formats confirmation message
                     ↓
@@ -35,18 +35,33 @@ Student connects wallet + submits activity description
 
 **The admin secret key lives in a Vercel environment variable — never in the browser.** The student's wallet is receive-only (view balance + sign ownership proof).
 
+### Effort-Based Scoring
+
+Rewards are not fixed — the AI scores submission quality and adds a bonus on top of the baseline:
+
+```
+reward = base_reward + (effort_score × max_bonus)
+```
+
+The AI scores `effort_score` (0.0–1.0) based on:
+- Specificity — vague one-liner vs. detailed account
+- Duration / scope — hours, number of people, scale of event
+- Impact — outcomes described, who was helped
+- Evidence — concrete details that indicate genuine participation
+
 ---
 
 ## Recognized Activities & Rewards
 
-| Activity              | Reward  |
-|-----------------------|---------|
-| Tutoring              | 5 XLM   |
-| Workshop              | 2 XLM   |
-| Volunteering          | 10 XLM  |
-| Event / Participation | 3 XLM   |
+| Activity      | Base  | Max Bonus | Max Total |
+|---------------|-------|-----------|-----------|
+| Tutoring      | 5 XLM | +5 XLM    | 10 XLM    |
+| Workshop      | 2 XLM | +3 XLM    | 5 XLM     |
+| Volunteering  | 10 XLM| +5 XLM    | 15 XLM    |
+| Event         | 3 XLM | +2 XLM    | 5 XLM     |
+| Participation | 3 XLM | +2 XLM    | 5 XLM     |
 
-*AI is authoritative — keywords above are hints. Groq evaluates the full description.*
+*Base reward is guaranteed for any valid submission. Bonus is determined by AI effort scoring — the more specific and detailed the description, the higher the multiplier.*
 
 ---
 
@@ -56,7 +71,7 @@ Student connects wallet + submits activity description
 |---|---|
 | Smart Contract | Rust / Soroban SDK 26.1 (Stellar Testnet) |
 | Backend | Vercel serverless TypeScript (`api/reward.ts`, `api/nonce.ts`) |
-| AI | Groq API (activity classification + reward evaluation) |
+| AI | Groq API — llama-3.1-8b-instant (activity classification + effort scoring) |
 | Frontend | React 19 + Vite + TypeScript |
 | Styling | Vanilla CSS + Tailwind utility classes |
 | Animations | Motion (Framer Motion v11) |
@@ -70,10 +85,10 @@ Student connects wallet + submits activity description
 | Item | Value |
 |------|-------|
 | Network | Stellar Testnet |
-| Contract ID | `CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ` |
+| Contract ID | `CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM` |
 | XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 | Treasury Balance | 10,000 testnet XLM |
-| Explorer | [View on StellarExpert](https://stellar.expert/explorer/testnet/contract/CAIYYR6UKRUVAYY56CKLNQDEPUR3PGZL3CUXWKH3TJKJ4MIDZYO4WJAJ) |
+| Explorer | [View on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) |
 
 ---
 
