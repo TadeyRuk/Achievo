@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import type { TreasuryInfo } from "./contract";
 import type { RewardHistoryItem } from "./RewardHistory";
 import { CustomWallet } from "./customIcons";
+import { StellarWalletsKit } from "./wallet";
 
 interface WalletProfileProps {
   walletAddress: string | null;
@@ -284,7 +285,13 @@ export function WalletProfile({
                 <span className="text-[12px] font-mono text-white/95 truncate">
                   {showAddress
                     ? `${walletAddress.slice(0, 8)}…${walletAddress.slice(-8)}`
-                    : (walletId && WALLET_META[walletId] ? WALLET_META[walletId].name : `${walletAddress.slice(0, 8)}…${walletAddress.slice(-8)}`)
+                    : (() => {
+                        try {
+                          const name = StellarWalletsKit.selectedModule.productName;
+                          if (name) return name;
+                        } catch {}
+                        return walletId && WALLET_META[walletId] ? WALLET_META[walletId].name : "Stellar Wallet";
+                      })()
                   }
                 </span>
               </button>

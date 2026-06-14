@@ -45,7 +45,9 @@ export default function App() {
 
   // Wallet
   const [walletAddress, setWalletAddress]     = useState<string | null>(null);
-  const [walletId, setWalletId]               = useState<string | null>(null);
+  const [walletId, setWalletId]               = useState<string | null>(() => {
+    return localStorage.getItem("achievo_wallet_id");
+  });
   const [isFunded, setIsFunded]               = useState<boolean>(true);
   const [isConnecting, setIsConnecting]       = useState<boolean>(false);
 
@@ -128,8 +130,21 @@ export default function App() {
     // 1. Auto-connect wallet
     (async () => {
       try {
+        const storedWalletId = localStorage.getItem("achievo_wallet_id");
+        if (storedWalletId) {
+          StellarWalletsKit.setWallet(storedWalletId);
+        }
         const { address } = await StellarWalletsKit.getAddress();
-        if (address) { setWalletAddress(address); fetchBalance(address); }
+        if (address) {
+          setWalletAddress(address);
+          if (storedWalletId) {
+            setWalletId(storedWalletId);
+          }
+          fetchBalance(address);
+        } else {
+          setWalletId(null);
+          localStorage.removeItem("achievo_wallet_id");
+        }
       } catch { /* not connected */ }
       void loadTreasury();
     })();
@@ -158,6 +173,7 @@ export default function App() {
       if (result?.address) {
         setWalletAddress(result.address);
         setWalletId(id);
+        localStorage.setItem("achievo_wallet_id", id);
         fetchBalance(result.address);
         void loadTreasury();
         setShowConnectSuccess(true);
@@ -174,6 +190,7 @@ export default function App() {
     try { await StellarWalletsKit.disconnect(); } catch { /* ignore */ }
     setWalletAddress(null);
     setWalletId(null);
+    localStorage.removeItem("achievo_wallet_id");
     setIsFunded(true);
     setTreasuryInfo(null);
     setTxHash(null);
