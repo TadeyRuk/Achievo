@@ -19,40 +19,33 @@ interface WalletProfileProps {
   history: RewardHistoryItem[];
 }
 
+const WALLET_ICONS: Record<string, string> = {
+  freighter: "https://stellar.creit.tech/wallet-icons/freighter.png",
+  albedo:    "https://stellar.creit.tech/wallet-icons/albedo.png",
+  xbull:     "https://stellar.creit.tech/wallet-icons/xbull.png",
+  lobstr:    "https://stellar.creit.tech/wallet-icons/lobstr.png",
+};
+
 const WALLET_META: Record<string, { name: string; icon: ReactNode; color: string }> = {
   freighter: {
     name: "Freighter",
     color: "#1a1a2e",
-    icon: <span className="text-base">⚓</span>,
+    icon: <img src={WALLET_ICONS.freighter} alt="Freighter" className="w-4 h-4 rounded-sm object-contain" />,
   },
   albedo: {
     name: "Albedo",
     color: "#2563eb",
-    icon: (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.47 0-.89.09-1.3.27A6 6 0 0 0 3 13c0 3.3 2.7 6 6 6h8.5z" />
-      </svg>
-    ),
+    icon: <img src={WALLET_ICONS.albedo} alt="Albedo" className="w-4 h-4 rounded-sm object-contain" />,
   },
   xbull: {
     name: "xBull",
     color: "#059669",
-    icon: (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      </svg>
-    ),
+    icon: <img src={WALLET_ICONS.xbull} alt="xBull" className="w-4 h-4 rounded-sm object-contain" />,
   },
   lobstr: {
     name: "Lobstr",
     color: "#4338ca",
-    icon: (
-      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-        <line x1="12" y1="22.08" x2="12" y2="12" />
-      </svg>
-    ),
+    icon: <img src={WALLET_ICONS.lobstr} alt="Lobstr" className="w-4 h-4 rounded-sm object-contain" />,
   },
 };
 
@@ -126,7 +119,7 @@ function WeeklyEarningsTrendChart({ history }: { history: RewardHistoryItem[] })
       {/* Chart container */}
       <div className="relative flex items-stretch h-36">
         {/* Y Axis Labels */}
-        <div className="w-12 flex flex-col justify-between text-[10px] font-bold text-[var(--dah-outline)] pr-2 py-1 select-none text-right">
+        <div className="w-12 shrink-0 flex flex-col justify-between text-[10px] font-bold text-[var(--dah-outline)] pr-2 py-1 select-none text-right">
           <span>{maxVal.toFixed(0)} XLM</span>
           <span>{midVal.toFixed(0)} XLM</span>
           <span>0 XLM</span>
@@ -167,10 +160,25 @@ function WeeklyEarningsTrendChart({ history }: { history: RewardHistoryItem[] })
       </div>
 
       {/* X Axis Day Labels */}
-      <div className="flex items-center text-[11px] font-bold text-[var(--dah-outline)] select-none pl-12">
-        {days.map((day, i) => (
-          <div key={i} className="flex-1 text-center">{day}</div>
-        ))}
+      <div className="flex items-center text-[11px] font-bold text-[var(--dah-outline)] select-none">
+        {/* Spacer to match Y Axis Labels width */}
+        <div className="w-12 shrink-0 pr-2" />
+        
+        {/* Labels container matching SVG chart width */}
+        <div className="flex-1 relative h-5">
+          {days.map((day, i) => {
+            const pct = ((10 + i * (280 / 6)) / 300) * 100;
+            return (
+              <div
+                key={i}
+                className="absolute -translate-x-1/2 text-center"
+                style={{ left: `${pct}%` }}
+              >
+                {day}
+              </div>
+            );
+          })}
+        </div>
       </div>
       
       {/* Bottom label section */}
@@ -427,9 +435,7 @@ export function WalletProfile({
             }`}>
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
-                  <div className="w-6 h-6 rounded-full bg-slate-900 flex items-center justify-center text-white text-[10px] font-bold">
-                    ⚓
-                  </div>
+                  <img src={WALLET_ICONS.freighter} alt="Freighter" className="w-6 h-6 rounded-sm object-contain" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -461,10 +467,8 @@ export function WalletProfile({
             {/* Albedo Card */}
             <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 text-blue-600 border border-slate-100">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.47 0-.89.09-1.3.27A6 6 0 0 0 3 13c0 3.3 2.7 6 6 6h8.5z" />
-                  </svg>
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
+                  <img src={WALLET_ICONS.albedo} alt="Albedo" className="w-6 h-6 rounded-sm object-contain" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)] block">Albedo</span>
@@ -483,10 +487,8 @@ export function WalletProfile({
             {/* xBull Card */}
             <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 text-emerald-600 border border-slate-100">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                  </svg>
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
+                  <img src={WALLET_ICONS.xbull} alt="xBull" className="w-6 h-6 rounded-sm object-contain" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)] block">xBull</span>
@@ -505,12 +507,8 @@ export function WalletProfile({
             {/* Lobstr Card */}
             <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 text-indigo-700 border border-slate-100">
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                    <line x1="12" y1="22.08" x2="12" y2="12" />
-                  </svg>
+                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
+                  <img src={WALLET_ICONS.lobstr} alt="Lobstr" className="w-6 h-6 rounded-sm object-contain" />
                 </div>
                 <div className="min-w-0">
                   <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)] block">Lobstr</span>

@@ -141,11 +141,25 @@ function verifyChallenge(
     return { ok: false, error: 'Challenge nonce mismatch.' };
   }
 
-  const txHash = tx.hash();
   const keypair = Keypair.fromPublicKey(wallet);
-  const signed = tx.signatures.some(sig => {
-    try { return keypair.verify(txHash, sig.signature()); } catch { return false; }
+  
+  // 1. Verify against Testnet hash
+  const txHashTestnet = tx.hash();
+  let signed = tx.signatures.some(sig => {
+    try { return keypair.verify(txHashTestnet, sig.signature()); } catch { return false; }
   });
+
+  // 2. Verify against Public hash (some wallets like LOBSTR or mainnet profiles sign on public network)
+  if (!signed) {
+    try {
+      const txPublic = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC) as Transaction;
+      const txHashPublic = txPublic.hash();
+      signed = txPublic.signatures.some(sig => {
+        try { return keypair.verify(txHashPublic, sig.signature()); } catch { return false; }
+      });
+    } catch { /* ignore */ }
+  }
+
   if (!signed) return { ok: false, error: 'Wallet ownership could not be verified.' };
 
   return { ok: true };
