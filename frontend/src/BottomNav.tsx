@@ -16,7 +16,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
 
   return (
     <div
-      className="absolute bottom-6 left-4 right-4 bg-[#e8e8ed] border border-[#d1d1d6] rounded-[28px] z-50 shadow-lg shadow-black/10"
+      className="absolute bottom-6 left-4 right-4 bg-white border border-black/10 rounded-[28px] z-50 shadow-lg shadow-black/10"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="flex items-center justify-around h-16 px-2">
