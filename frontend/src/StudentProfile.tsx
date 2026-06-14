@@ -328,30 +328,83 @@ export function StudentProfile({
             <motion.div
               animate={{ rotateY: 360 }}
               transition={{ repeat: Infinity, duration: 9, ease: "linear" }}
-              style={{ perspective: 1000 }}
-              className={`w-16 h-16 rounded-full p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.3),_0_3px_8px_rgba(0,0,0,0.2),_inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center relative border border-black/10 ${
-                selectedBadge.unlocked
-                  ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
-                  : "bg-gradient-to-tr from-slate-700/50 via-slate-600/50 to-slate-800/50"
-              }`}
+              style={{ perspective: 1000, transformStyle: "preserve-3d" }}
+              className="w-16 h-16 relative flex items-center justify-center bg-transparent"
             >
-              <div className={`w-full h-full rounded-full flex items-center justify-center relative overflow-hidden ${
-                selectedBadge.unlocked
-                  ? `bg-gradient-to-tr ${selectedBadge.innerColor} shadow-[inset_0_4px_8px_rgba(0,0,0,0.6),_inset_0_-4px_8px_rgba(255,255,255,0.15)]`
-                  : "bg-gradient-to-tr from-slate-800 to-slate-900 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)]"
-              }`}>
-                {/* Curved 3D highlight */}
-                <div className="absolute top-0 left-0 right-0 h-[45%] bg-gradient-to-b from-white/25 to-white/0 rounded-t-full pointer-events-none" />
-                {/* Sharp reflection shine */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/15 to-transparent rotate-35 translate-y-[-20%] pointer-events-none" />
-                {/* Crescent bottom shadow */}
-                <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-black/30 to-transparent rounded-b-full pointer-events-none" />
-                
-                <SelectedBadgeIcon className={`w-7 h-7 z-10 ${
+              {/* 3D thickness edge layers (stacked tightly at 0.4px intervals for smooth solid extrusion) */}
+              {Array.from({ length: 16 }).map((_, idx) => {
+                const z = -3.0 + idx * 0.4;
+                return (
+                  <div
+                    key={idx}
+                    style={{ transform: `translateZ(${z}px)` }}
+                    className={`absolute inset-0 rounded-full border border-black/5 pointer-events-none ${
+                      selectedBadge.unlocked
+                        ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
+                        : "bg-gradient-to-tr from-slate-700/50 via-slate-600/50 to-slate-800/50"
+                    }`}
+                  />
+                );
+              })}
+
+              {/* Front Face */}
+              <div
+                style={{ 
+                  transform: "translateZ(3.2px)",
+                  backfaceVisibility: "hidden"
+                }}
+                className={`absolute inset-0 rounded-full p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.35),_0_3px_8px_rgba(0,0,0,0.22),_inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center border border-black/10 ${
                   selectedBadge.unlocked
-                    ? `${selectedBadge.iconColor} filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]`
-                    : "text-slate-600"
-                }`} />
+                    ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
+                    : "bg-gradient-to-tr from-slate-700/50 via-slate-600/50 to-slate-800/50"
+                }`}
+              >
+                <div className={`w-full h-full rounded-full flex items-center justify-center relative overflow-hidden ${
+                  selectedBadge.unlocked
+                    ? `bg-gradient-to-tr ${selectedBadge.innerColor} shadow-[inset_0_4px_8px_rgba(0,0,0,0.6),_inset_0_-4px_8px_rgba(255,255,255,0.15)]`
+                    : "bg-gradient-to-tr from-slate-800 to-slate-900 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)]"
+                }`}>
+                  {/* Curved 3D highlight */}
+                  <div className="absolute top-0 left-0 right-0 h-[45%] bg-gradient-to-b from-white/25 to-white/0 rounded-t-full pointer-events-none" />
+                  {/* Sharp reflection shine */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/15 to-transparent rotate-35 translate-y-[-20%] pointer-events-none" />
+                  {/* Crescent bottom shadow */}
+                  <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-black/30 to-transparent rounded-b-full pointer-events-none" />
+                  
+                  <SelectedBadgeIcon className={`w-7 h-7 z-10 ${
+                    selectedBadge.unlocked
+                      ? `${selectedBadge.iconColor} filter drop-shadow-[0_2px_3px_rgba(0,0,0,0.65)]`
+                      : "text-slate-600"
+                  }`} />
+                </div>
+              </div>
+
+              {/* Back Face */}
+              <div
+                style={{ 
+                  transform: "translateZ(-3.2px) rotateY(180deg)",
+                  backfaceVisibility: "hidden"
+                }}
+                className={`absolute inset-0 rounded-full p-[3px] shadow-[0_10px_20px_rgba(0,0,0,0.35),_0_3px_8px_rgba(0,0,0,0.22),_inset_0_1px_0_rgba(255,255,255,0.4)] flex items-center justify-center border border-black/10 ${
+                  selectedBadge.unlocked
+                    ? `bg-gradient-to-tr ${selectedBadge.rimColor}`
+                    : "bg-gradient-to-tr from-slate-700/50 via-slate-600/50 to-slate-800/50"
+                }`}
+              >
+                <div className={`w-full h-full rounded-full flex items-center justify-center relative overflow-hidden ${
+                  selectedBadge.unlocked
+                    ? `bg-gradient-to-tr ${selectedBadge.innerColor} shadow-[inset_0_4px_8px_rgba(0,0,0,0.6),_inset_0_-4px_8px_rgba(255,255,255,0.15)]`
+                    : "bg-gradient-to-tr from-slate-800 to-slate-900 shadow-[inset_0_4px_8px_rgba(0,0,0,0.6)]"
+                }`}>
+                  {/* Curved 3D highlight */}
+                  <div className="absolute top-0 left-0 right-0 h-[45%] bg-gradient-to-b from-white/20 to-white/0 rounded-t-full pointer-events-none" />
+                  {/* Sharp reflection shine */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent rotate-35 translate-y-[-20%] pointer-events-none" />
+                  
+                  <SelectedBadgeIcon className={`w-7 h-7 z-10 opacity-30 ${
+                    selectedBadge.unlocked ? selectedBadge.iconColor : "text-slate-600"
+                  }`} />
+                </div>
               </div>
             </motion.div>
           </div>
