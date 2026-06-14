@@ -7,14 +7,7 @@ interface NavbarProps {
 
 export function Navbar({ onInfoClick }: NavbarProps) {
   return (
-    <header
-      className="px-4 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-[60] border-b border-[var(--dah-outline-variant)]/25"
-      style={{
-        backgroundColor: "rgba(255, 255, 255, 0.15)",
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-      }}
-    >
+    <header className="px-4 py-4 flex items-center justify-between absolute top-0 left-0 right-0 z-[60]">
       {/* Left — info icon in pill cutout */}
       <div
         className="flex items-center px-2 py-1 rounded-full border border-[var(--dah-outline-variant)]/40"
