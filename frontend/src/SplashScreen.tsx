@@ -8,6 +8,7 @@ interface SplashScreenProps {
 
 export function SplashScreen({ progress, onDone }: SplashScreenProps) {
   const [phase, setPhase] = useState<"in" | "loading" | "out">("in");
+  const [visualProgress, setVisualProgress] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -16,15 +17,42 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  // Smooth out the progress accumulation to prevent sudden jumps
   useEffect(() => {
-    if (progress >= 100) {
+    const interval = 16; // ~60fps
+    const timer = setInterval(() => {
+      setVisualProgress((prev) => {
+        if (prev >= progress) {
+          return prev;
+        }
+        
+        const diff = progress - prev;
+        let step = 1.0;
+        if (diff > 50) {
+          step = 2.2; // faster step if the real progress jumped way ahead
+        } else if (diff > 20) {
+          step = 1.4;
+        } else {
+          step = 0.8; // slower ease-out near target
+        }
+        
+        return Math.min(prev + step, progress);
+      });
+    }, interval);
+
+    return () => clearInterval(timer);
+  }, [progress]);
+
+  // Once visual progress settles at 100%, trigger the out phase
+  useEffect(() => {
+    if (visualProgress >= 100) {
       setPhase("out");
       const timer = setTimeout(() => {
         onDone();
-      }, 600);
+      }, 500);
       return () => clearTimeout(timer);
     }
-  }, [progress, onDone]);
+  }, [visualProgress, onDone]);
 
   return (
     <motion.div
@@ -87,7 +115,7 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
         {/* Gold fill */}
         <motion.div
           initial={{ width: "0%" }}
-          animate={{ width: `${progress}%` }}
+          animate={{ width: `${visualProgress}%` }}
           transition={{ type: "spring", stiffness: 70, damping: 15 }}
           style={{
             position: "absolute",
@@ -100,10 +128,10 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
         />
 
         {/* Floating pulse bead at the leading edge */}
-        {progress > 0 && progress < 100 && (
+        {visualProgress > 0 && visualProgress < 100 && (
           <motion.div
             initial={{ left: "0%" }}
-            animate={{ left: `${progress}%` }}
+            animate={{ left: `${visualProgress}%` }}
             transition={{ type: "spring", stiffness: 70, damping: 15 }}
             style={{
               position: "absolute",
@@ -141,7 +169,7 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
       {/* Loading label */}
       <motion.p
         initial={{ opacity: 0 }}
-        animate={{ opacity: phase === "loading" && progress < 100 ? 0.4 : 0 }}
+        animate={{ opacity: phase === "loading" && visualProgress < 100 ? 0.4 : 0 }}
         transition={{ duration: 0.4 }}
         style={{
           marginTop: 12,
