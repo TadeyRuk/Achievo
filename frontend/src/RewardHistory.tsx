@@ -257,7 +257,8 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       initial="hidden"
       animate="show"
       exit={{ opacity: 0, y: -15 }}
-      className="space-y-6"
+      transition={{ duration: 0.35, ease: "easeOut" }}
+      className="p-5 space-y-6"
     >
       {/* 1. Current Rank Card */}
       <motion.div

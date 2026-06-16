@@ -492,9 +492,7 @@ export default function App() {
               )
             )}
             {!showSplash && tab === 'history' && (
-              <div key="history" className="p-5">
-                <RewardHistory history={history} />
-              </div>
+              <RewardHistory key="history" history={history} />
             )}
             {!showSplash && tab === 'wallet' && (
               <WalletProfile
@@ -512,14 +510,13 @@ export default function App() {
               />
             )}
             {!showSplash && tab === 'profile' && (
-              <div key="profile" className="p-5">
-                <StudentProfile
-                  walletAddress={walletAddress}
-                  history={history}
-                  userAvatar={userAvatar}
-                  onAvatarChange={handleAvatarChange}
-                />
-              </div>
+              <StudentProfile
+                key="profile"
+                walletAddress={walletAddress}
+                history={history}
+                userAvatar={userAvatar}
+                onAvatarChange={handleAvatarChange}
+              />
             )}
           </AnimatePresence>
         </div>

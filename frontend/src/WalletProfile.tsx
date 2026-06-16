@@ -191,6 +191,35 @@ function WeeklyEarningsTrendChart({ history }: { history: RewardHistoryItem[] })
   );
 }
 
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0,
+      delayChildren: 0,
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.92,
+    y: 20,
+  },
+  show: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 80,
+      damping: 20,
+      mass: 0.9,
+    }
+  }
+};
+
 export function WalletProfile({
   walletAddress, walletId, isFunded, treasuryInfo,
   isConnecting, onConnect, onDisconnect, onFund, onRefresh, history
@@ -242,16 +271,18 @@ export function WalletProfile({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      exit={{ opacity: 0, y: -15 }}
+      transition={{ duration: 0.35, ease: "easeOut" }}
       className="p-5 space-y-5"
     >
       {walletAddress ? (
         /* ── CONNECTED DASHBOARD STATE ── */
         <>
           {/* Header with Title and Refresh Button */}
-          <div className="flex items-center justify-between px-1">
+          <motion.div variants={itemVariants} className="flex items-center justify-between px-1">
             <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-[var(--dah-primary)] font-display">
               My Wallet
             </h2>
@@ -263,10 +294,13 @@ export function WalletProfile({
             >
               <RefreshCw className={`w-4.5 h-4.5 ${isRefreshing ? "animate-spin" : ""}`} />
             </button>
-          </div>
+          </motion.div>
 
           {/* Balance Hero Card - 28px/32px corner radius, Level 1 elevation */}
-          <div className="bg-[var(--dah-primary-container)] rounded-[28px] p-6 text-white relative overflow-hidden shadow-lg shadow-[var(--dah-primary-container)]/15">
+          <motion.div
+            variants={itemVariants}
+            className="bg-[var(--dah-primary-container)] rounded-[28px] p-6 text-white relative overflow-hidden shadow-lg shadow-[var(--dah-primary-container)]/15"
+          >
             <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/5 rounded-full pointer-events-none" />
 
             <div className="relative space-y-4">
@@ -304,10 +338,12 @@ export function WalletProfile({
                 </span>
               </button>
             </div>
-          </div>
-
+          </motion.div>
           {/* Weekly Earnings Trend Card - 24px corner radius */}
-          <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 shadow-sm space-y-4">
+          <motion.div
+            variants={itemVariants}
+            className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-5 shadow-sm space-y-4"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[14px] font-extrabold text-[var(--dah-on-surface)] font-display">Weekly Earnings Trend</span>
               <span className="flex items-center gap-1 text-[11.5px] text-[var(--dah-primary)] font-bold font-display">
@@ -316,21 +352,25 @@ export function WalletProfile({
               </span>
             </div>
             <WeeklyEarningsTrendChart history={history} />
-          </div>
+          </motion.div>
 
           {/* Funding Prompt for fresh testnet accounts */}
           {!isFunded && (
-            <button
+            <motion.button
+              variants={itemVariants}
               onClick={onFund}
-              className="w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--dah-secondary-container)] text-[var(--dah-on-secondary-container)] font-extrabold text-[14px] hover:brightness-105 transition-all shadow-md shadow-[var(--dah-secondary-container)]/25 font-display uppercase tracking-[0.02em]"
+              className="w-full flex items-center justify-center gap-2.5 py-4 rounded-full bg-[var(--dah-secondary-container)] text-[var(--dah-on-secondary-container)] font-extrabold text-[14px] hover:brightness-105 transition-colors duration-200 shadow-md shadow-[var(--dah-secondary-container)]/25 font-display uppercase tracking-[0.02em]"
             >
               <RefreshCw className="w-4 h-4" />
               Claim Friendbot Testnet XLM
-            </button>
+            </motion.button>
           )}
 
           {/* Performance Section */}
-          <div className="space-y-3">
+          <motion.div
+            variants={itemVariants}
+            className="space-y-3"
+          >
             <h3 className="text-[20px] font-extrabold text-[var(--dah-primary)] font-display px-1">
               Performance
             </h3>
@@ -364,10 +404,13 @@ export function WalletProfile({
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Treasury Stats - Top-heavy shape styling */}
-          <div className="bg-[var(--dah-primary)] rounded-[24px] p-5 text-white shadow-sm space-y-4">
+          <motion.div
+            variants={itemVariants}
+            className="bg-[var(--dah-primary)] rounded-[24px] p-5 text-white shadow-sm space-y-4"
+          >
             <div className="flex items-center gap-2">
               <Database className="w-4 h-4 text-[var(--dah-on-primary-container)]" />
               <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/60 font-display">
@@ -387,22 +430,23 @@ export function WalletProfile({
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Disconnect Button - Fully Rounded Pill */}
-          <button
+          <motion.button
+            variants={itemVariants}
             onClick={onDisconnect}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-transparent border border-[var(--dah-error)] text-[var(--dah-error)] font-bold text-[14px] hover:bg-[var(--dah-error-container)] transition-all font-display uppercase tracking-[0.02em]"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full bg-transparent border border-[var(--dah-error)] text-[var(--dah-error)] font-bold text-[14px] hover:bg-[var(--dah-error-container)] transition-colors duration-200 font-display uppercase tracking-[0.02em]"
           >
             <LogOut className="w-4 h-4" />
             Disconnect Wallet
-          </button>
+          </motion.button>
         </>
       ) : (
         /* ── DISCONNECTED CONNECT WALLET STATE (STRICT MOCKUP LAYOUT) ── */
         <>
           {/* Hero Illustration Section */}
-          <div className="flex flex-col items-center pt-4 pb-2">
+          <motion.div variants={itemVariants} className="flex flex-col items-center pt-4 pb-2">
             {/* Large gold circular background */}
             <div className="relative w-36 h-36 rounded-full bg-[#ffe8ab] flex items-center justify-center shadow-inner">
               {/* White rounded-square wallet container */}
@@ -415,24 +459,27 @@ export function WalletProfile({
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Headline and description */}
-          <div className="text-center space-y-1.5 px-2">
+          <motion.div variants={itemVariants} className="text-center space-y-1.5 px-2">
             <h2 className="text-[24px] font-extrabold tracking-tight text-[#00162b] font-display">
               Connect Your Wallet
             </h2>
             <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed max-w-[280px] mx-auto font-semibold">
               Link your Stellar wallet to start receiving XLM rewards for your achievements.
             </p>
-          </div>
+          </motion.div>
 
           {/* Wallet Options List - Pill-shaped items */}
           <div className="space-y-3 pt-2">
             {/* Freighter Card */}
-            <div className={`flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/45 transition-all shadow-sm ${
-              isMobile ? "opacity-60" : "hover:border-[var(--dah-primary)]"
-            }`}>
+            <motion.div
+              variants={itemVariants}
+              className={`flex items-center justify-between p-4 rounded-full bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/45 transition-colors duration-200 shadow-sm ${
+                isMobile ? "opacity-60" : "hover:border-[var(--dah-primary)]"
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
                   <img src={WALLET_ICONS.freighter} alt="Freighter" className="w-6 h-6 rounded-sm object-contain" />
@@ -462,10 +509,13 @@ export function WalletProfile({
               >
                 {isMobile ? "N/A" : "Connect"}
               </button>
-            </div>
+            </motion.div>
 
             {/* Albedo Card */}
-            <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
+            <motion.div
+              variants={itemVariants}
+              className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-colors duration-200 text-left shadow-sm"
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
                   <img src={WALLET_ICONS.albedo} alt="Albedo" className="w-6 h-6 rounded-sm object-contain" />
@@ -482,10 +532,13 @@ export function WalletProfile({
               >
                 Connect
               </button>
-            </div>
+            </motion.div>
 
             {/* xBull Card */}
-            <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
+            <motion.div
+              variants={itemVariants}
+              className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-colors duration-200 text-left shadow-sm"
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
                   <img src={WALLET_ICONS.xbull} alt="xBull" className="w-6 h-6 rounded-sm object-contain" />
@@ -502,10 +555,13 @@ export function WalletProfile({
               >
                 Connect
               </button>
-            </div>
+            </motion.div>
 
             {/* Lobstr Card */}
-            <div className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-all text-left shadow-sm">
+            <motion.div
+              variants={itemVariants}
+              className="w-full flex items-center justify-between p-4 rounded-[28px] bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/40 hover:border-[var(--dah-primary)] transition-colors duration-200 text-left shadow-sm"
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm shrink-0 border border-slate-100">
                   <img src={WALLET_ICONS.lobstr} alt="Lobstr" className="w-6 h-6 rounded-sm object-contain" />
@@ -522,11 +578,14 @@ export function WalletProfile({
               >
                 Connect
               </button>
-            </div>
+            </motion.div>
           </div>
 
           {/* Promotion Card (New to Stellar?) */}
-          <div className="p-5 rounded-[24px] bg-[var(--dah-surface-low)] border border-dashed border-[var(--dah-outline-variant)] text-center space-y-3.5 shadow-sm mt-2">
+          <motion.div
+            variants={itemVariants}
+            className="p-5 rounded-[24px] bg-[var(--dah-surface-low)] border border-dashed border-[var(--dah-outline-variant)] text-center space-y-3.5 shadow-sm mt-2"
+          >
             <div className="space-y-1">
               <h3 className="text-[16px] font-extrabold text-[#00162b] font-display">New to Stellar?</h3>
               <p className="text-[12px] text-[var(--dah-on-surface-variant)] leading-relaxed font-semibold max-w-[260px] mx-auto">
@@ -538,12 +597,12 @@ export function WalletProfile({
               href="https://www.stellar.org/learn/wallets"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#ffbf21] hover:brightness-105 text-[#00162b] font-extrabold text-[13px] transition-all shadow-sm font-display uppercase tracking-wider"
+              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#ffbf21] hover:brightness-105 text-[#00162b] font-extrabold text-[13px] transition-colors duration-200 shadow-sm font-display uppercase tracking-wider"
             >
               <span className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-[11px] font-black leading-none text-[#ffbf21]">+</span>
               <span>Create New Wallet</span>
             </a>
-          </div>
+          </motion.div>
         </>
       )}
     </motion.div>
