@@ -34,6 +34,35 @@ const ACTIVITY_ICONS: Record<string, React.ComponentType<any>> = {
   participation: CustomMedal,
 };
 
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0,
+      delayChildren: 0,
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.92,
+    y: 20,
+  },
+  show: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring" as const,
+      stiffness: 80,
+      damping: 20,
+      mass: 0.9,
+    }
+  }
+};
+
 export function RewardHistory({ history }: RewardHistoryProps) {
   const sortedHistory = [...history].sort((a, b) => b.timestamp - a.timestamp);
 
@@ -224,13 +253,17 @@ export function RewardHistory({ history }: RewardHistoryProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      exit={{ opacity: 0, y: -15 }}
       className="space-y-6"
     >
       {/* 1. Current Rank Card */}
-      <div className="bg-[var(--dah-primary-container)] rounded-[28px] p-5 shadow-lg shadow-[var(--dah-primary-container)]/15 text-white relative overflow-hidden">
+      <motion.div
+        variants={itemVariants}
+        className="bg-[var(--dah-primary-container)] rounded-[28px] p-5 shadow-lg shadow-[var(--dah-primary-container)]/15 text-white relative overflow-hidden"
+      >
         {/* Decorative background glow */}
         <div className="absolute -top-10 -right-10 w-36 h-36 bg-[var(--dah-secondary-container)]/10 rounded-full pointer-events-none" />
         <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-white/5 rounded-full pointer-events-none" />
@@ -275,12 +308,15 @@ export function RewardHistory({ history }: RewardHistoryProps) {
             {rank.reqMsg}
           </p>
         </div>
-      </div>
+      </motion.div>
 
 
 
       {/* 3. Milestones */}
-      <div className="space-y-3">
+      <motion.div
+        variants={itemVariants}
+        className="space-y-3"
+      >
         <div className="flex items-center justify-between px-1">
           <h3 className="text-[18px] font-display font-extrabold tracking-tight text-[var(--dah-primary)]">
             Milestones
@@ -335,19 +371,23 @@ export function RewardHistory({ history }: RewardHistoryProps) {
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
       <div className="border-t border-[var(--dah-outline-variant)]/40 my-2" />
 
       {/* 4. Reward History Title & List */}
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-[22px] font-display font-extrabold tracking-[-0.02em] text-[var(--dah-primary)]">
-          Reward History
-        </h2>
-        <span className="text-[12px] font-display font-semibold text-[var(--dah-primary)] bg-[var(--dah-secondary-container)]/30 px-2.5 py-1 rounded-full">
-          {history.length} {history.length === 1 ? "Reward" : "Rewards"}
-        </span>
-      </div>
+      <motion.div
+        variants={itemVariants}
+        className="space-y-4"
+      >
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-[22px] font-display font-extrabold tracking-[-0.02em] text-[var(--dah-primary)]">
+            Reward History
+          </h2>
+          <span className="text-[12px] font-display font-semibold text-[var(--dah-primary)] bg-[var(--dah-secondary-container)]/30 px-2.5 py-1 rounded-full">
+            {history.length} {history.length === 1 ? "Reward" : "Rewards"}
+          </span>
+        </div>
 
       {sortedHistory.length === 0 ? (
         /* Empty State */
@@ -421,6 +461,7 @@ export function RewardHistory({ history }: RewardHistoryProps) {
           })}
         </div>
       )}
+      </motion.div>
     </motion.div>
   );
 }
