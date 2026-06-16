@@ -134,8 +134,8 @@ export default function App() {
   // ── Bootstrap ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    // 1. Auto-connect wallet
-    (async () => {
+    // 1. Auto-connect wallet — delay first tick so the bar renders at 0% first
+    setTimeout(async () => {
       setBootstrapProgress(15);
       try {
         const storedWalletId = localStorage.getItem("achievo_wallet_id");
@@ -159,7 +159,7 @@ export default function App() {
       setBootstrapProgress(85);
       await loadTreasury();
       setBootstrapProgress(100);
-    })();
+    }, 120);
   }, [fetchBalance, loadTreasury]);
 
   // Flush submission states when wallet is disconnected
