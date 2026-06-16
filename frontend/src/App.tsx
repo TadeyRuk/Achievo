@@ -394,7 +394,7 @@ export default function App() {
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 80, damping: 20 }}
+              transition={{ type: "spring", stiffness: 110, damping: 19 }}
               style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 60 }}
             >
               <Navbar onInfoClick={() => setShowInfo(true)} />
@@ -537,7 +537,7 @@ export default function App() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 80, damping: 20 }}
+              transition={{ type: "spring", stiffness: 110, damping: 19 }}
               className="absolute bottom-0 left-0 right-0 z-50"
             >
               <BottomNav activeTab={tab} onTabChange={(t) => { setShowRefer(false); setTab(t); }} />

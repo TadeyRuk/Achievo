@@ -56,8 +56,8 @@ const itemVariants = {
     y: 0,
     transition: {
       type: "spring" as const,
-      stiffness: 80,
-      damping: 20,
+      stiffness: 110,
+      damping: 19,
       mass: 0.9,
     }
   }
@@ -257,7 +257,7 @@ export function RewardHistory({ history }: RewardHistoryProps) {
       initial="hidden"
       animate="show"
       exit={{ opacity: 0, y: -15 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
       className="p-5 space-y-6"
     >
       {/* 1. Current Rank Card */}
