@@ -182,6 +182,22 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
       >
         Loading…
       </motion.p>
+      {/* Footer / Powered by label */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.3 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        style={{
+          position: "absolute",
+          bottom: 36,
+          fontSize: 10,
+          letterSpacing: "0.05em",
+          color: "#00162b",
+          fontFamily: "'Be Vietnam Pro', system-ui, sans-serif",
+        }}
+      >
+        Powered by Kouri | Stellar
+      </motion.p>
 
       {/* Decorative corner dots */}
       {[
