@@ -43,12 +43,11 @@ export function Navbar({ onInfoClick }: NavbarProps) {
       {/* Left — info icon in pill cutout */}
       <div
         className="flex items-center px-2 py-1 rounded-full border-2 border-black/20"
-        style={{ backgroundColor: "rgba(255,255,255,0.18)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}
+        style={{ backgroundColor: "white", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}
       >
         <button
           onClick={onInfoClick}
           className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all"
-          style={{ backgroundColor: "white" }}
         >
           <CustomCircleInformation className="w-5.5 h-5.5" />
         </button>
@@ -64,13 +63,12 @@ export function Navbar({ onInfoClick }: NavbarProps) {
       {/* Right — rewind icon in pill cutout */}
       <div
         className="flex items-center px-2 py-1 rounded-full border-2 border-black/20"
-        style={{ backgroundColor: "rgba(255,255,255,0.18)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}
+        style={{ backgroundColor: "white", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}
       >
         <button
           onClick={handleRefresh}
           disabled={spinning}
           className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all disabled:opacity-60"
-          style={{ backgroundColor: "white" }}
         >
           <RefreshCw className={`w-4.5 h-4.5 ${spinning ? "animate-spin" : ""}`} />
         </button>
