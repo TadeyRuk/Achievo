@@ -185,14 +185,15 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
       {/* Footer / Powered by label */}
       <motion.p
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.3 }}
+        animate={{ opacity: 0.6 }}
         transition={{ duration: 0.5, delay: 0.3 }}
         style={{
           position: "absolute",
           bottom: 36,
-          fontSize: 10,
+          fontSize: 11,
           letterSpacing: "0.05em",
           color: "#00162b",
+          fontWeight: 500,
           fontFamily: "'Be Vietnam Pro', system-ui, sans-serif",
         }}
       >
