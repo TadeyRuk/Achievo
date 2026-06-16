@@ -15,6 +15,8 @@ import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
 import { StudentProfile } from './StudentProfile';
 import { Dashboard } from './Dashboard';
 import { ReferFriend } from './ReferFriend';
+import { SplashScreen } from './SplashScreen';
+
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 
@@ -32,6 +34,9 @@ const makePipeline = (): PipelineStep[] => [
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [bootstrapProgress, setBootstrapProgress] = useState<number>(0);
+
   const [tab, setTab] = useState<Tab>('home');
 
   // User Avatar
@@ -131,24 +136,29 @@ export default function App() {
   useEffect(() => {
     // 1. Auto-connect wallet
     (async () => {
+      setBootstrapProgress(15);
       try {
         const storedWalletId = localStorage.getItem("achievo_wallet_id");
         if (storedWalletId) {
           StellarWalletsKit.setWallet(storedWalletId);
         }
+        setBootstrapProgress(35);
         const { address } = await StellarWalletsKit.getAddress();
         if (address) {
           setWalletAddress(address);
           if (storedWalletId) {
             setWalletId(storedWalletId);
           }
-          fetchBalance(address);
+          setBootstrapProgress(65);
+          await fetchBalance(address);
         } else {
           setWalletId(null);
           localStorage.removeItem("achievo_wallet_id");
         }
       } catch { /* not connected */ }
-      void loadTreasury();
+      setBootstrapProgress(85);
+      await loadTreasury();
+      setBootstrapProgress(100);
     })();
   }, [fetchBalance, loadTreasury]);
 
@@ -365,15 +375,37 @@ export default function App() {
 
   return (
     <div className="min-h-[100dvh] bg-[var(--dah-surface-highest)] flex items-center justify-center">
+
       {/* Phone frame — navy bezel on desktop, full-bleed on mobile */}
       <div className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[4px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#000666]/35">
 
-        <Navbar onInfoClick={() => setShowInfo(true)} />
+        {/* Startup splash screen — lives inside the phone frame */}
+        <AnimatePresence>
+          {showSplash && (
+            <SplashScreen
+              progress={bootstrapProgress}
+              onDone={() => setShowSplash(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {!showSplash && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 80, damping: 20 }}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 60 }}
+            >
+              <Navbar onInfoClick={() => setShowInfo(true)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Scrollable tab content */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-[84px] pb-28 custom-scrollbar">
           <AnimatePresence mode="wait" initial={false}>
-            {tab === 'home' && (
+            {!showSplash && tab === 'home' && (
               isRunning || txHash || pipeline.some(step => step.status === 'error') ? (
                 <div key="home-running" className="p-5 space-y-5">
                   <PipelineVisualizer steps={pipeline} logs={logs} />
@@ -459,12 +491,12 @@ export default function App() {
                 />
               )
             )}
-            {tab === 'history' && (
+            {!showSplash && tab === 'history' && (
               <div key="history" className="p-5">
                 <RewardHistory history={history} />
               </div>
             )}
-            {tab === 'wallet' && (
+            {!showSplash && tab === 'wallet' && (
               <WalletProfile
                 key="wallet"
                 walletAddress={walletAddress}
@@ -479,7 +511,7 @@ export default function App() {
                 history={history}
               />
             )}
-            {tab === 'profile' && (
+            {!showSplash && tab === 'profile' && (
               <div key="profile" className="p-5">
                 <StudentProfile
                   walletAddress={walletAddress}
@@ -503,7 +535,18 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        <BottomNav activeTab={tab} onTabChange={(t) => { setShowRefer(false); setTab(t); }} />
+        <AnimatePresence>
+          {!showSplash && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 80, damping: 20 }}
+              className="absolute bottom-0 left-0 right-0 z-50"
+            >
+              <BottomNav activeTab={tab} onTabChange={(t) => { setShowRefer(false); setTab(t); }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Reward Modal */}
         <AnimatePresence>

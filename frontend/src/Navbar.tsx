@@ -36,14 +36,14 @@ export function Navbar({ onInfoClick }: NavbarProps) {
           zIndex: -1,
           backdropFilter: "blur(14px)",
           WebkitBackdropFilter: "blur(14px)",
-          maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+          maskImage: "linear-gradient(to bottom, black 5%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 5%, transparent 100%)",
         }}
       />
       {/* Left — info icon in pill cutout */}
       <div
         className="flex items-center px-2 py-1 rounded-full border-2 border-black/20"
-        style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
+        style={{ backgroundColor: "rgba(255,255,255,0.18)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}
       >
         <button
           onClick={onInfoClick}
@@ -63,7 +63,7 @@ export function Navbar({ onInfoClick }: NavbarProps) {
       {/* Right — rewind icon in pill cutout */}
       <div
         className="flex items-center px-2 py-1 rounded-full border-2 border-black/20"
-        style={{ backgroundColor: "rgba(255,255,255,0.18)" }}
+        style={{ backgroundColor: "rgba(255,255,255,0.18)", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}
       >
         <button
           onClick={handleRefresh}

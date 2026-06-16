@@ -96,6 +96,35 @@ const ProgressCircle = ({ value, max }: { value: number; max: number }) => {
   );
 };
 
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0,
+      delayChildren: 0,
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.92,
+    y: 20,
+  },
+  show: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 80,
+      damping: 20,
+      mass: 0.9,
+    }
+  }
+};
+
 export function Dashboard({
   userName,
   history,
@@ -194,7 +223,7 @@ export function Dashboard({
           <span className="text-[13px] text-gray-500"> just earned </span>
           <strong className="text-[13px] font-extrabold text-[#0a235c]">{item.reward} XLM</strong>
           <span className="text-[13px] text-gray-500"> for </span>
-          <strong className="text-[13px] font-bold text-[#00162b]">{cleanActivity.length > 25 ? cleanActivity.slice(0, 25) + "..." : cleanActivity}</strong>
+          <strong className="text-[13px] font-bold text-[#00162b]">{(cleanActivity.length > 25 ? cleanActivity.slice(0, 25) + "..." : cleanActivity)}</strong>
         </span>
       ),
       timestamp: item.timestamp,
@@ -209,8 +238,9 @@ export function Dashboard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
       exit={{ opacity: 0, y: -15 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="p-5 space-y-5 relative"
@@ -231,7 +261,10 @@ export function Dashboard({
       </AnimatePresence>
 
       {/* Welcome Hero Card */}
-      <div className="bg-[var(--dah-primary-container)] rounded-[32px] p-6 text-white relative overflow-hidden shadow-xl shadow-[var(--dah-primary-container)]/15">
+      <motion.div
+        variants={itemVariants}
+        className="bg-[var(--dah-primary-container)] rounded-[32px] p-6 text-white relative overflow-hidden shadow-xl shadow-[var(--dah-primary-container)]/15"
+      >
         {/* Glowing backdrop decorative accents */}
         <div className="absolute -top-12 -right-12 w-44 h-44 bg-white/5 rounded-full pointer-events-none" />
         <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full pointer-events-none" />
@@ -274,15 +307,16 @@ export function Dashboard({
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Wallet Disconnected Banner if applicable */}
       {!walletAddress && (
         <motion.div
+          variants={itemVariants}
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.98 }}
           onClick={onConnectWalletClick}
-          className="bg-red-50/60 hover:bg-red-100/60 px-4 py-3 rounded-[20px] flex items-center justify-between cursor-pointer transition-all border border-red-100/30 shadow-xs"
+          className="bg-red-50/60 hover:bg-red-100/60 px-4 py-3 rounded-[20px] flex items-center justify-between cursor-pointer transition-colors duration-200 border border-red-100/30 shadow-xs"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-red-100/80 flex items-center justify-center text-red-600">
@@ -303,11 +337,12 @@ export function Dashboard({
 
       {/* Submit Activity Button (Golden/Yellow) */}
       <motion.button
+        variants={itemVariants}
         whileHover={!walletAddress ? {} : { scale: 1.01 }}
         whileTap={!walletAddress ? {} : { scale: 0.98 }}
         onClick={onSubmitActivityClick}
         disabled={!walletAddress}
-        className={`w-full font-extrabold py-4 rounded-[24px] flex items-center justify-center gap-3 transition-all text-[15px] font-display uppercase tracking-wide ${
+        className={`w-full font-extrabold py-4 rounded-[24px] flex items-center justify-center gap-3 transition-colors duration-200 text-[15px] font-display uppercase tracking-wide ${
           !walletAddress
             ? "bg-slate-200 text-slate-400 border border-slate-300/50 cursor-not-allowed shadow-none"
             : "bg-[#ffbe42] text-[#00162b] hover:brightness-105 shadow-lg shadow-[#ffbe42]/15 cursor-pointer"
@@ -319,10 +354,11 @@ export function Dashboard({
 
       {/* Invite Friend Button */}
       <motion.button
+        variants={itemVariants}
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.99 }}
         onClick={onInviteClick || handleInviteClick}
-        className="w-full bg-[#f3f5fa] hover:bg-[#ebedf2] border border-[#e1e3e8]/40 px-5 py-4 rounded-[24px] flex items-center justify-between text-[13px] font-bold text-[#00162b] transition-all cursor-pointer"
+        className="w-full bg-[#f3f5fa] hover:bg-[#ebedf2] border border-[#e1e3e8]/40 px-5 py-4 rounded-[24px] flex items-center justify-between text-[13px] font-bold text-[#00162b] transition-colors duration-200 cursor-pointer"
       >
         <div className="flex items-center gap-3">
           <UserPlus className="w-5 h-5 text-[#00162b]" strokeWidth={2.2} />
@@ -332,7 +368,10 @@ export function Dashboard({
       </motion.button>
 
       {/* Community Pulse Section */}
-      <div className="bg-[#f5f6fa] rounded-[32px] p-5 space-y-4 shadow-sm border border-[#eef1f6]">
+      <motion.div
+        variants={itemVariants}
+        className="bg-[#f5f6fa] rounded-[32px] p-5 space-y-4 shadow-sm border border-[#eef1f6]"
+      >
         {/* Section Header */}
         <div className="flex items-center gap-2.5 px-1">
           <MessageSquare className="w-5 h-5 text-[#0f3b8c]" strokeWidth={2.2} />
@@ -389,7 +428,7 @@ export function Dashboard({
             );
           })}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
