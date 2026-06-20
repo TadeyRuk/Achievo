@@ -13,15 +13,15 @@ Students connect their wallet, describe what they did, and Achievo's AI pipeline
 ## Screenshots
 
 <p align="center">
-  <img src="vault/assets2/screenshots/7a7c6956-f839-4354-ad44-1de7243da92a.jpeg" width="22%" alt="Home" />
-  <img src="vault/assets2/screenshots/ce517080-4294-4760-8b2c-a82e827c0763.jpeg" width="22%" alt="Community Pulse" />
-  <img src="vault/assets2/screenshots/c01b6332-92b9-4e87-a425-309bddc3017f.jpeg" width="22%" alt="AI Pipeline" />
-  <img src="vault/assets2/screenshots/593164cc-1ced-4da1-b54e-9e868dd12a8e.jpeg" width="22%" alt="Reward Confirmation" />
+  <img src="docs/screenshots/7a7c6956-f839-4354-ad44-1de7243da92a.jpeg" width="22%" alt="Home" />
+  <img src="docs/screenshots/ce517080-4294-4760-8b2c-a82e827c0763.jpeg" width="22%" alt="Community Pulse" />
+  <img src="docs/screenshots/c01b6332-92b9-4e87-a425-309bddc3017f.jpeg" width="22%" alt="AI Pipeline" />
+  <img src="docs/screenshots/593164cc-1ced-4da1-b54e-9e868dd12a8e.jpeg" width="22%" alt="Reward Confirmation" />
 </p>
 <p align="center">
-  <img src="vault/assets2/screenshots/bf381d31-294b-42f6-96f0-6a00aa35031b.jpeg" width="22%" alt="Profile" />
-  <img src="vault/assets2/screenshots/bd77e0f7-3a15-4e2d-a8d2-45e3d079a76c.jpeg" width="22%" alt="Milestones" />
-  <img src="vault/assets2/screenshots/99aae065-bceb-4b2a-8f03-268720534581.jpeg" width="22%" alt="Avatar Picker" />
+  <img src="docs/screenshots/bf381d31-294b-42f6-96f0-6a00aa35031b.jpeg" width="22%" alt="Profile" />
+  <img src="docs/screenshots/bd77e0f7-3a15-4e2d-a8d2-45e3d079a76c.jpeg" width="22%" alt="Milestones" />
+  <img src="docs/screenshots/99aae065-bceb-4b2a-8f03-268720534581.jpeg" width="22%" alt="Avatar Picker" />
 </p>
 
 ---
