@@ -26,6 +26,17 @@ Students connect their wallet, describe what they did, and Achievo's AI pipeline
   <img src="docs/screenshots/99aae065-bceb-4b2a-8f03-268720534581.jpeg" width="22%" alt="Avatar Picker" />
 </p>
 
+**Mobile (full-bleed) vs Desktop (phone-frame bezel):**
+<p align="center">
+  <img src="docs/screenshots/mobile-home.png" width="22%" alt="Mobile — full-bleed" />
+  <img src="docs/screenshots/desktop-phone-frame.png" width="45%" alt="Desktop — phone frame" />
+</p>
+
+**CI Pipeline (both jobs green):**
+<p align="center">
+  <img src="docs/screenshots/ci-green.png" width="70%" alt="GitHub Actions CI — Frontend + Contract both passing" />
+</p>
+
 ---
 
 ## Features
