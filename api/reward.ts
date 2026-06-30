@@ -4,6 +4,7 @@ import {
   Contract,
   TransactionBuilder,
   nativeToScVal,
+  Address,
   Networks,
   BASE_FEE,
   Keypair,
@@ -245,7 +246,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
       .addOperation(contract.call(
         'send_reward',
-        nativeToScVal(wallet, { type: 'address' }),
+        new Address(wallet).toScVal(),
         nativeToScVal(rewardStroops, { type: 'i128' }),
       ))
       .setTimeout(30)
