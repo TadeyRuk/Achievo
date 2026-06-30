@@ -36,3 +36,7 @@ assets/
 achievo-ui.png
 .vercel
 .env*
+
+# Local tooling / IDE
+.kiro/
+.vscode/

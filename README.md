@@ -8,6 +8,8 @@
 
 Students connect their wallet, describe what they did, and Achievo's AI pipeline evaluates the submission and sends XLM directly to their wallet — no manual approval, no middleman.
 
+**[Live Demo →](https://achievo-rust.vercel.app)**
+
 ---
 
 ## Screenshots
@@ -139,6 +141,7 @@ XP is earned at **100 XP per XLM received**. Each rank has a badge with a 3D ani
 | Contract ID | `CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM` |
 | XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 | Treasury Balance | 10,000 testnet XLM |
+| Sample Transaction | [f0649aba…](https://stellar.expert/explorer/testnet/tx/f0649abac4f597b6f2f7244f79e0ef4376a299573891034def5d16cc9392ee35) |
 | Explorer | [View on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) |
 
 ---
@@ -167,7 +170,8 @@ frontend/
     BottomNav.tsx           — Floating pill-style bottom navigation
     Navbar.tsx              — Top bar with logo and info modal trigger
     agents.ts               — 5 pure client-side agent hint functions
-    contract.ts             — Soroban read-only view calls (treasury info)
+    contract.ts             — Soroban view calls + getEvents polling (live payout feed)
+    RecentPayouts.tsx       — Live on-chain reward feed (polls every 15 s)
     wallet.ts               — StellarWalletsKit + Horizon + Friendbot
     customIcons.tsx         — Custom SVG icon components
 vault/                      — Design docs (Obsidian)
@@ -175,9 +179,32 @@ vault/                      — Design docs (Obsidian)
 
 ---
 
+## Demo Video
+
+<!-- TODO: add 1–2 min walkthrough video link once recorded -->
+🎥 _Demo video coming soon — will be added before final submission._
+
+---
+
 ## Testing
 
-> **Recommended:** Use the live Vercel deployment for evaluation. All environment variables (`ADMIN_SECRET`, `GROQ_API_KEY`, `NONCE_HMAC_SECRET`) are already configured there — the AI pipeline, wallet auth, and on-chain payouts work out of the box with no local setup required.
+> **Recommended:** Use the **[live Vercel deployment](https://achievo-rust.vercel.app)** for evaluation. All environment variables (`ADMIN_SECRET`, `GROQ_API_KEY`, `NONCE_HMAC_SECRET`) are already configured there — the AI pipeline, wallet auth, and on-chain payouts work out of the box with no local setup required.
+
+**Contract tests (Rust):**
+```bash
+cd contract && cargo test
+# 12 tests: initialize, send_reward, edge cases, event emission
+```
+
+**Frontend tests (Vitest + fast-check):**
+```bash
+cd frontend && npm test
+# 8 test files, 29 tests: pure helpers (computeStartLedger, stroopsToXlm,
+# decodeRewardEvent, filterByRecipient, mergePayouts) + RecentPayouts UI states,
+# property-based tests (fast-check) for correctness across full value ranges
+```
+
+> **Note on real-time event feed:** Soroban RPC does not expose SSE or WebSocket streams for contract events — `getEvents` polling is the supported mechanism. Achievo polls every 15 seconds using the Soroban RPC `getEvents` endpoint, filtered by the `(reward, sent)` topic and the connected wallet address. This is architecturally equivalent to event streaming for Soroban.
 
 Running locally requires manually setting env vars and a Vercel CLI session for the serverless API to work (see below).
 
