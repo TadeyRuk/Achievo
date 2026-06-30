@@ -331,7 +331,7 @@ export function WalletProfile({
                         try {
                           const name = StellarWalletsKit.selectedModule.productName;
                           if (name) return name;
-                        } catch {}
+                        } catch { /* no-op: selectedModule may not be set */ }
                         return walletId && WALLET_META[walletId] ? WALLET_META[walletId].name : "Stellar Wallet";
                       })()
                   }

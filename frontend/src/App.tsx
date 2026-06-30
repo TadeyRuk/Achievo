@@ -3,7 +3,14 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Networks } from '@stellar/stellar-sdk';
 import { getXlmBalance, fundWithFriendbot, StellarWalletsKit } from './wallet';
-import { CONTRACT_ID, getTreasuryInfo, type TreasuryInfo } from './contract';
+import {
+  CONTRACT_ID,
+  getTreasuryInfo,
+  getRewardEvents,
+  mergePayouts,
+  type TreasuryInfo,
+  type PayoutItem,
+} from './contract';
 import { activityAgent, rewardAgent, feedbackAgent } from './agents';
 import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
@@ -12,6 +19,7 @@ import { PipelineVisualizer, type PipelineStep } from './PipelineVisualizer';
 import { WalletProfile } from './WalletProfile';
 import { RewardCard } from './RewardCard';
 import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
+import { RecentPayouts } from './RecentPayouts';
 import { StudentProfile } from './StudentProfile';
 import { Dashboard } from './Dashboard';
 import { ReferFriend } from './ReferFriend';
@@ -84,6 +92,14 @@ export default function App() {
     }
   });
 
+  // On-chain payout feed (polled from Soroban RPC getEvents)
+  const [payouts, setPayouts]           = useState<PayoutItem[]>([]);
+  const [payoutsLoading, setPayoutsLoading] = useState<boolean>(false);
+  const [payoutsError, setPayoutsError] = useState<string | null>(null);
+  // Stable ref so loadPayouts can read current history without re-subscribing interval
+  const historyRef = useRef<RewardHistoryItem[]>(history);
+  useEffect(() => { historyRef.current = history; }, [history]);
+
   // Success modal states for wallet actions
   const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState<boolean>(false);
@@ -128,6 +144,20 @@ export default function App() {
     try { setTreasuryInfo(await getTreasuryInfo(CONTRACT_ID)); } catch { /* ignore */ }
   }, []);
 
+  const loadPayouts = useCallback(async () => {
+    if (!walletAddress || (CONTRACT_ID as string) === "PLACEHOLDER_DEPLOY_AND_UPDATE") return;
+    setPayoutsLoading(true);
+    setPayoutsError(null);
+    try {
+      const chainEvents = await getRewardEvents(walletAddress);
+      setPayouts(mergePayouts(chainEvents, historyRef.current));
+    } catch (err) {
+      setPayoutsError((err as Error).message ?? "Failed to load payouts");
+    } finally {
+      setPayoutsLoading(false);
+    }
+  }, [walletAddress]); // historyRef is a ref — stable, excluded from deps
+
   const setStep = (i: number, patch: Partial<PipelineStep>) =>
     setPipeline(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
 
@@ -165,6 +195,7 @@ export default function App() {
   // Flush submission states when wallet is disconnected
   useEffect(() => {
     if (!walletAddress) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActivityText("");
       setShowForm(false);
       setIsRunning(false);
@@ -174,6 +205,19 @@ export default function App() {
       setRewardXlm(null);
     }
   }, [walletAddress]);
+
+  // Poll on-chain reward events every 15 s while a wallet is connected
+  useEffect(() => {
+    if (!walletAddress) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPayouts([]);
+      setPayoutsError(null);
+      return;
+    }
+    void loadPayouts();
+    const id = setInterval(() => { void loadPayouts(); }, 15_000);
+    return () => clearInterval(id);
+  }, [walletAddress, loadPayouts]);
 
   // ── Wallet actions ─────────────────────────────────────────────────────────
 
@@ -364,6 +408,7 @@ export default function App() {
 
       await fetchBalance(walletAddress);
       void loadTreasury();
+      void loadPayouts();
       setActivityText("");
 
     } finally {
@@ -492,7 +537,15 @@ export default function App() {
               )
             )}
             {!showSplash && tab === 'history' && (
-              <RewardHistory key="history" history={history} />
+              <div key="history">
+                <RecentPayouts
+                  payouts={payouts}
+                  loading={payoutsLoading}
+                  error={payoutsError}
+                  walletConnected={!!walletAddress}
+                />
+                <RewardHistory history={history} />
+              </div>
             )}
             {!showSplash && tab === 'wallet' && (
               <WalletProfile

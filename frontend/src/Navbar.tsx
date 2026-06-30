@@ -13,7 +13,7 @@ async function hardRefresh() {
     if (reg?.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
     const keys = await caches.keys();
     await Promise.all(keys.map(k => caches.delete(k)));
-  } catch {}
+  } catch { /* no-op: best-effort cache clear, failure is fine */ }
   window.location.reload();
 }
 
