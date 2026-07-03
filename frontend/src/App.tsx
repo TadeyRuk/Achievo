@@ -1,6 +1,7 @@
 // This project is dedicated for Belle 🤍
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import posthog from 'posthog-js';
 import { Networks } from '@stellar/stellar-sdk';
 import { getXlmBalance, fundWithFriendbot, StellarWalletsKit } from './wallet';
 import {
@@ -228,6 +229,7 @@ export default function App() {
       const result = await StellarWalletsKit.fetchAddress();
       if (result?.address) {
         setWalletAddress(result.address);
+        posthog.capture('wallet_connected', { wallet_type: id });
         setWalletId(id);
         localStorage.setItem("achievo_wallet_id", id);
         fetchBalance(result.address);
@@ -274,6 +276,8 @@ export default function App() {
   const handleSubmit = async (overrideText?: string) => {
     const textToSubmit = overrideText ? overrideText.trim() : activityText.trim();
     if (!walletAddress || !textToSubmit || isRunning) return;
+
+    posthog.capture('activity_submitted', { length: textToSubmit.length });
 
     setIsRunning(true);
     setTxHash(null);
@@ -376,6 +380,7 @@ export default function App() {
       }
 
       setTxHash(hash);
+      posthog.capture('reward_paid', { amount: serverReward, activity: serverActivity, tx_hash: hash });
       setStep(3, { status: 'done', detail: `Settled: ${hash.slice(0, 12)}…` });
       setLogs(p => [...p,
         `✓ [Stellar Agent] Hash: ${hash.slice(0, 16)}…`,
