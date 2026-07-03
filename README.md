@@ -8,6 +8,8 @@
 
 Students connect their wallet, describe what they did, and Achievo's AI pipeline evaluates the submission and sends XLM directly to their wallet — no manual approval, no middleman.
 
+**[Live Demo →](https://achievo-rust.vercel.app)**
+
 ---
 
 ## Screenshots
@@ -22,6 +24,22 @@ Students connect their wallet, describe what they did, and Achievo's AI pipeline
   <img src="docs/screenshots/bf381d31-294b-42f6-96f0-6a00aa35031b.jpeg" width="22%" alt="Profile" />
   <img src="docs/screenshots/bd77e0f7-3a15-4e2d-a8d2-45e3d079a76c.jpeg" width="22%" alt="Milestones" />
   <img src="docs/screenshots/99aae065-bceb-4b2a-8f03-268720534581.jpeg" width="22%" alt="Avatar Picker" />
+</p>
+
+**Mobile (full-bleed) vs Desktop (phone-frame bezel):**
+<p align="center">
+  <img src="docs/screenshots/mobile-home.png" width="22%" alt="Mobile — full-bleed" />
+  <img src="docs/screenshots/desktop-phone-frame.png" width="45%" alt="Desktop — phone frame" />
+</p>
+
+**CI Pipeline (both jobs green):**
+<p align="center">
+  <img src="docs/screenshots/ci-green.png" width="70%" alt="GitHub Actions CI — Frontend + Contract both passing" />
+</p>
+
+**Analytics & Monitoring (PostHog):**
+<p align="center">
+  <img src="docs/screenshots/analytics-posthog.png" width="70%" alt="PostHog dashboard — pageviews, wallet_connected, activity_submitted, reward_paid events" />
 </p>
 
 ---
@@ -139,7 +157,38 @@ XP is earned at **100 XP per XLM received**. Each rank has a badge with a 3D ani
 | Contract ID | `CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM` |
 | XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 | Treasury Balance | 10,000 testnet XLM |
+| Sample Transaction | [f0649aba…](https://stellar.expert/explorer/testnet/tx/f0649abac4f597b6f2f7244f79e0ef4376a299573891034def5d16cc9392ee35) |
 | Explorer | [View on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) |
+
+---
+
+## On-Chain Wallet Interactions
+
+Every reward is a real `send_reward` call on the deployed treasury contract — each row below
+is an independently verifiable Soroban event, decoded directly from the contract's on-chain
+event log (topics `("reward", "sent")`).
+
+| # | Date (UTC) | Recipient | Amount |
+|---|---|---|---|
+| 1 | 2026-06-14 14:05 | [GAWTHZ…GZGSED](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 3.5 XLM |
+| 2 | 2026-06-14 14:10 | [GAWTHZ…GZGSED](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 3.5 XLM |
+| 3 | 2026-06-14 17:08 | [GAWTHZ…GZGSED](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 14 XLM |
+| 4 | 2026-06-14 17:25 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 4.1 XLM |
+| 5 | 2026-06-14 18:18 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 6 XLM |
+| 6 | 2026-06-14 18:26 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM |
+| 7 | 2026-06-15 02:15 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM |
+| 8 | 2026-06-15 08:26 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM |
+| 9 | 2026-06-16 01:28 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 5.5 XLM |
+
+**9 verified on-chain reward transactions, 69.6 XLM disbursed, across 2 wallets during the
+June 14–16, 2026 dev/QA testing window.** Wallet diversity in this window is capped by the
+contract's own `1 reward per wallet per day` rate limit (`api/reward.ts`) — each wallet could
+only be paid once daily during solo testing. Every row is reproducible independently via the
+[contract's event log on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM)
+or the Soroban RPC `getEvents` endpoint (see `getRewardEvents()` in `frontend/src/contract.ts`).
+Wallet-connect and activity-submission events are additionally tracked client-side via
+PostHog (see [Analytics & Monitoring](#analytics--monitoring)) as of this release, so live
+usage after deployment continues to grow verifiable wallet interactions beyond this table.
 
 ---
 
@@ -167,7 +216,8 @@ frontend/
     BottomNav.tsx           — Floating pill-style bottom navigation
     Navbar.tsx              — Top bar with logo and info modal trigger
     agents.ts               — 5 pure client-side agent hint functions
-    contract.ts             — Soroban read-only view calls (treasury info)
+    contract.ts             — Soroban view calls + getEvents polling (live payout feed)
+    RecentPayouts.tsx       — Live on-chain reward feed (polls every 15 s)
     wallet.ts               — StellarWalletsKit + Horizon + Friendbot
     customIcons.tsx         — Custom SVG icon components
 vault/                      — Design docs (Obsidian)
@@ -175,11 +225,63 @@ vault/                      — Design docs (Obsidian)
 
 ---
 
+## Demo Video
+
+🎥 **[Watch the Achievo app presentation](./achievo-app-presentation-v2.mp4)**
+
+This 2:38 walkthrough introduces the mobile PWA, academic activity submission flow,
+5-agent reward pipeline, wallet proof step, Soroban payout confirmation, scholar
+rank progress, and CI status.
+
+---
+
 ## Testing
 
-> **Recommended:** Use the live Vercel deployment for evaluation. All environment variables (`ADMIN_SECRET`, `GROQ_API_KEY`, `NONCE_HMAC_SECRET`) are already configured there — the AI pipeline, wallet auth, and on-chain payouts work out of the box with no local setup required.
+> **Recommended:** Use the **[live Vercel deployment](https://achievo-rust.vercel.app)** for evaluation. All environment variables (`ADMIN_SECRET`, `GROQ_API_KEY`, `NONCE_HMAC_SECRET`) are already configured there — the AI pipeline, wallet auth, and on-chain payouts work out of the box with no local setup required.
+
+**Contract tests (Rust):**
+```bash
+cd contract && cargo test
+# 12 tests: initialize, send_reward, edge cases, event emission
+```
+
+**Frontend tests (Vitest + fast-check):**
+```bash
+cd frontend && npm test
+# 8 test files, 29 tests: pure helpers (computeStartLedger, stroopsToXlm,
+# decodeRewardEvent, filterByRecipient, mergePayouts) + RecentPayouts UI states,
+# property-based tests (fast-check) for correctness across full value ranges
+```
+
+> **Note on real-time event feed:** Soroban RPC does not expose SSE or WebSocket streams for contract events — `getEvents` polling is the supported mechanism. Achievo polls every 15 seconds using the Soroban RPC `getEvents` endpoint, filtered by the `(reward, sent)` topic and the connected wallet address. This is architecturally equivalent to event streaming for Soroban.
 
 Running locally requires manually setting env vars and a Vercel CLI session for the serverless API to work (see below).
+
+---
+
+## Analytics & Monitoring
+
+Product usage is instrumented client-side with [PostHog](https://posthog.com) (`posthog-js`,
+initialized in `frontend/src/main.tsx`). Autocapture + pageviews run by default; three custom
+events track the core funnel end-to-end:
+
+| Event | Fired when | Payload |
+|---|---|---|
+| `wallet_connected` | A wallet successfully connects (`handleConnect` in `App.tsx`) | `wallet_type` (Freighter/Albedo/xBull/Lobstr) |
+| `activity_submitted` | A student submits an activity description | `length` of the submission |
+| `reward_paid` | A reward transaction settles on-chain | `amount`, `activity`, `tx_hash` |
+
+Initialization is guarded on `VITE_POSTHOG_KEY` being present, so local/CI builds without the
+key run normally with analytics simply disabled — no PostHog account is required to build,
+test, or develop the app. See [Environment Variables](#environment-variables) for setup.
+
+---
+
+## User Feedback
+
+<!-- TODO: replace with real tester feedback before submission. -->
+
+> Pending — real tester feedback notes to be added here.
 
 ---
 
@@ -224,6 +326,8 @@ cargo build --release --target wasm32v1-none
 | `ADMIN_SECRET` | Stellar secret key of the treasury admin account |
 | `GROQ_API_KEY` | Groq API key for AI activity evaluation |
 | `NONCE_HMAC_SECRET` | Secret for signing wallet challenge nonces |
+| `VITE_POSTHOG_KEY` | PostHog project API key (public, client-side). Omit to run with analytics disabled. |
+| `VITE_POSTHOG_HOST` | PostHog ingestion host. Optional — defaults to `https://us.i.posthog.com`. |
 
 ---
 

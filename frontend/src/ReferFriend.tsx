@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Copy, Mail, MoreHorizontal, HelpCircle, Users, UserCheck, Gift, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -11,7 +11,11 @@ export function ReferFriend({ userName }: ReferFriendProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Generate a mock unique referral code based on the username
-  const referralCode = `ACH-${userName.slice(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
+  const referralCode = useMemo(
+    // eslint-disable-next-line react-hooks/purity
+    () => `ACH-${userName.slice(0, 3).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`,
+    [userName],
+  );
   const referralUrl = `https://achievo.app/join?ref=${referralCode}`;
 
   const handleCopyCode = () => {

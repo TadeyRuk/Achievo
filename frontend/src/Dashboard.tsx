@@ -184,6 +184,7 @@ export function Dashboard({
         <strong className="text-[13px] font-bold text-[#00162b]">Tutoring</strong>
       </span>
     ),
+    // eslint-disable-next-line react-hooks/purity
     timestamp: Date.now() - 2 * 60 * 1000, // 2 mins ago
     timeStr: "2 mins ago",
   };
@@ -202,6 +203,7 @@ export function Dashboard({
         </div>
       </div>
     ),
+    // eslint-disable-next-line react-hooks/purity
     timestamp: Date.now() - 60 * 60 * 1000, // 1 hr ago
     timeStr: "1 hr ago",
   };

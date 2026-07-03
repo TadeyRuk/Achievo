@@ -96,3 +96,6 @@ impl RewardTreasuryContract {
         state.admin
     }
 }
+
+#[cfg(test)]
+mod test;

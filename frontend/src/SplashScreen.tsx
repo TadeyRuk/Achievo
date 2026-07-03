@@ -27,14 +27,8 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
         }
         
         const diff = progress - prev;
-        let step = 1.0;
-        if (diff > 50) {
-          step = 2.2; // faster step if the real progress jumped way ahead
-        } else if (diff > 20) {
-          step = 1.4;
-        } else {
-          step = 0.8; // slower ease-out near target
-        }
+        // faster step when real progress jumped ahead; ease-out near target
+        const step = diff > 50 ? 2.2 : diff > 20 ? 1.4 : 0.8;
         
         return Math.min(prev + step, progress);
       });
@@ -46,6 +40,7 @@ export function SplashScreen({ progress, onDone }: SplashScreenProps) {
   // Once visual progress settles at 100%, trigger the out phase
   useEffect(() => {
     if (visualProgress >= 100) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPhase("out");
       const timer = setTimeout(() => {
         onDone();

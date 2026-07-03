@@ -26,7 +26,7 @@ interface RewardHistoryProps {
   history: RewardHistoryItem[];
 }
 
-const ACTIVITY_ICONS: Record<string, React.ComponentType<any>> = {
+const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   volunteering: CustomUserHeart,
   tutoring: CustomBookUser,
   workshop: CustomBookOpen,

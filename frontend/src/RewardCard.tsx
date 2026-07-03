@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { motion } from "motion/react";
 
@@ -16,7 +17,9 @@ const MESSAGES = [
 ];
 
 export function RewardCard({ reward, txHash, onClose }: RewardCardProps) {
-  const msg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
+  // Pick a random message once per mount — stable across re-renders
+  // eslint-disable-next-line react-hooks/purity
+  const msg = useMemo(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)], []);
 
   return (
     <motion.div
