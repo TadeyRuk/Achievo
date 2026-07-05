@@ -22,16 +22,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid wallet address.' });
   }
 
-  const adminSecret = process.env.ADMIN_SECRET;
-  if (!adminSecret) {
+  const nonceSecret = process.env.NONCE_HMAC_SECRET;
+  if (!nonceSecret) {
     return res.status(500).json({ error: 'Server configuration error.' });
   }
 
   const nonce = randomBytes(16).toString('hex');
   const expiry = Date.now() + 5 * 60 * 1000; // 5 min
 
-  // HMAC proves this nonce+expiry was server-issued — no storage needed
-  const mac = createHmac('sha256', adminSecret)
+  // HMAC proves this nonce+expiry was server-issued. Signed with a dedicated
+  // secret (not ADMIN_SECRET) so a leaked challenge token never touches the
+  // treasury signing key. Single-use enforcement happens in reward.ts via Redis.
+  const mac = createHmac('sha256', nonceSecret)
     .update(`${nonce}:${expiry}`)
     .digest('hex');
 

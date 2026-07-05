@@ -83,10 +83,10 @@
                   "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
                 },
                 {
-                  "i128": "5000000"
+                  "i128": "50000000"
                 },
                 {
-                  "symbol": "volunteer"
+                  "symbol": "event"
                 }
               ]
             }
@@ -208,7 +208,7 @@
                           "symbol": "activity"
                         },
                         "val": {
-                          "symbol": "volunteer"
+                          "symbol": "event"
                         }
                       },
                       {
@@ -216,7 +216,7 @@
                           "symbol": "amount"
                         },
                         "val": {
-                          "i128": "5000000"
+                          "i128": "50000000"
                         }
                       },
                       {
@@ -295,7 +295,7 @@
                               "symbol": "total_disbursed"
                             },
                             "val": {
-                              "i128": "5000000"
+                              "i128": "50000000"
                             }
                           }
                         ]
@@ -355,7 +355,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "995000000"
+                      "i128": "950000000"
                     }
                   },
                   {
@@ -407,7 +407,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "5000000"
+                      "i128": "50000000"
                     }
                   },
                   {

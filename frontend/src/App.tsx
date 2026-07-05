@@ -8,9 +8,10 @@ import {
   CONTRACT_ID,
   getTreasuryInfo,
   getRewardEvents,
-  mergePayouts,
+  getRewardLedger,
+  attachTxHashes,
   type TreasuryInfo,
-  type PayoutItem,
+  type RewardLedgerRecord,
 } from './contract';
 import { activityAgent, rewardAgent, feedbackAgent } from './agents';
 import { Navbar } from './Navbar';
@@ -94,7 +95,7 @@ export default function App() {
   });
 
   // On-chain payout feed (polled from Soroban RPC getEvents)
-  const [payouts, setPayouts]           = useState<PayoutItem[]>([]);
+  const [payouts, setPayouts]           = useState<RewardLedgerRecord[]>([]);
   const [payoutsLoading, setPayoutsLoading] = useState<boolean>(false);
   const [payoutsError, setPayoutsError] = useState<string | null>(null);
   // Stable ref so loadPayouts can read current history without re-subscribing interval

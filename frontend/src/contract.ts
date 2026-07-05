@@ -43,6 +43,23 @@ export interface RewardEvent {
   recipient: string;   // Stellar public key (decoded via scValToNative)
   amount: number;      // reward in XLM (stroops / STROOP_FACTOR)
   timestamp: number;   // ms epoch derived from event ledgerClosedAt
+  ledger?: number;     // ledger sequence the event was emitted in — joins to RewardLedgerRecord.
+                       // Optional: always set by decodeRewardEvent; existing tests construct
+                       // RewardEvent literals directly and predate this field.
+}
+
+// A single durable reward record read from contract storage via get_history.
+// This is the read-only, on-chain ledger — it survives past the bounded
+// RPC event-retention window (unlike RewardEvent). It has no txHash on its
+// own (a contract cannot observe its own transaction hash); attachTxHashes
+// fills that in by joining against RewardEvent on (ledger, recipient, amount).
+export interface RewardLedgerRecord {
+  recipient: string;
+  amount: number;      // XLM
+  activity: string;
+  ledger: number;
+  timestamp: number;   // ms epoch (contract stores seconds)
+  txHash?: string;      // present only if a matching event was found in-window
 }
 
 // A merged feed entry combining chain truth with a local activity label.
@@ -86,6 +103,7 @@ export function decodeRewardEvent(event: rpc.Api.EventResponse): RewardEvent {
     recipient,
     amount: stroopsToXlm(amountStroops),
     timestamp: new Date(event.ledgerClosedAt).getTime(),
+    ledger: event.ledger,
   };
 }
 
@@ -125,6 +143,47 @@ export function mergePayouts(
 
   // 3. Sort by timestamp descending (most recent first).
   return payouts.sort((a, b) => b.timestamp - a.timestamp);
+}
+
+// ─── On-chain ledger (get_history) ────────────────────────────────────────────
+
+// Decode one raw RewardRecord struct (from the contract's get_history view) into
+// a typed RewardLedgerRecord. The contract stores { recipient, amount, activity,
+// ledger, timestamp } where amount is i128 stroops, activity is a Symbol, and
+// timestamp is Unix seconds (converted to ms here to match RewardEvent).
+export function decodeLedgerRecord(raw: unknown): RewardLedgerRecord {
+  const r = raw as {
+    recipient: unknown;
+    amount: number | bigint;
+    activity: unknown;
+    ledger: number;
+    timestamp: number | bigint;
+  };
+  return {
+    recipient: String(r.recipient),
+    amount: stroopsToXlm(r.amount),
+    activity: String(r.activity),
+    ledger: Number(r.ledger),
+    timestamp: Number(r.timestamp) * 1000,
+  };
+}
+
+// Attach a txHash to each ledger record by matching (ledger, recipient, amount)
+// against the decoded event log. Records with no matching event (i.e. older than
+// the RPC event-retention window) are left with txHash undefined — the UI falls
+// back to a ledger-sequence explorer link in that case.
+export function attachTxHashes(
+  records: RewardLedgerRecord[],
+  events: RewardEvent[]
+): RewardLedgerRecord[] {
+  const eventsByKey = new Map<string, RewardEvent>();
+  for (const event of events) {
+    eventsByKey.set(`${event.ledger}:${event.recipient}:${event.amount}`, event);
+  }
+  return records.map((record) => {
+    const match = eventsByKey.get(`${record.ledger}:${record.recipient}:${record.amount}`);
+    return match ? { ...record, txHash: match.txHash } : record;
+  });
 }
 
 // ─── RPC retrieval — getRewardEvents ──────────────────────────────────────────
@@ -221,6 +280,15 @@ export async function getTreasuryAdmin(contractId: string = CONTRACT_ID): Promis
   return String(raw);
 }
 
+// Read-only on-chain ledger: every reward this treasury has ever paid out,
+// straight from contract storage (get_history) — no signature, no XLM cost,
+// and (unlike getRewardEvents) not bounded by RPC event retention.
+export async function getRewardLedger(contractId: string = CONTRACT_ID): Promise<RewardLedgerRecord[]> {
+  const raw = await simulateViewCall(contractId, "get_history");
+  const rows = Array.isArray(raw) ? raw : [];
+  return rows.map(decodeLedgerRecord);
+}
+
 export async function getTreasuryInfo(contractId: string = CONTRACT_ID): Promise<TreasuryInfo> {
   const [balance, admin, disbursed] = await Promise.all([
     simulateViewCall(contractId, "get_balance"),
@@ -241,23 +309,26 @@ export async function getTreasuryInfo(contractId: string = CONTRACT_ID): Promise
  * @param admin     Connected admin wallet address (must match contract admin)
  * @param recipient Student's Stellar public key
  * @param rewardXlm Reward amount in XLM (not stroops)
+ * @param activity  Activity label recorded on-chain (get_history); e.g. "tutoring"
  */
 export async function sendRewardOnChain(
   admin: string,
   recipient: string,
   rewardXlm: number,
+  activity: string,
   onStatusUpdate?: (status: string) => void,
   contractId: string = CONTRACT_ID
 ): Promise<string> {
   const rewardStroops = BigInt(Math.round(rewardXlm * STROOP_FACTOR));
   const scRecipient = nativeToScVal(recipient, { type: "address" });
   const scAmount = nativeToScVal(rewardStroops, { type: "i128" });
+  const scActivity = nativeToScVal(activity, { type: "symbol" });
 
   return sendContractTransaction(
     admin,
     contractId,
     "send_reward",
-    [scRecipient, scAmount],
+    [scRecipient, scAmount, scActivity],
     onStatusUpdate
   );
 }

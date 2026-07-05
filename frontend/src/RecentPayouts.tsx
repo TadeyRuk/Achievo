@@ -1,6 +1,12 @@
 import { ExternalLink, Wallet, AlertCircle, Zap } from "lucide-react";
 import { motion } from "motion/react";
-import { CustomTrophy } from "./customIcons";
+import {
+  CustomTrophy,
+  CustomUserHeart,
+  CustomBookUser,
+  CustomBookOpen,
+  CustomMedal,
+} from "./customIcons";
 import type { PayoutItem } from "./contract";
 
 interface RecentPayoutsProps {
@@ -15,6 +21,72 @@ function truncateHash(hash: string): string {
   if (hash.length <= 16) return hash;
   return `${hash.slice(0, 8)}…${hash.slice(-8)}`;
 }
+
+// Relative time formatter for transaction items
+function formatTimeAgo(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return "Just now";
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+
+  return new Date(ts).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  volunteering: CustomUserHeart,
+  tutoring: CustomBookUser,
+  workshop: CustomBookOpen,
+  event: CustomMedal,
+  participation: CustomMedal,
+};
+
+const getIcon = (act: string) => {
+  const normalized = act.toLowerCase();
+  if (normalized.includes("volunteer")) return CustomUserHeart;
+  if (normalized.includes("tutor") || normalized.includes("math")) return CustomBookUser;
+  if (normalized.includes("workshop")) return CustomBookOpen;
+  if (normalized.includes("event") || normalized.includes("participation")) return CustomMedal;
+  return Zap;
+};
+
+const getIconColorClasses = (act: string) => {
+  const normalized = act.toLowerCase();
+  if (normalized.includes("volunteer")) {
+    return {
+      bg: "bg-rose-50/80 border-rose-100/50 text-rose-600",
+      icon: "text-rose-500",
+    };
+  }
+  if (normalized.includes("tutor") || normalized.includes("math")) {
+    return {
+      bg: "bg-violet-50/80 border-violet-100/50 text-violet-600",
+      icon: "text-violet-500",
+    };
+  }
+  if (normalized.includes("workshop")) {
+    return {
+      bg: "bg-indigo-50/80 border-indigo-100/50 text-indigo-600",
+      icon: "text-indigo-500",
+    };
+  }
+  if (normalized.includes("event") || normalized.includes("participation")) {
+    return {
+      bg: "bg-amber-50/80 border-amber-100/50 text-amber-600",
+      icon: "text-amber-500",
+    };
+  }
+  return {
+    bg: "bg-blue-50/80 border-blue-100/50 text-[var(--dah-primary)]",
+    icon: "text-[var(--dah-primary)]",
+  };
+};
 
 const itemVariants = {
   hidden: {
@@ -41,7 +113,7 @@ export function RecentPayouts({ payouts, loading, error, walletConnected }: Rece
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
-      className="space-y-4"
+      className="px-5 pt-5 pb-0 space-y-4"
     >
       {/* Section Header */}
       <div className="flex items-center justify-between px-1">
@@ -49,44 +121,53 @@ export function RecentPayouts({ payouts, loading, error, walletConnected }: Rece
           Recent Payouts
         </h2>
         {walletConnected && payouts.length > 0 && (
-          <span className="text-[12px] font-display font-semibold text-[var(--dah-primary)] bg-[var(--dah-secondary-container)]/30 px-2.5 py-1 rounded-full">
-            Live
+          <span className="flex items-center gap-1.5 text-[10px] font-display font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/30 px-2.5 py-1 rounded-full shadow-xs">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            <span>LIVE FEED</span>
           </span>
         )}
       </div>
 
-      {/* Non-destructive error banner — rendered ABOVE the retained list (Req 6.1) */}
+      {/* Non-destructive error banner — rendered ABOVE the retained list */}
       {error && (
-        <div className="bg-[var(--dah-surface-low)] border border-[var(--dah-outline-variant)]/60 rounded-[20px] px-4 py-3 flex items-center gap-2.5">
-          <AlertCircle className="w-4 h-4 text-[var(--dah-outline)] shrink-0" />
-          <p className="text-[12px] font-medium text-[var(--dah-on-surface-variant)] leading-snug">
+        <div className="bg-[var(--dah-error-container)]/30 border border-[var(--dah-error)]/25 rounded-[20px] px-4 py-3 flex items-center gap-2.5 shadow-xs">
+          <AlertCircle className="w-4 h-4 text-[var(--dah-error)] shrink-0" />
+          <p className="text-[12px] font-semibold text-[var(--dah-error)] leading-snug">
             {error}
           </p>
         </div>
       )}
 
       {!walletConnected ? (
-        /* Not connected — purely presentational empty state, no RPC (Req 2.2) */
-        <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/60 p-8 text-center space-y-4">
-          <div className="w-16 h-16 bg-[var(--dah-surface-low)] rounded-full flex items-center justify-center mx-auto text-[var(--dah-outline)]">
-            <Wallet className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-[16px] font-display font-bold text-[var(--dah-on-surface)]">
-              Connect your wallet
-            </p>
-            <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed max-w-[220px] mx-auto font-medium">
-              Connect a Stellar wallet to see your recent on-chain payouts here.
-            </p>
+        /* Not connected — purely presentational empty state, no RPC */
+        <div className="bg-white rounded-[28px] border border-[var(--dah-outline-variant)]/40 p-8 text-center relative overflow-hidden shadow-xs">
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-[var(--dah-surface-low)] rounded-full pointer-events-none animate-pulse" style={{ animationDuration: '3s' }} />
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-[var(--dah-surface-low)]/50 rounded-full pointer-events-none" />
+
+          <div className="relative space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-tr from-[var(--dah-primary-container)] to-[var(--dah-primary)] rounded-full flex items-center justify-center mx-auto text-white shadow-lg shadow-[var(--dah-primary)]/10">
+              <Wallet className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5 max-w-[240px] mx-auto font-medium">
+              <p className="text-[17px] font-display font-bold text-[var(--dah-on-surface)]">
+                Connect your wallet
+              </p>
+              <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed">
+                Connect a Stellar wallet to see your recent on-chain payouts here.
+              </p>
+            </div>
           </div>
         </div>
       ) : loading && payouts.length === 0 ? (
-        /* Initial loading indicator (Req 5.4) */
-        <div className="space-y-2.5">
+        /* Initial loading indicator */
+        <div className="space-y-3">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/60 p-4 flex items-center justify-between animate-pulse"
+              className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/40 p-4.5 flex items-center justify-between animate-pulse"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-12 h-12 rounded-full bg-[var(--dah-surface-low)] shrink-0" />
@@ -95,64 +176,85 @@ export function RecentPayouts({ payouts, loading, error, walletConnected }: Rece
                   <div className="h-2.5 w-32 bg-[var(--dah-surface-low)] rounded-full" />
                 </div>
               </div>
-              <div className="h-4 w-16 bg-[var(--dah-surface-low)] rounded-full" />
+              <div className="h-5 w-16 bg-[var(--dah-surface-low)] rounded-full" />
             </div>
           ))}
         </div>
       ) : payouts.length > 0 ? (
-        /* Populated payout list (Req 5.2) */
-        <div className="space-y-2.5">
-          {payouts.map((item, index) => (
-            <motion.div
-              key={item.txHash}
-              variants={itemVariants}
-              initial="hidden"
-              animate="show"
-              transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/60 p-4 flex items-center justify-between hover:border-[var(--dah-primary)] transition-all active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-[var(--dah-surface-low)] flex items-center justify-center shrink-0">
-                  <Zap className="w-5 h-5 text-[var(--dah-primary)]" />
-                </div>
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-[14px] font-display font-bold text-[var(--dah-on-surface)] capitalize truncate">
-                    {item.activity}
-                  </p>
-                  <a
-                    href={`https://stellar.expert/explorer/testnet/tx/${item.txHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] font-semibold text-[var(--dah-primary)] hover:underline flex items-center gap-1 font-mono"
-                  >
-                    {truncateHash(item.txHash)}
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
-                </div>
-              </div>
+        /* Populated payout list */
+        <div className="space-y-3">
+          {payouts.map((item, index) => {
+            const IconComponent = getIcon(item.activity);
+            const colors = getIconColorClasses(item.activity);
 
-              <div className="flex items-center gap-1 justify-end font-display shrink-0">
-                <span className="text-[16px] font-extrabold text-[var(--dah-secondary)]">
-                  +{item.amount}
-                </span>
-                <span className="text-[11px] font-bold text-[var(--dah-outline)]">XLM</span>
-              </div>
-            </motion.div>
-          ))}
+            return (
+              <motion.div
+                key={item.txHash}
+                variants={itemVariants}
+                initial="hidden"
+                animate="show"
+                transition={{ delay: index * 0.05 }}
+                className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/45 p-4 flex items-center justify-between hover:border-[var(--dah-primary)] hover:shadow-md hover:shadow-slate-100/50 transition-all duration-300 active:scale-[0.99] group cursor-pointer"
+              >
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                  <div className={`w-12 h-12 rounded-full border ${colors.bg} flex items-center justify-center shrink-0 shadow-xs transition-transform duration-300 group-hover:scale-105`}>
+                    <IconComponent className={`w-5.5 h-5.5 ${colors.icon}`} />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="text-[14px] font-display font-bold text-[var(--dah-on-surface)] capitalize truncate leading-tight">
+                      {item.activity}
+                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <a
+                        href={`https://stellar.expert/explorer/testnet/tx/${item.txHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono bg-[var(--dah-surface-low)] hover:bg-[var(--dah-surface-container)] text-[var(--dah-primary)] px-2 py-0.5 rounded-md transition-colors"
+                      >
+                        {truncateHash(item.txHash)}
+                        <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                      </a>
+                      <span className="text-[10px] font-semibold text-[var(--dah-outline)]">
+                        {formatTimeAgo(item.timestamp)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0 pl-2">
+                  <div className="flex items-baseline gap-0.5 font-display justify-end">
+                    <span className="text-[16px] font-extrabold text-[var(--dah-secondary)]">
+                      +{item.amount}
+                    </span>
+                    <span className="text-[11px] font-bold text-[var(--dah-outline)] ml-0.5">XLM</span>
+                  </div>
+                  <div className="flex items-center justify-end gap-1 mt-0.5 text-[9px] font-extrabold text-emerald-600 tracking-wider uppercase">
+                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>On-Chain</span>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       ) : !error ? (
-        /* Empty state after a successful query (Req 5.3, 6.3) */
-        <div className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)]/60 p-8 text-center space-y-4">
-          <div className="w-16 h-16 bg-[var(--dah-surface-low)] rounded-full flex items-center justify-center mx-auto text-[var(--dah-outline)]">
-            <CustomTrophy className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <p className="text-[16px] font-display font-bold text-[var(--dah-on-surface)]">
-              No payouts found yet
-            </p>
-            <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed max-w-[220px] mx-auto font-medium">
-              Payouts sent to your wallet on the Stellar testnet will appear here automatically.
-            </p>
+        /* Empty state after a successful query */
+        <div className="bg-white rounded-[28px] border border-[var(--dah-outline-variant)]/40 p-8 text-center relative overflow-hidden shadow-xs">
+          <div className="absolute -top-12 -right-12 w-28 h-28 bg-amber-500/5 rounded-full pointer-events-none" />
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-blue-500/5 rounded-full pointer-events-none" />
+
+          <div className="relative space-y-4">
+            <div className="w-16 h-16 bg-gradient-to-tr from-amber-400 to-amber-600 rounded-full flex items-center justify-center mx-auto text-white shadow-lg shadow-amber-500/10">
+              <CustomTrophy className="w-7 h-7" />
+            </div>
+            <div className="space-y-1.5 max-w-[240px] mx-auto font-medium">
+              <p className="text-[17px] font-display font-bold text-[var(--dah-on-surface)]">
+                No payouts found yet
+              </p>
+              <p className="text-[13px] text-[var(--dah-on-surface-variant)] leading-relaxed">
+                Payouts sent to your wallet on the Stellar testnet will appear here automatically.
+              </p>
+            </div>
           </div>
         </div>
       ) : null}

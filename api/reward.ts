@@ -111,14 +111,14 @@ function getClientIp(req: VercelRequest): string {
 }
 
 function verifyChallenge(
-  adminSecret: string,
+  nonceSecret: string,
   wallet: string,
   nonce: string,
   expiry: number,
   mac: string,
   signedXdr: string,
 ): { ok: boolean; error?: string } {
-  const expectedMac = createHmac('sha256', adminSecret)
+  const expectedMac = createHmac('sha256', nonceSecret)
     .update(`${nonce}:${expiry}`)
     .digest('hex');
   if (expectedMac !== mac) return { ok: false, error: 'Invalid challenge token.' };
@@ -191,9 +191,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const adminSecret = process.env.ADMIN_SECRET;
-  if (!adminSecret) return res.status(500).json({ error: 'Server configuration error.' });
+  const nonceSecret = process.env.NONCE_HMAC_SECRET;
+  if (!adminSecret || !nonceSecret) return res.status(500).json({ error: 'Server configuration error.' });
 
-  const proof = verifyChallenge(adminSecret, wallet, nonce, expiry, mac, signedXdr);
+  const proof = verifyChallenge(nonceSecret, wallet, nonce, expiry, mac, signedXdr);
   if (!proof.ok) return res.status(401).json({ error: proof.error });
 
   // AI classification — authoritative decision
@@ -248,6 +249,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'send_reward',
         new Address(wallet).toScVal(),
         nativeToScVal(rewardStroops, { type: 'i128' }),
+        nativeToScVal(classification.activity, { type: 'symbol' }),
       ))
       .setTimeout(30)
       .build();
