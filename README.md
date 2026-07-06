@@ -154,11 +154,17 @@ XP is earned at **100 XP per XLM received**. Each rank has a badge with a 3D ani
 | Item | Value |
 |------|-------|
 | Network | Stellar Testnet |
-| Contract ID | `CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM` |
+| Contract ID | `CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS` |
 | XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
-| Treasury Balance | 10,000 testnet XLM |
-| Sample Transaction | [f0649aba…](https://stellar.expert/explorer/testnet/tx/f0649abac4f597b6f2f7244f79e0ef4376a299573891034def5d16cc9392ee35) |
-| Explorer | [View on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) |
+| Treasury Balance | 1,000 testnet XLM |
+| Explorer | [View on StellarExpert](https://stellar.expert/explorer/testnet/contract/CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS) |
+
+> **Redeployed 2026-07-06.** The treasury was redeployed to add an on-chain
+> `MAX_REWARD_PER_TX` cap (20 XLM) and a durable on-chain reward history
+> (`get_history`/`get_reward`), so a leaked admin key or API bug can no longer
+> drain the treasury in a single call. The wallet-interaction table below is a
+> historical record from the previous contract deployment; the live app and
+> Recent Payouts feed now point at the contract ID above.
 
 ---
 
@@ -184,7 +190,7 @@ event log (topics `("reward", "sent")`).
 June 14–16, 2026 dev/QA testing window.** Wallet diversity in this window is capped by the
 contract's own `1 reward per wallet per day` rate limit (`api/reward.ts`) — each wallet could
 only be paid once daily during solo testing. Every row is reproducible independently via the
-[contract's event log on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM)
+[contract's event log on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) (previous contract deployment, prior to the 2026-07-06 redeploy above)
 or the Soroban RPC `getEvents` endpoint (see `getRewardEvents()` in `frontend/src/contract.ts`).
 Wallet-connect and activity-submission events are additionally tracked client-side via
 PostHog (see [Analytics & Monitoring](#analytics--monitoring)) as of this release, so live
@@ -242,7 +248,7 @@ rank progress, and CI status.
 **Contract tests (Rust):**
 ```bash
 cd contract && cargo test
-# 12 tests: initialize, send_reward, edge cases, event emission
+# 18 tests: initialize, send_reward, per-tx cap, on-chain history, edge cases, event emission
 ```
 
 **Frontend tests (Vitest + fast-check):**

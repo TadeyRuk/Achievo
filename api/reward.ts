@@ -14,7 +14,7 @@ import {
 } from '@stellar/stellar-sdk';
 import { createHmac } from 'crypto';
 
-const CONTRACT_ID = "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM";
+const CONTRACT_ID = "CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS";
 const STROOP_FACTOR = 10_000_000;
 
 const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
