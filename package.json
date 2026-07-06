@@ -6,7 +6,8 @@
     "vercel-build": "cd frontend && npm install && npm run build"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^13.3.0"
+    "@stellar/stellar-sdk": "^13.3.0",
+    "@upstash/redis": "^1.38.0"
   },
   "devDependencies": {
     "@vercel/node": "^5.1.5",

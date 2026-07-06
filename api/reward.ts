@@ -13,6 +13,7 @@ import {
   StrKey,
 } from '@stellar/stellar-sdk';
 import { createHmac } from 'crypto';
+import { getTimestamp, setTimestamp, claimOnce } from './_lib/store';
 
 const CONTRACT_ID = "CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS";
 const STROOP_FACTOR = 10_000_000;
@@ -20,8 +21,6 @@ const STROOP_FACTOR = 10_000_000;
 const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
 const horizonServer = new Horizon.Server("https://horizon-testnet.stellar.org");
 
-const walletLastReward = new Map<string, number>();
-const ipLastReward = new Map<string, number>();
 const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
 
 const BASE_REWARD: Record<string, number> = {
@@ -197,6 +196,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const proof = verifyChallenge(nonceSecret, wallet, nonce, expiry, mac, signedXdr);
   if (!proof.ok) return res.status(401).json({ error: proof.error });
 
+  // 1. Single-use nonce check (prevent replay attacks)
+  const nonceKey = `nonce:${nonce}`;
+  const claimed = await claimOnce(nonceKey, 300); // 5 min TTL matching nonce expiry
+  if (!claimed) {
+    return res.status(401).json({ error: 'Challenge nonce has already been used.' });
+  }
+
+  // 2. Rate limit check
+  const ip = getClientIp(req);
+  const now = Date.now();
+  const walletLimitKey = `rate:wallet:${wallet}`;
+  const ipLimitKey = `rate:ip:${ip}`;
+
+  const walletTs = await getTimestamp(walletLimitKey);
+  if (walletTs && now - walletTs < RATE_LIMIT_MS) {
+    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - walletTs)) / 3_600_000);
+    return res.status(429).json({ error: `Rate limit: 1 reward per day. Try again in ${hoursLeft}h.` });
+  }
+  if (ip !== 'unknown') {
+    const ipTs = await getTimestamp(ipLimitKey);
+    if (ipTs && now - ipTs < RATE_LIMIT_MS) {
+      const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - ipTs)) / 3_600_000);
+      return res.status(429).json({ error: `Rate limit reached for your IP. Try again in ${hoursLeft}h.` });
+    }
+  }
+
   // AI classification — authoritative decision
   let classification: GroqClassification;
   try {
@@ -210,22 +235,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: `Activity not eligible for reward. ${classification.reason}`,
       activity: classification.activity,
     });
-  }
-
-  const ip = getClientIp(req);
-  const now = Date.now();
-
-  const walletTs = walletLastReward.get(wallet);
-  if (walletTs && now - walletTs < RATE_LIMIT_MS) {
-    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - walletTs)) / 3_600_000);
-    return res.status(429).json({ error: `Rate limit: 1 reward per day. Try again in ${hoursLeft}h.` });
-  }
-  if (ip !== 'unknown') {
-    const ipTs = ipLastReward.get(ip);
-    if (ipTs && now - ipTs < RATE_LIMIT_MS) {
-      const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - ipTs)) / 3_600_000);
-      return res.status(429).json({ error: `Rate limit reached for your IP. Try again in ${hoursLeft}h.` });
-    }
   }
 
   const effortScore = Math.min(1, Math.max(0, classification.effort_score ?? 0));
@@ -270,11 +279,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`Transaction rejected: ${errStr}`);
     }
 
-    walletLastReward.set(wallet, now);
-    if (ip !== 'unknown') ipLastReward.set(ip, now);
+    const txHash = sendResponse.hash;
+
+    // Poll for transaction settlement on-chain
+    let attempts = 0;
+    let txResponse = null;
+    while (attempts < 10) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      txResponse = await rpcServer.getTransaction(txHash);
+
+      if (txResponse.status === rpc.Api.GetTransactionStatus.SUCCESS) {
+        break;
+      } else if (txResponse.status === rpc.Api.GetTransactionStatus.FAILED) {
+        throw new Error(`Transaction execution failed on-chain: ${JSON.stringify(txResponse)}`);
+      }
+      attempts++;
+    }
+
+    if (!txResponse || txResponse.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
+      throw new Error("Transaction polling timed out. The payout may still succeed later.");
+    }
+
+    // Record rate limits durably now that the transaction has settled successfully
+    const ttlSeconds = RATE_LIMIT_MS / 1000;
+    await setTimestamp(walletLimitKey, now, ttlSeconds);
+    if (ip !== 'unknown') {
+      await setTimestamp(ipLimitKey, now, ttlSeconds);
+    }
 
     return res.status(200).json({
-      txHash: sendResponse.hash,
+      txHash,
       reward,
       base,
       bonus,
