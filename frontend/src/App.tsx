@@ -14,6 +14,7 @@ import {
   type RewardLedgerRecord,
 } from './contract';
 import { activityAgent, rewardAgent, feedbackAgent } from './agents';
+import { ProgressionAgent, type StoredProgression } from './agents/progression';
 import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
 import { ActivityForm } from './ActivityForm';
@@ -98,6 +99,25 @@ export default function App() {
       return [];
     }
   });
+
+  // ProgressionAgent persisted freeze state (streak freezes). Reconciled against
+  // history + time whenever history changes; persisted so freezes survive reloads.
+  const [progression, setProgression] = useState<StoredProgression>(() => {
+    try {
+      const saved = localStorage.getItem("achievo_progression");
+      return saved ? (JSON.parse(saved) as StoredProgression) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    setProgression((prev) => {
+      const { storedNext } = ProgressionAgent.reconcile(history, prev);
+      try { localStorage.setItem("achievo_progression", JSON.stringify(storedNext)); } catch { /* ignore */ }
+      return storedNext;
+    });
+  }, [history]);
 
   // On-chain payout feed: durable ledger (get_history, contract storage — survives
   // past the RPC event-retention window) with tx hashes attached from getRewardEvents
@@ -551,6 +571,7 @@ export default function App() {
                   key="home-dashboard"
                   userName="Xander"
                   history={history}
+                  progression={progression}
                   walletAddress={walletAddress}
                   userAvatar={userAvatar}
                   onSubmitActivityClick={() => {
@@ -596,6 +617,7 @@ export default function App() {
                 key="profile"
                 walletAddress={walletAddress}
                 history={history}
+                progression={progression}
                 userAvatar={userAvatar}
                 onAvatarChange={handleAvatarChange}
               />

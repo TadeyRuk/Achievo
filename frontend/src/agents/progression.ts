@@ -67,6 +67,9 @@ export interface ProgressionState {
 /** XP awarded per XLM earned. */
 export const XP_PER_XLM = 100;
 
+/** Streak length at each multiple of which a freeze token is awarded. */
+export const FREEZE_MILESTONE = 7;
+
 // ─── Streak ────────────────────────────────────────────────────────────────
 
 /** Local "YYYY-MM-DD" day key, matching the historical toLocaleDateString("en-CA"). */
@@ -97,7 +100,99 @@ export function computeStreak(history: ProgressionHistoryItem[], now: Date = new
   return count;
 }
 
-// ─── XP & activity counts ────────────────────────────────────────────────────
+export interface StreakReconciliation {
+  /** Freeze-aware streak length (single-day gaps bridged by tokens). */
+  streak: number;
+  /** Freeze tokens remaining after bridging + awarding this run. */
+  freezes: number;
+  /** Freeze tokens newly awarded this run (for a "pop" animation). */
+  freezesEarned: number;
+  /** The StoredProgression to persist so results are stable across sessions. */
+  storedNext: Required<StoredProgression>;
+}
+
+/**
+ * Freeze-aware streak. Walks backwards from today (with the same today-not-yet-
+ * logged grace as computeStreak) and:
+ *   • bridges an ISOLATED single missed day by consuming one freeze token
+ *     (a two-day gap always breaks the streak, tokens or not);
+ *   • re-bridges days already paid for on a prior run (idempotent);
+ *   • awards one freeze token per FREEZE_MILESTONE (7) days of streak, once
+ *     per milestone crossed (no double-award).
+ *
+ * Pure + deterministic. `storedNext` is what the caller should persist.
+ */
+export function reconcileStreak(
+  history: ProgressionHistoryItem[],
+  stored: StoredProgression = {},
+  now: Date = new Date(),
+): StreakReconciliation {
+  let freezes = Math.max(0, stored.freezes ?? 0);
+  const consumed = new Set(stored.freezeConsumedDays ?? []);
+  const earnedMilestone0 = stored.lastAwardedStreakMilestone ?? 0;
+
+  const finish = (streak: number, earned: number): StreakReconciliation => {
+    let freezesEarned = 0;
+    let earnedMilestone = earnedMilestone0;
+    const target = Math.floor(streak / FREEZE_MILESTONE) * FREEZE_MILESTONE;
+    if (target > earnedMilestone0) {
+      freezesEarned = (target - earnedMilestone0) / FREEZE_MILESTONE;
+      freezes += freezesEarned;
+      earnedMilestone = target;
+    }
+    return {
+      streak,
+      freezes,
+      freezesEarned: earned + freezesEarned,
+      storedNext: {
+        freezes,
+        freezeConsumedDays: [...consumed],
+        lastAwardedStreakMilestone: earnedMilestone,
+      },
+    };
+  };
+
+  if (history.length === 0) return finish(0, 0);
+
+  const daySet = new Set(history.map((item) => dayKey(new Date(item.timestamp))));
+  const today = new Date(now);
+  const startOffset = daySet.has(dayKey(today)) ? 0 : 1;
+
+  let count = 0;
+  const MAX = 365 * 2;
+  for (let i = startOffset; i < MAX; ) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = dayKey(d);
+
+    if (daySet.has(key)) {
+      count++;
+      i++;
+      continue;
+    }
+
+    // Missed day. Only an isolated single gap (older neighbour active) can be bridged.
+    const older = new Date(today);
+    older.setDate(today.getDate() - (i + 1));
+    const olderActive = daySet.has(dayKey(older));
+
+    if (olderActive && consumed.has(key)) {
+      i++; // already paid for on a prior run — bridge for free
+      continue;
+    }
+    if (olderActive && freezes > 0) {
+      freezes--;
+      consumed.add(key);
+      i++;
+      continue;
+    }
+    break; // two-day gap, or no token available
+  }
+
+  return finish(count, 0);
+}
+
+// ─── XP & activity counts ───────────────────────────────────────────────────────
 
 export function computeXp(history: ProgressionHistoryItem[]): number {
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
@@ -221,17 +316,33 @@ export const ProgressionAgent = {
   computeUnlocks,
   getRankInfo,
   progressPercent,
+  reconcileStreak,
+
+  /**
+   * Reconcile persisted freeze state against history + current time. Returns
+   * the freeze-aware streak, remaining/earned tokens, and the StoredProgression
+   * to persist. Call this from the state owner (App) to advance + persist.
+   */
+  reconcile(
+    history: ProgressionHistoryItem[],
+    stored: StoredProgression = {},
+    now: Date = new Date(),
+  ): StreakReconciliation {
+    return reconcileStreak(history, stored, now);
+  },
 
   /**
    * Aggregate the full progression snapshot from reward history (+ optional
-   * persisted state). This is the stable entry point screens should prefer.
+   * persisted freeze state). Streak/rank are freeze-aware. This is the stable
+   * entry point screens should prefer for display; it does not persist.
    */
   state(
     history: ProgressionHistoryItem[],
     stored: StoredProgression = {},
     now: Date = new Date(),
   ): ProgressionState {
-    const streak = computeStreak(history, now);
+    const rec = reconcileStreak(history, stored, now);
+    const streak = rec.streak;
     const xp = computeXp(history);
     const counts = activityCounts(history);
     const rankInfo = getRankInfo(xp, streak, counts);
@@ -242,7 +353,7 @@ export const ProgressionAgent = {
       unlocks: computeUnlocks(xp, streak, counts),
       rankInfo,
       progressPercent: progressPercent(xp, rankInfo),
-      freezes: stored.freezes ?? 0,
+      freezes: rec.freezes,
     };
   },
 };

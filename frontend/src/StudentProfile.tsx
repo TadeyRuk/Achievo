@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ShieldAlert, Lock, Check, Pencil, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShieldAlert, Lock, Check, Pencil, X, ChevronLeft, ChevronRight, Snowflake } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
-import { ProgressionAgent } from "./agents/progression";
+import { ProgressionAgent, type StoredProgression } from "./agents/progression";
 import {
   CustomCompass,
   CustomStar,
@@ -17,6 +17,7 @@ import {
 interface StudentProfileProps {
   walletAddress: string | null;
   history: RewardHistoryItem[];
+  progression?: StoredProgression;
   userAvatar: string;
   onAvatarChange: (avatar: string) => void;
 }
@@ -70,6 +71,7 @@ const itemVariants = {
 export function StudentProfile({
   walletAddress,
   history,
+  progression,
   userAvatar,
   onAvatarChange,
 }: StudentProfileProps) {
@@ -77,14 +79,15 @@ export function StudentProfile({
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
   const totalSubmissions = history.length;
 
-  // Progression — single source of truth via ProgressionAgent
-  const progression = ProgressionAgent.state(history);
-  const streak = progression.streak;
+  // Progression — single source of truth via ProgressionAgent (freeze-aware)
+  const prog = ProgressionAgent.state(history, progression ?? {});
+  const streak = prog.streak;
+  const freezes = prog.freezes;
 
-  const isSilverUnlocked = progression.unlocks.silver;
-  const isGoldUnlocked = progression.unlocks.gold;
-  const isPlatinumUnlocked = progression.unlocks.platinum;
-  const isDiamondUnlocked = progression.unlocks.diamond;
+  const isSilverUnlocked = prog.unlocks.silver;
+  const isGoldUnlocked = prog.unlocks.gold;
+  const isPlatinumUnlocked = prog.unlocks.platinum;
+  const isDiamondUnlocked = prog.unlocks.diamond;
 
   const badges = [
     {
@@ -171,7 +174,7 @@ export function StudentProfile({
       id: "community_savior",
       name: "Community Savior",
       desc: "Logged 3 volunteering sessions to support your community.",
-      unlocked: progression.counts.volunteering >= 3,
+      unlocked: prog.counts.volunteering >= 3,
       rimColor: "from-emerald-400 via-emerald-100 to-teal-600",
       innerColor: "from-emerald-700 via-emerald-800 to-teal-950",
       iconColor: "text-emerald-100",
@@ -181,7 +184,7 @@ export function StudentProfile({
       id: "giga_brain",
       name: "Giga Brain",
       desc: "Completed 5 tutoring sessions to enlighten your peers.",
-      unlocked: progression.counts.tutoring >= 5,
+      unlocked: prog.counts.tutoring >= 5,
       rimColor: "from-sky-400 via-sky-100 to-indigo-600",
       innerColor: "from-sky-700 via-sky-800 to-indigo-950",
       iconColor: "text-sky-100",
@@ -289,16 +292,29 @@ export function StudentProfile({
       {/* Stats Dashboard */}
       <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2.5">
         {[
-          { label: "Rewards", value: `${totalEarned} XLM`, icon: CustomTrophy },
-          { label: "Approved", value: totalSubmissions, icon: CustomClipboardList },
-          { label: "Streak", value: streak === 0 ? "No streak" : `${streak} Day${streak === 1 ? "" : "s"}`, icon: CustomStar },
+          { label: "Rewards", value: `${totalEarned} XLM`, icon: CustomTrophy, freeze: undefined as number | undefined },
+          { label: "Approved", value: totalSubmissions, icon: CustomClipboardList, freeze: undefined as number | undefined },
+          { label: "Streak", value: streak === 0 ? "No streak" : `${streak} Day${streak === 1 ? "" : "s"}`, icon: CustomStar, freeze: freezes },
         ].map((stat) => {
           const Icon = stat.icon;
           return (
             <div
               key={stat.label}
-              className="bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-3.5 text-center flex flex-col items-center justify-center space-y-1.5 shadow-sm"
+              className="relative bg-white rounded-[24px] border border-[var(--dah-outline-variant)] p-3.5 text-center flex flex-col items-center justify-center space-y-1.5 shadow-sm"
             >
+              {stat.freeze !== undefined && stat.freeze > 0 && (
+                <motion.div
+                  key={stat.freeze}
+                  initial={{ scale: 0.4, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 16 }}
+                  className="absolute top-2 right-2 inline-flex items-center gap-0.5 rounded-full bg-[var(--dah-surface-container)] border border-[var(--dah-secondary-container)] px-1.5 py-0.5"
+                  title={`${stat.freeze} streak freeze${stat.freeze === 1 ? "" : "s"} — protects a missed day`}
+                >
+                  <Snowflake className="w-2.5 h-2.5 text-[var(--dah-secondary)]" strokeWidth={2.5} />
+                  <span className="text-[9px] font-extrabold text-[var(--dah-secondary)] leading-none">{stat.freeze}</span>
+                </motion.div>
+              )}
               <div className="w-8 h-8 rounded-full bg-[var(--dah-surface-low)] flex items-center justify-center text-[var(--dah-primary)]">
                 <Icon className="w-4 h-4" />
               </div>

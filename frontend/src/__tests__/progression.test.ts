@@ -6,6 +6,8 @@ import {
   computeXp,
   activityCounts,
   getRankInfo,
+  reconcileStreak,
+  FREEZE_MILESTONE,
   type ProgressionHistoryItem,
 } from "../agents/progression";
 
@@ -114,5 +116,84 @@ describe("ProgressionAgent — rank gates", () => {
     expect(s.streak).toBe(1);
     expect(s.unlocks.silver).toBe(true);
     expect(s.freezes).toBe(0);
+  });
+});
+
+describe("ProgressionAgent — streak freeze", () => {
+  // Build a run of consecutive daily rewards ending `endOffset` days before NOW.
+  const consecutive = (days: number, endOffset = 0): ProgressionHistoryItem[] =>
+    Array.from({ length: days }, (_, k) => ({
+      activity: "tutoring",
+      reward: 5,
+      timestamp: NOW.getTime() - (endOffset + k) * DAY,
+    }));
+
+  it("awards one freeze at the 7-day milestone", () => {
+    const rec = reconcileStreak(consecutive(FREEZE_MILESTONE), {}, NOW);
+    expect(rec.streak).toBe(7);
+    expect(rec.freezes).toBe(1);
+    expect(rec.freezesEarned).toBe(1);
+    expect(rec.storedNext.lastAwardedStreakMilestone).toBe(7);
+  });
+
+  it("does not award before the milestone", () => {
+    const rec = reconcileStreak(consecutive(6), {}, NOW);
+    expect(rec.streak).toBe(6);
+    expect(rec.freezes).toBe(0);
+    expect(rec.freezesEarned).toBe(0);
+  });
+
+  it("bridges a single missed day and decrements a freeze", () => {
+    // active today, gap yesterday, active 2 days ago
+    const history = [
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() },
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() - 2 * DAY },
+    ];
+    const rec = reconcileStreak(history, { freezes: 1 }, NOW);
+    expect(rec.streak).toBe(2);
+    expect(rec.freezes).toBe(0);
+    expect(rec.storedNext.freezeConsumedDays.length).toBe(1);
+  });
+
+  it("does NOT bridge a two-day gap even with freezes available", () => {
+    // active today, gap for two days, active 3 days ago
+    const history = [
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() },
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() - 3 * DAY },
+    ];
+    const rec = reconcileStreak(history, { freezes: 5 }, NOW);
+    expect(rec.streak).toBe(1);
+    expect(rec.freezes).toBe(5); // untouched
+  });
+
+  it("does not double-award once a milestone was already granted", () => {
+    const rec = reconcileStreak(consecutive(FREEZE_MILESTONE), {
+      freezes: 1,
+      lastAwardedStreakMilestone: 7,
+    }, NOW);
+    expect(rec.streak).toBe(7);
+    expect(rec.freezesEarned).toBe(0);
+    expect(rec.freezes).toBe(1); // unchanged
+  });
+
+  it("is idempotent: reconciling the result again is stable", () => {
+    const history = [
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() },
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() - 2 * DAY },
+    ];
+    const first = reconcileStreak(history, { freezes: 1 }, NOW);
+    const second = reconcileStreak(history, first.storedNext, NOW);
+    expect(second.streak).toBe(first.streak);
+    expect(second.freezes).toBe(first.freezes);
+    expect(second.freezesEarned).toBe(0);
+  });
+
+  it("no freeze available: single gap still breaks the streak", () => {
+    const history = [
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() },
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() - 2 * DAY },
+    ];
+    const rec = reconcileStreak(history, { freezes: 0 }, NOW);
+    expect(rec.streak).toBe(1);
   });
 });

@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { Flame, UserPlus, ChevronRight, MessageSquare, Flag, Check, Wallet } from "lucide-react";
+import { Flame, UserPlus, ChevronRight, MessageSquare, Flag, Check, Wallet, Snowflake } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
-import { ProgressionAgent } from "./agents/progression";
+import { ProgressionAgent, type StoredProgression } from "./agents/progression";
 
 interface DashboardProps {
   userName: string;
   history: RewardHistoryItem[];
+  progression?: StoredProgression;
   walletAddress: string | null;
   onSubmitActivityClick: () => void;
   onConnectWalletClick: () => void;
@@ -129,6 +130,7 @@ const itemVariants = {
 export function Dashboard({
   userName,
   history,
+  progression,
   walletAddress,
   onSubmitActivityClick,
   onConnectWalletClick,
@@ -137,8 +139,10 @@ export function Dashboard({
 }: DashboardProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Dynamic Streak Calculation — via ProgressionAgent (single source of truth)
-  const streak = ProgressionAgent.computeStreak(history);
+  // Progression — freeze-aware streak + available freeze tokens (single source of truth)
+  const progressionState = ProgressionAgent.state(history, progression ?? {});
+  const streak = progressionState.streak;
+  const freezes = progressionState.freezes;
 
   // Today's completed activity count
   const todayStr = new Date().toLocaleDateString("en-CA");
@@ -277,6 +281,19 @@ export function Dashboard({
                 <span className="text-[9px] font-extrabold text-white/50 tracking-wider uppercase mt-1 leading-none">
                   STREAK
                 </span>
+                {freezes > 0 && (
+                  <motion.div
+                    key={freezes}
+                    initial={{ scale: 0.4, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 16 }}
+                    className="mt-1.5 inline-flex items-center gap-1 self-start rounded-full bg-[#bfe6ff]/20 border border-[#bfe6ff]/30 px-1.5 py-0.5"
+                    title={`${freezes} streak freeze${freezes === 1 ? "" : "s"} — protects a missed day`}
+                  >
+                    <Snowflake className="w-3 h-3 text-[#bfe6ff]" strokeWidth={2.5} />
+                    <span className="text-[10px] font-extrabold text-[#bfe6ff] leading-none">{freezes}</span>
+                  </motion.div>
+                )}
               </div>
             </div>
 
