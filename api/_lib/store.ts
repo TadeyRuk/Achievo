@@ -87,3 +87,41 @@ export async function exists(key: string): Promise<boolean> {
   if (!redis) return memClaimed.has(key) || memTimestamps.has(key);
   return (await redis.exists(key)) === 1;
 }
+
+// ── Recent-list helpers (bounded per-key history) ─────────────────────────────
+// Back the IntegrityAgent's near-duplicate detection: a small, most-recent-first
+// list of submission fingerprints per wallet.
+
+const memLists = new Map<string, string[]>();
+
+/**
+ * Push `value` to the front of the bounded list at `key`, trimming to `maxLen`
+ * most-recent entries and refreshing the TTL. Best-effort in fallback mode.
+ */
+export async function addRecent(
+  key: string,
+  value: string,
+  maxLen: number,
+  ttlSeconds: number,
+): Promise<void> {
+  const cap = Math.max(1, Math.floor(maxLen));
+  const ttl = Math.max(1, Math.ceil(ttlSeconds));
+  const redis = getRedis();
+  if (!redis) {
+    const list = memLists.get(key) ?? [];
+    list.unshift(value);
+    memLists.set(key, list.slice(0, cap));
+    setTimeout(() => memLists.delete(key), ttl * 1000).unref?.();
+    return;
+  }
+  await redis.lpush(key, value);
+  await redis.ltrim(key, 0, cap - 1);
+  await redis.expire(key, ttl);
+}
+
+/** Return the bounded list at `key`, most-recent-first (empty if none). */
+export async function listRecent(key: string): Promise<string[]> {
+  const redis = getRedis();
+  if (!redis) return memLists.get(key) ?? [];
+  return (await redis.lrange<string>(key, 0, -1)) ?? [];
+}

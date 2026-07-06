@@ -13,8 +13,9 @@ import {
   StrKey,
 } from '@stellar/stellar-sdk';
 import { createHmac } from 'crypto';
-import { getTimestamp, setTimestamp, claimOnce } from './_lib/store';
+import { getTimestamp, setTimestamp, claimOnce, listRecent, addRecent } from './_lib/store';
 import { ScoringAgent, type Evaluation } from './_agents/scoring';
+import { IntegrityAgent } from './_agents/integrity';
 
 const CONTRACT_ID = "CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS";
 const STROOP_FACTOR = 10_000_000;
@@ -176,7 +177,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const effortScore = evaluation.score;
+  // IntegrityAgent — trust & anti-abuse (near-duplicate soft-flag today)
+  const recentKey = `recent:wallet:${wallet}`;
+  let recent: string[] = [];
+  try {
+    recent = await listRecent(recentKey);
+  } catch {
+    recent = []; // integrity is best-effort; never block a payout on store errors
+  }
+  const integrity = IntegrityAgent.assess(activityText.trim(), { recent });
+
+  const effortScore = Math.round(evaluation.score * integrity.effortMultiplier * 1000) / 1000;
   const base = BASE_REWARD[evaluation.activity];
   const bonus = Math.round(effortScore * MAX_BONUS[evaluation.activity] * 10) / 10;
   // Belt-and-suspenders: mirrors the contract's on-chain MAX_REWARD_PER_TX (20 XLM)
@@ -246,6 +257,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await setTimestamp(ipLimitKey, now, ttlSeconds);
     }
 
+    // Record this submission's fingerprint for IntegrityAgent duplicate detection
+    // (bounded, 30-day retention). Best-effort — never fail the response on this.
+    try {
+      await addRecent(recentKey, IntegrityAgent.fingerprint(activityText.trim()), 20, 30 * 24 * 60 * 60);
+    } catch { /* ignore */ }
+
     return res.status(200).json({
       txHash,
       reward,
@@ -255,6 +272,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       activity: evaluation.activity,
       reason: evaluation.rationale,
       criteria: evaluation.criteria,
+      flagged: integrity.flagged,
+      flagReason: integrity.reasons[0] ?? null,
+      integrityReasons: integrity.reasons,
     });
 
   } catch (err) {
