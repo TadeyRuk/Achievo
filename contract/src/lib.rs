@@ -24,6 +24,12 @@ pub struct RewardRecord {
     pub timestamp: u64,
 }
 
+/// Hard ceiling on any single reward payout, in stroops (20 XLM). Headroom
+/// above the highest legitimate reward (volunteering: 10 base + 5 bonus =
+/// 15 XLM), enforced on-chain so a leaked admin key or an API miscalculation
+/// can drain the treasury only one bounded step at a time, not in one call.
+const MAX_REWARD_PER_TX: i128 = 200_000_000;
+
 #[contract]
 pub struct RewardTreasuryContract;
 
@@ -63,6 +69,9 @@ impl RewardTreasuryContract {
 
         if amount <= 0 {
             panic!("Reward amount must be positive");
+        }
+        if amount > MAX_REWARD_PER_TX {
+            panic!("Reward exceeds per-tx cap");
         }
 
         let token_client = token::Client::new(&env, &state.token);

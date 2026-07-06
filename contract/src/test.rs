@@ -137,6 +137,28 @@ fn reward_exceeds_balance_panics() {
     f.client().send_reward(&recipient, &1_000_000_i128, &symbol_short!("event"));
 }
 
+#[test]
+fn reward_at_cap_boundary_succeeds() {
+    let f = TestFixture::setup();
+    f.initialize();
+    f.fund(1_000_000_000_i128);
+    let recipient = Address::generate(&f.env);
+
+    // MAX_REWARD_PER_TX itself must still succeed — the cap is inclusive.
+    f.client().send_reward(&recipient, &200_000_000_i128, &symbol_short!("volunteer"));
+    assert_eq!(f.token().balance(&recipient), 200_000_000_i128);
+}
+
+#[test]
+#[should_panic(expected = "Reward exceeds per-tx cap")]
+fn reward_over_cap_panics() {
+    let f = TestFixture::setup();
+    f.initialize();
+    f.fund(10_000_000_000_i128);
+    let recipient = Address::generate(&f.env);
+    f.client().send_reward(&recipient, &200_000_001_i128, &symbol_short!("volunteer"));
+}
+
 // ── view functions ────────────────────────────────────────────────────────────
 
 #[test]
