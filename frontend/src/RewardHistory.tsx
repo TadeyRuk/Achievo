@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { CustomTrophy, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from "./customIcons";
+import { ProgressionAgent } from "./agents/progression";
 
 export interface RewardHistoryItem {
   id: string;
@@ -80,122 +81,18 @@ export function RewardHistory({ history }: RewardHistoryProps) {
     });
   };
 
-  // Dynamic streak — consecutive days with at least one reward (going back from today)
-  const streak = (() => {
-    if (history.length === 0) return 0;
-    const daySet = new Set(
-      history.map(item => new Date(item.timestamp).toLocaleDateString("en-CA"))
-    );
-    let count = 0;
-    const today = new Date();
-    const startOffset = daySet.has(today.toLocaleDateString("en-CA")) ? 0 : 1;
-    for (let i = startOffset; i < 365; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      if (daySet.has(d.toLocaleDateString("en-CA"))) {
-        count++;
-      } else {
-        break;
-      }
-    }
-    return count;
-  })();
+  // Progression — single source of truth via ProgressionAgent
+  const progression = ProgressionAgent.state(history);
+  const streak = progression.streak;
 
   // Activity milestones counts
-  const volunteeringCount = history.filter(h => h.activity.toLowerCase().includes("volunteer")).length;
-  const tutoringOrMathCount = history.filter(h => 
-    h.activity.toLowerCase().includes("tutor") || 
-    h.activity.toLowerCase().includes("math")
-  ).length;
-  const workshopCount = history.filter(h => h.activity.toLowerCase().includes("workshop")).length;
-  const scienceCount = history.filter(h => h.activity.toLowerCase().includes("science")).length;
+  const volunteeringCount = progression.counts.volunteering;
+  const workshopCount = progression.counts.workshop;
+  const scienceCount = progression.counts.science;
 
-  // Rank calculations
-  const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
-  const baseXP = 0;
-  const totalXP = baseXP + Math.round(totalEarned * 100);
-  
-  const getRankInfo = (xp: number, streakVal: number) => {
-    const isDiamond = xp >= 10000 && scienceCount >= 1 && streakVal >= 5;
-    const isPlatinum = xp >= 5000 && workshopCount >= 1 && streakVal >= 3;
-    const isGold = xp >= 2500 && tutoringOrMathCount >= 1;
-    const isSilver = xp >= 1000 && volunteeringCount >= 1;
-
-    if (isDiamond) {
-      return { 
-        name: "Diamond Scholar", 
-        nextName: "Max Rank", 
-        minXP: 10000, 
-        maxXP: 10000,
-        reqMsg: "You have reached the highest scholar rank!"
-      };
-    } else if (isPlatinum) {
-      let reqMsg = "";
-      if (xp < 10000) {
-        const diff = 10000 - xp;
-        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
-      }
-      if (scienceCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Science` : "1 Science";
-      if (streakVal < 5) reqMsg = reqMsg ? `${reqMsg} + 5-day streak` : "5-day streak";
-
-      return { 
-        name: "Platinum Scholar", 
-        nextName: "Diamond Scholar", 
-        minXP: 5000, 
-        maxXP: 10000,
-        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
-      };
-    } else if (isGold) {
-      let reqMsg = "";
-      if (xp < 5000) {
-        const diff = 5000 - xp;
-        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
-      }
-      if (workshopCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Workshop` : "1 Workshop";
-      if (streakVal < 3) reqMsg = reqMsg ? `${reqMsg} + 3-day streak` : "3-day streak";
-
-      return { 
-        name: "Gold Scholar", 
-        nextName: "Platinum Scholar", 
-        minXP: 2500, 
-        maxXP: 5000,
-        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
-      };
-    } else if (isSilver) {
-      let reqMsg = "";
-      if (xp < 2500) {
-        const diff = 2500 - xp;
-        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
-      }
-      if (tutoringOrMathCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Tutoring/Math` : "1 Tutoring/Math";
-
-      return { 
-        name: "Silver Scholar", 
-        nextName: "Gold Scholar", 
-        minXP: 1000, 
-        maxXP: 2500,
-        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
-      };
-    } else {
-      let reqMsg = "";
-      if (xp < 1000) {
-        const diff = 1000 - xp;
-        reqMsg = `${diff.toLocaleString()} XP (~${diff / 100} XLM)`;
-      }
-      if (volunteeringCount < 1) reqMsg = reqMsg ? `${reqMsg} + 1 Volunteering` : "1 Volunteering";
-
-      return { 
-        name: "Bronze Scholar", 
-        nextName: "Silver Scholar", 
-        minXP: 0, 
-        maxXP: 1000,
-        reqMsg: reqMsg ? `Need ${reqMsg}` : "Ready to rank up!"
-      };
-    }
-  };
-
-  const rank = getRankInfo(totalXP, streak);
-  const progressPercent = rank.minXP === rank.maxXP ? 100 : Math.min(100, Math.max(0, ((totalXP - rank.minXP) / (rank.maxXP - rank.minXP)) * 100));
+  const totalXP = progression.xp;
+  const rank = progression.rankInfo;
+  const progressPercent = progression.progressPercent;
 
   const milestones = [
     {
@@ -226,7 +123,7 @@ export function RewardHistory({ history }: RewardHistoryProps) {
     {
       id: "mastermind",
       name: "Mastermind",
-      unlocked: tutoringOrMathCount >= 1,
+      unlocked: progression.counts.tutoringOrMath >= 1,
       icon: Brain,
       activeBg: "bg-[#e2e6ff]",
       activeIconColor: "text-[#102a9c]"

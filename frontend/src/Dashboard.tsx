@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Flame, UserPlus, ChevronRight, MessageSquare, Flag, Check, Wallet } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
+import { ProgressionAgent } from "./agents/progression";
 
 interface DashboardProps {
   userName: string;
@@ -136,26 +137,8 @@ export function Dashboard({
 }: DashboardProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Dynamic Streak Calculation (from history)
-  const streak = (() => {
-    if (history.length === 0) return 0;
-    const daySet = new Set(
-      history.map(item => new Date(item.timestamp).toLocaleDateString("en-CA"))
-    );
-    let count = 0;
-    const today = new Date();
-    const startOffset = daySet.has(today.toLocaleDateString("en-CA")) ? 0 : 1;
-    for (let i = startOffset; i < 365; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      if (daySet.has(d.toLocaleDateString("en-CA"))) {
-        count++;
-      } else {
-        break;
-      }
-    }
-    return count;
-  })();
+  // Dynamic Streak Calculation — via ProgressionAgent (single source of truth)
+  const streak = ProgressionAgent.computeStreak(history);
 
   // Today's completed activity count
   const todayStr = new Date().toLocaleDateString("en-CA");

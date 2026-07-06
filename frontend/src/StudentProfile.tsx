@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ShieldAlert, Lock, Check, Pencil, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
+import { ProgressionAgent } from "./agents/progression";
 import {
   CustomCompass,
   CustomStar,
@@ -76,47 +77,14 @@ export function StudentProfile({
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
   const totalSubmissions = history.length;
 
-  // Dynamic streak — consecutive days with at least one reward (going back from today)
-  const streak = (() => {
-    if (history.length === 0) return 0;
-    // Get unique day strings "YYYY-MM-DD" that have rewards
-    const daySet = new Set(
-      history.map(item => new Date(item.timestamp).toLocaleDateString("en-CA"))
-    );
-    let count = 0;
-    const today = new Date();
-    // Allow streak to still be active if today has no entry yet (check from yesterday)
-    const startOffset = daySet.has(today.toLocaleDateString("en-CA")) ? 0 : 1;
-    for (let i = startOffset; i < 365; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      if (daySet.has(d.toLocaleDateString("en-CA"))) {
-        count++;
-      } else {
-        break;
-      }
-    }
-    return count;
-  })();
-  
-  // Dynamic Badge Unlocking
-  const volunteeredCount = history.filter(h => h.activity.toLowerCase().includes("volunteer")).length;
-  const tutoredCount = history.filter(h => h.activity.toLowerCase().includes("tutor")).length;
-  
-  const tutoringOrMathCount = history.filter(h => 
-    h.activity.toLowerCase().includes("tutor") || 
-    h.activity.toLowerCase().includes("math")
-  ).length;
-  const workshopCount = history.filter(h => h.activity.toLowerCase().includes("workshop")).length;
-  const scienceCount = history.filter(h => h.activity.toLowerCase().includes("science")).length;
+  // Progression — single source of truth via ProgressionAgent
+  const progression = ProgressionAgent.state(history);
+  const streak = progression.streak;
 
-  const baseXP = 0;
-  const totalXP = baseXP + Math.round(totalEarned * 100);
-
-  const isSilverUnlocked = totalXP >= 1000 && volunteeredCount >= 1;
-  const isGoldUnlocked = totalXP >= 2500 && tutoringOrMathCount >= 1;
-  const isPlatinumUnlocked = totalXP >= 5000 && workshopCount >= 1 && streak >= 3;
-  const isDiamondUnlocked = totalXP >= 10000 && scienceCount >= 1 && streak >= 5;
+  const isSilverUnlocked = progression.unlocks.silver;
+  const isGoldUnlocked = progression.unlocks.gold;
+  const isPlatinumUnlocked = progression.unlocks.platinum;
+  const isDiamondUnlocked = progression.unlocks.diamond;
 
   const badges = [
     {
@@ -203,7 +171,7 @@ export function StudentProfile({
       id: "community_savior",
       name: "Community Savior",
       desc: "Logged 3 volunteering sessions to support your community.",
-      unlocked: volunteeredCount >= 3,
+      unlocked: progression.counts.volunteering >= 3,
       rimColor: "from-emerald-400 via-emerald-100 to-teal-600",
       innerColor: "from-emerald-700 via-emerald-800 to-teal-950",
       iconColor: "text-emerald-100",
@@ -213,7 +181,7 @@ export function StudentProfile({
       id: "giga_brain",
       name: "Giga Brain",
       desc: "Completed 5 tutoring sessions to enlighten your peers.",
-      unlocked: tutoredCount >= 5,
+      unlocked: progression.counts.tutoring >= 5,
       rimColor: "from-sky-400 via-sky-100 to-indigo-600",
       innerColor: "from-sky-700 via-sky-800 to-indigo-950",
       iconColor: "text-sky-100",
