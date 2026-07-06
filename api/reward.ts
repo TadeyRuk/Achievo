@@ -14,6 +14,7 @@ import {
 } from '@stellar/stellar-sdk';
 import { createHmac } from 'crypto';
 import { getTimestamp, setTimestamp, claimOnce } from './_lib/store';
+import { ScoringAgent, type Evaluation } from './_agents/scoring';
 
 const CONTRACT_ID = "CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS";
 const STROOP_FACTOR = 10_000_000;
@@ -38,68 +39,6 @@ const MAX_BONUS: Record<string, number> = {
   event:         2,
   participation: 2,
 };
-
-interface GroqClassification {
-  activity: string;
-  valid: boolean;
-  effort_score: number; // 0.0–1.0
-  reason: string;
-}
-
-async function classifyWithGroq(activityText: string): Promise<GroqClassification> {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) throw new Error('GROQ_API_KEY not configured.');
-
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an AI evaluator for a student reward system on the Stellar blockchain. ' +
-            'Your job has two parts:\n' +
-            '1. Classify the activity into exactly one of: tutoring, workshop, volunteering, event, participation. ' +
-            'If it fits none, set valid=false and activity="unknown".\n' +
-            '2. Score the student\'s effort from 0.0 to 1.0 based on: specificity of description, ' +
-            'duration or scope mentioned, impact or outcomes described, and number of people helped. ' +
-            'A vague one-liner scores 0.1–0.3. A detailed account with context scores 0.7–1.0.\n' +
-            'Respond with valid JSON only — no markdown, no text outside the JSON.',
-        },
-        {
-          role: 'user',
-          content:
-            `Student activity submission: "${activityText}"\n\n` +
-            'Respond with: {"activity":"tutoring|workshop|volunteering|event|participation|unknown","valid":true|false,"effort_score":0.0-1.0,"reason":"one sentence"}',
-        },
-      ],
-      temperature: 0,
-      max_tokens: 120,
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Groq API error: ${res.status}`);
-  }
-
-  const data = await res.json() as { choices: { message: { content: string } }[] };
-  const content = data.choices[0]?.message?.content?.trim() ?? '';
-
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('AI returned non-JSON response.');
-
-  const parsed = JSON.parse(jsonMatch[0]) as GroqClassification;
-  if (!parsed.activity || typeof parsed.valid !== 'boolean') {
-    throw new Error('AI response missing required fields.');
-  }
-
-  return parsed;
-}
 
 function getClientIp(req: VercelRequest): string {
   return (
@@ -222,24 +161,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // AI classification — authoritative decision
-  let classification: GroqClassification;
+  // ScoringAgent — explainable, authoritative evaluation
+  let evaluation: Evaluation;
   try {
-    classification = await classifyWithGroq(activityText.trim());
+    evaluation = await ScoringAgent.evaluate(activityText.trim());
   } catch (err) {
     return res.status(502).json({ error: `AI evaluation failed: ${(err as Error).message}` });
   }
 
-  if (!classification.valid || !(classification.activity in BASE_REWARD)) {
+  if (!evaluation.valid || !(evaluation.activity in BASE_REWARD)) {
     return res.status(422).json({
-      error: `Activity not eligible for reward. ${classification.reason}`,
-      activity: classification.activity,
+      error: `Activity not eligible for reward. ${evaluation.rationale}`,
+      activity: evaluation.activity,
     });
   }
 
-  const effortScore = Math.min(1, Math.max(0, classification.effort_score ?? 0));
-  const base = BASE_REWARD[classification.activity];
-  const bonus = Math.round(effortScore * MAX_BONUS[classification.activity] * 10) / 10;
+  const effortScore = evaluation.score;
+  const base = BASE_REWARD[evaluation.activity];
+  const bonus = Math.round(effortScore * MAX_BONUS[evaluation.activity] * 10) / 10;
   // Belt-and-suspenders: mirrors the contract's on-chain MAX_REWARD_PER_TX (20 XLM)
   // so a legitimately-computed reward is never rejected on-chain in normal operation.
   const MAX_REWARD_XLM = 20;
@@ -261,7 +200,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         'send_reward',
         new Address(wallet).toScVal(),
         nativeToScVal(rewardStroops, { type: 'i128' }),
-        nativeToScVal(classification.activity, { type: 'symbol' }),
+        nativeToScVal(evaluation.activity, { type: 'symbol' }),
       ))
       .setTimeout(30)
       .build();
@@ -313,8 +252,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       base,
       bonus,
       effortScore,
-      activity: classification.activity,
-      reason: classification.reason,
+      activity: evaluation.activity,
+      reason: evaluation.rationale,
+      criteria: evaluation.criteria,
     });
 
   } catch (err) {

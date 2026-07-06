@@ -83,6 +83,11 @@ export default function App() {
   // Results
   const [rewardXlm, setRewardXlm] = useState<number | null>(null);
   const [txHash, setTxHash]       = useState<string | null>(null);
+  // ScoringAgent + IntegrityAgent breakdown for the reward card (optional).
+  const [rewardMeta, setRewardMeta] = useState<{
+    base?: number; bonus?: number; effortScore?: number; reason?: string;
+    flagged?: boolean; flagReason?: string;
+  } | null>(null);
 
   // Reward History Local Storage - Lazy State Initialization
   const [history, setHistory] = useState<RewardHistoryItem[]>(() => {
@@ -375,7 +380,7 @@ export default function App() {
           }),
         });
         const rewardRaw = await apiRes.text();
-        let data: { txHash?: string; reward?: number; base?: number; bonus?: number; effortScore?: number; activity?: string; reason?: string; error?: string };
+        let data: { txHash?: string; reward?: number; base?: number; bonus?: number; effortScore?: number; activity?: string; reason?: string; flagged?: boolean; flagReason?: string; error?: string };
         try { data = JSON.parse(rewardRaw); }
         catch { throw new Error(`Reward API error ${apiRes.status}: server returned non-JSON`); }
         if (!apiRes.ok || !data.txHash) throw new Error(data.error ?? `Reward API error ${apiRes.status}`);
@@ -383,6 +388,14 @@ export default function App() {
         serverReward = data.reward ?? rwdPreview.reward;
         serverActivity = data.activity ?? actResult.activity;
         setRewardXlm(serverReward);
+        setRewardMeta({
+          base: data.base,
+          bonus: data.bonus,
+          effortScore: data.effortScore,
+          reason: data.reason,
+          flagged: data.flagged,
+          flagReason: data.flagReason,
+        });
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
         setStep(3, { status: 'error', detail: 'Transaction failed.' });
@@ -620,7 +633,8 @@ export default function App() {
             <RewardCard
               reward={rewardXlm}
               txHash={txHash}
-              onClose={() => { setTxHash(null); setRewardXlm(null); }}
+              breakdown={rewardMeta ?? undefined}
+              onClose={() => { setTxHash(null); setRewardXlm(null); setRewardMeta(null); }}
             />
           )}
         </AnimatePresence>

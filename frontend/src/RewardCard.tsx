@@ -1,11 +1,14 @@
 import { useMemo } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { motion } from "motion/react";
+import { formatRewardBreakdown, type RewardBreakdownInput } from "./rewardBreakdown";
 
 interface RewardCardProps {
   reward: number;
   txHash: string;
   onClose: () => void;
+  /** Optional ScoringAgent breakdown (base/bonus/effort/rationale + integrity flag). */
+  breakdown?: Omit<RewardBreakdownInput, "reward">;
 }
 
 const MESSAGES = [
@@ -16,10 +19,15 @@ const MESSAGES = [
   { headline: "You're on a roll!", sub: "Your dedication is literally paying off." },
 ];
 
-export function RewardCard({ reward, txHash, onClose }: RewardCardProps) {
+export function RewardCard({ reward, txHash, onClose, breakdown }: RewardCardProps) {
   // Pick a random message once per mount — stable across re-renders
   // eslint-disable-next-line react-hooks/purity
   const msg = useMemo(() => MESSAGES[Math.floor(Math.random() * MESSAGES.length)], []);
+
+  const fmt = useMemo(
+    () => formatRewardBreakdown({ reward, ...(breakdown ?? {}) }),
+    [reward, breakdown],
+  );
 
   return (
     <motion.div
@@ -81,6 +89,63 @@ export function RewardCard({ reward, txHash, onClose }: RewardCardProps) {
             </motion.div>
           </div>
         </div>
+
+        {/* ScoringAgent breakdown — effort meter, formula, rationale */}
+        {(fmt.hasBreakdown || fmt.reason || fmt.effortPct !== null) && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.32 }}
+            className="bg-[var(--dah-surface)] px-6 py-4 space-y-3"
+          >
+            {fmt.formula && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--dah-on-surface-variant)]">
+                  How it was scored
+                </span>
+                <span className="text-[12px] font-extrabold text-[var(--dah-primary)] font-display">
+                  {fmt.formula}
+                </span>
+              </div>
+            )}
+
+            {fmt.effortPct !== null && (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-[var(--dah-on-surface-variant)]">
+                    Effort score
+                  </span>
+                  <span className="text-[11px] font-extrabold text-[var(--dah-secondary)]">
+                    {fmt.effortPct}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-[var(--dah-surface-highest)] overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${fmt.effortPct}%` }}
+                    transition={{ delay: 0.4, type: "spring", stiffness: 120, damping: 20 }}
+                    className="h-full rounded-full gold-shimmer"
+                  />
+                </div>
+              </div>
+            )}
+
+            {fmt.reason && (
+              <p className="text-[12px] italic leading-relaxed text-[var(--dah-on-surface-variant)]">
+                “{fmt.reason}”
+              </p>
+            )}
+
+            {fmt.flagged && (
+              <div className="flex items-start gap-2 rounded-2xl bg-[var(--dah-error-container)] px-3 py-2">
+                <span className="text-[13px] leading-none mt-0.5">⚠️</span>
+                <p className="text-[11px] font-semibold leading-relaxed text-[var(--dah-error)]">
+                  {fmt.flagReason ?? "Similar to a recent submission — bonus reduced."}
+                </p>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* Dark footer with View button only */}
         <div className="bg-[var(--dah-primary)] px-6 py-4 flex items-center justify-between gap-4">
