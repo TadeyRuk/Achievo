@@ -49,14 +49,6 @@ function formatTimeAgo(ts: number): string {
   });
 }
 
-const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-  volunteering: CustomUserHeart,
-  tutoring: CustomBookUser,
-  workshop: CustomBookOpen,
-  event: CustomMedal,
-  participation: CustomMedal,
-};
-
 const getIcon = (act: string) => {
   const normalized = act.toLowerCase();
   if (normalized.includes("volunteer")) return CustomUserHeart;

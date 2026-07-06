@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 import { RecentPayouts } from "../RecentPayouts";
-import type { PayoutItem } from "../contract";
+import type { RewardLedgerRecord } from "../contract";
 
 // Example-based render-state tests for RecentPayouts. These complement the
 // property test in RecentPayouts.rowContent.test.tsx (task 12.2) by pinning down
@@ -12,11 +12,12 @@ afterEach(() => {
 });
 
 // A small, fixed payout used by the states that need a populated list.
-const samplePayout: PayoutItem = {
+const samplePayout: RewardLedgerRecord = {
   txHash: "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
   recipient: "GRECIPIENTADDRESS000000000000000000000000000000000000000",
   amount: 12.5,
   activity: "Workout completed",
+  ledger: 123456,
   timestamp: 1_700_000_000_000,
 };
 

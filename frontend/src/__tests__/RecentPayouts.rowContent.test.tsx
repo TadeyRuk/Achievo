@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, cleanup } from "@testing-library/react";
 import fc from "fast-check";
 import { RecentPayouts } from "../RecentPayouts";
-import type { PayoutItem } from "../contract";
+import type { RewardLedgerRecord } from "../contract";
 
 // ─── Generators ───────────────────────────────────────────────────────────────
 
@@ -23,11 +23,12 @@ const activityArb = fc
 // shortest string representation, so `String(amount)` matches what the row shows.
 const amountArb = fc.integer({ min: 1, max: 1_000_000 }).map((n) => n / 100);
 
-const payoutItemArb: fc.Arbitrary<PayoutItem> = fc.record({
+const payoutItemArb: fc.Arbitrary<RewardLedgerRecord> = fc.record({
   txHash: txHashArb,
   recipient: fc.string({ minLength: 1, maxLength: 56 }),
   amount: amountArb,
   activity: activityArb,
+  ledger: fc.integer({ min: 1, max: 100_000_000 }),
   timestamp: fc.integer({ min: 0, max: 2_000_000_000_000 }),
 });
 
