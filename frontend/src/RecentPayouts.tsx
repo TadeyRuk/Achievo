@@ -1,4 +1,5 @@
-import { ExternalLink, Wallet, AlertCircle, Zap } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, Wallet, AlertCircle, Zap, Copy, Check } from "lucide-react";
 import { motion } from "motion/react";
 import {
   CustomTrophy,
@@ -7,13 +8,22 @@ import {
   CustomBookOpen,
   CustomMedal,
 } from "./customIcons";
-import type { PayoutItem } from "./contract";
+import type { RewardLedgerRecord } from "./contract";
 
 interface RecentPayoutsProps {
-  payouts: PayoutItem[];
+  payouts: RewardLedgerRecord[];
   loading: boolean;
   error: string | null;
   walletConnected: boolean;
+}
+
+// Explorer link for a ledger record: a tx-hash link when one has been joined
+// in (see attachTxHashes), else a ledger-sequence link — the durable ledger
+// (get_history) holds records the RPC event log has already aged out.
+function explorerHref(item: RewardLedgerRecord): string {
+  return item.txHash
+    ? `https://stellar.expert/explorer/testnet/tx/${item.txHash}`
+    : `https://stellar.expert/explorer/testnet/ledger/${item.ledger}`;
 }
 
 // Truncate a transaction hash for compact display (e.g. "a1b2c3d4…e5f6g7h8").
@@ -108,6 +118,21 @@ const itemVariants = {
 };
 
 export function RecentPayouts({ payouts, loading, error, walletConnected }: RecentPayoutsProps) {
+  // Tracks which row's hash was just copied, for a brief "Copied" affirmation.
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const handleCopyHash = async (e: React.MouseEvent, txHash: string, key: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(txHash);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500);
+    } catch {
+      /* clipboard unavailable — ignore */
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -186,10 +211,11 @@ export function RecentPayouts({ payouts, loading, error, walletConnected }: Rece
           {payouts.map((item, index) => {
             const IconComponent = getIcon(item.activity);
             const colors = getIconColorClasses(item.activity);
+            const rowKey = item.txHash ?? `ledger-${item.ledger}`;
 
             return (
               <motion.div
-                key={item.txHash}
+                key={rowKey}
                 variants={itemVariants}
                 initial="hidden"
                 animate="show"
@@ -206,14 +232,28 @@ export function RecentPayouts({ payouts, loading, error, walletConnected }: Rece
                     </p>
                     <div className="flex items-center gap-2 flex-wrap">
                       <a
-                        href={`https://stellar.expert/explorer/testnet/tx/${item.txHash}`}
+                        href={explorerHref(item)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1.5 text-[10px] font-bold font-mono bg-[var(--dah-surface-low)] hover:bg-[var(--dah-surface-container)] text-[var(--dah-primary)] px-2 py-0.5 rounded-md transition-colors"
                       >
-                        {truncateHash(item.txHash)}
+                        {item.txHash ? truncateHash(item.txHash) : `Ledger #${item.ledger}`}
                         <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                       </a>
+                      {item.txHash && (
+                        <button
+                          type="button"
+                          title="Copy full transaction hash"
+                          onClick={(e) => handleCopyHash(e, item.txHash!, rowKey)}
+                          className="text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-colors cursor-pointer"
+                        >
+                          {copiedKey === rowKey ? (
+                            <Check className="w-3 h-3 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
                       <span className="text-[10px] font-semibold text-[var(--dah-outline)]">
                         {formatTimeAgo(item.timestamp)}
                       </span>

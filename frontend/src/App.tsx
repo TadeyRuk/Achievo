@@ -94,13 +94,12 @@ export default function App() {
     }
   });
 
-  // On-chain payout feed (polled from Soroban RPC getEvents)
+  // On-chain payout feed: durable ledger (get_history, contract storage — survives
+  // past the RPC event-retention window) with tx hashes attached from getRewardEvents
+  // where available (falls back to a ledger-sequence explorer link otherwise).
   const [payouts, setPayouts]           = useState<RewardLedgerRecord[]>([]);
   const [payoutsLoading, setPayoutsLoading] = useState<boolean>(false);
   const [payoutsError, setPayoutsError] = useState<string | null>(null);
-  // Stable ref so loadPayouts can read current history without re-subscribing interval
-  const historyRef = useRef<RewardHistoryItem[]>(history);
-  useEffect(() => { historyRef.current = history; }, [history]);
 
   // Success modal states for wallet actions
   const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
@@ -151,14 +150,25 @@ export default function App() {
     setPayoutsLoading(true);
     setPayoutsError(null);
     try {
-      const chainEvents = await getRewardEvents(walletAddress);
-      setPayouts(mergePayouts(chainEvents, historyRef.current));
+      // get_history is the durable, read-only on-chain ledger (contract storage) —
+      // unlike getRewardEvents it isn't bounded by RPC event retention, so past
+      // rewards never disappear from view. getRewardEvents is still queried
+      // alongside it purely to supply the tx hash (a contract can't observe its
+      // own tx hash), joined in via attachTxHashes.
+      const [ledger, chainEvents] = await Promise.all([
+        getRewardLedger(),
+        getRewardEvents(walletAddress),
+      ]);
+      const mine = ledger.filter((record) => record.recipient === walletAddress);
+      const withHashes = attachTxHashes(mine, chainEvents)
+        .sort((a, b) => b.timestamp - a.timestamp);
+      setPayouts(withHashes);
     } catch (err) {
       setPayoutsError((err as Error).message ?? "Failed to load payouts");
     } finally {
       setPayoutsLoading(false);
     }
-  }, [walletAddress]); // historyRef is a ref — stable, excluded from deps
+  }, [walletAddress]);
 
   const setStep = (i: number, patch: Partial<PipelineStep>) =>
     setPipeline(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
