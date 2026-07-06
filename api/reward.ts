@@ -231,7 +231,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const effortScore = Math.min(1, Math.max(0, classification.effort_score ?? 0));
   const base = BASE_REWARD[classification.activity];
   const bonus = Math.round(effortScore * MAX_BONUS[classification.activity] * 10) / 10;
-  const reward = Math.round((base + bonus) * 10) / 10;
+  // Belt-and-suspenders: mirrors the contract's on-chain MAX_REWARD_PER_TX (20 XLM)
+  // so a legitimately-computed reward is never rejected on-chain in normal operation.
+  const MAX_REWARD_XLM = 20;
+  const reward = Math.min(Math.round((base + bonus) * 10) / 10, MAX_REWARD_XLM);
 
   try {
     const adminKeypair = Keypair.fromSecret(adminSecret);
