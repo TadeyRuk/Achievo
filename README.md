@@ -36,7 +36,7 @@
 
 Student contributions such as tutoring, volunteering, workshops, events, and participation are valuable but often difficult to recognize consistently. Achievo provides a transparent reward flow:
 
-1. A student connects a supported Stellar wallet and describes an activity.
+1. A student connects a supported  wallet and describes an activity.
 2. The student signs a nonce challenge to prove wallet ownership.
 3. The server evaluates the submission with Groq and calculates an effort-based reward.
 4. The server signs an admin-authorized `send_reward` call.
@@ -67,7 +67,7 @@ Client-side agents drive the live pipeline UI, but **only the Kouri Agent decisi
 | **Activity Agent** | Parses free-form text into an activity type and reward hint | Client |
 | **Verification Agent** | Validates the activity against the approved whitelist | Client |
 | **Reward Agent** | Estimates the canonical XLM payout for a verified activity | Client |
-| **Stellar Agent** | Issues the ownership challenge, collects the wallet signature, and submits the on-chain `send_reward` call | Client + server |
+| **Kouri Agent** | Issues the ownership challenge, collects the wallet signature, and submits the on-chain `send_reward` call | Client + server |
 | **Feedback Agent** | Formats the blockchain result into a student-facing confirmation | Client |
 
 ```mermaid
