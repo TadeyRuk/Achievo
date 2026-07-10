@@ -11,6 +11,28 @@ StellarWalletsKit.init({
   network: Networks.TESTNET,
 });
 
+/** Re-request Freighter/site access and confirm Testnet before signing. */
+export async function ensureWalletSession(walletId: string): Promise<string> {
+  StellarWalletsKit.setWallet(walletId);
+  const { address } = await StellarWalletsKit.fetchAddress();
+  const network = await StellarWalletsKit.getNetwork();
+  if (network.networkPassphrase !== Networks.TESTNET) {
+    throw new Error(
+      'Freighter must be on Stellar Testnet. Open Freighter → Settings → Network → Testnet, then reconnect.',
+    );
+  }
+  return address;
+}
+
+export async function clearWalletSession(): Promise<void> {
+  try {
+    await StellarWalletsKit.disconnect();
+  } catch {
+    /* ignore */
+  }
+  localStorage.removeItem('achievo_wallet_id');
+}
+
 export { StellarWalletsKit, Networks };
 
 /**

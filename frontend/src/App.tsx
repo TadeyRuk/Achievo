@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import posthog from 'posthog-js';
 import { Networks } from '@stellar/stellar-sdk';
-import { getXlmBalance, fundWithFriendbot, StellarWalletsKit } from './wallet';
+import { getXlmBalance, fundWithFriendbot, StellarWalletsKit, ensureWalletSession, clearWalletSession } from './wallet';
 import {
   CONTRACT_ID,
   getTreasuryInfo,
@@ -221,25 +221,21 @@ export default function App() {
     // 1. Auto-connect wallet — delay first tick so the bar renders at 0% first
     setTimeout(async () => {
       setBootstrapProgress(15);
-      try {
-        const storedWalletId = localStorage.getItem("achievo_wallet_id");
-        if (storedWalletId) {
-          StellarWalletsKit.setWallet(storedWalletId);
-        }
+      const storedWalletId = localStorage.getItem("achievo_wallet_id");
+      if (storedWalletId) {
         setBootstrapProgress(35);
-        const { address } = await StellarWalletsKit.getAddress();
-        if (address) {
+        try {
+          const address = await ensureWalletSession(storedWalletId);
           setWalletAddress(address);
-          if (storedWalletId) {
-            setWalletId(storedWalletId);
-          }
+          setWalletId(storedWalletId);
           setBootstrapProgress(65);
           await fetchBalance(address);
-        } else {
+        } catch {
+          await clearWalletSession();
+          setWalletAddress(null);
           setWalletId(null);
-          localStorage.removeItem("achievo_wallet_id");
         }
-      } catch { /* not connected */ }
+      }
       setBootstrapProgress(85);
       await loadTreasury();
       setBootstrapProgress(100);
@@ -278,18 +274,15 @@ export default function App() {
   const handleConnect = async (id: string) => {
     setIsConnecting(true);
     try {
-      StellarWalletsKit.setWallet(id);
-      const result = await StellarWalletsKit.fetchAddress();
-      if (result?.address) {
-        setWalletAddress(result.address);
-        posthog.capture('wallet_connected', { wallet_type: id });
-        setWalletId(id);
-        localStorage.setItem("achievo_wallet_id", id);
-        fetchBalance(result.address);
-        void loadTreasury();
-        setShowConnectSuccess(true);
-      }
-    } catch { /* user cancelled */ } finally { setIsConnecting(false); }
+      const address = await ensureWalletSession(id);
+      setWalletAddress(address);
+      posthog.capture('wallet_connected', { wallet_type: id });
+      setWalletId(id);
+      localStorage.setItem("achievo_wallet_id", id);
+      fetchBalance(address);
+      void loadTreasury();
+      setShowConnectSuccess(true);
+    } catch { /* user cancelled or Freighter denied access */ } finally { setIsConnecting(false); }
   };
 
   const handleDisconnectRequest = () => {
@@ -298,10 +291,9 @@ export default function App() {
 
   const handleDisconnectConfirm = async () => {
     setShowDisconnectConfirm(false);
-    try { await StellarWalletsKit.disconnect(); } catch { /* ignore */ }
+    await clearWalletSession();
     setWalletAddress(null);
     setWalletId(null);
-    localStorage.removeItem("achievo_wallet_id");
     setIsFunded(true);
     setTreasuryInfo(null);
     setTxHash(null);
@@ -396,9 +388,13 @@ export default function App() {
 
         setStep(3, { detail: 'Sign the challenge in your wallet…' });
         setLogs(p => [...p, "⏳ [Kouri Agent] Awaiting wallet signature…"]);
+        if (!walletId) {
+          throw new Error('Connect Freighter on the Wallet tab before submitting.');
+        }
+        const signingAddress = await ensureWalletSession(walletId);
         const signResult = await StellarWalletsKit.signTransaction(nonceData.challengeXdr, {
           networkPassphrase: Networks.TESTNET,
-          address: walletAddress,
+          address: signingAddress,
         });
 
         setStep(3, { detail: 'AI evaluating activity + submitting to Stellar…' });
