@@ -1,5 +1,10 @@
 import React from "react";
 import { Composition } from "remotion";
+import {
+  PRODUCT_DEMO_DURATION,
+  ProductDemo,
+} from "./demo/ProductDemo";
+import { VIDEO } from "./demo/theme";
 import { DynamicComp } from "./DynamicComp";
 
 const defaultCode = `import { AbsoluteFill } from "remotion";
@@ -20,6 +25,14 @@ export const RemotionRoot: React.FC = () => {
           durationInFrames: props.durationInFrames as number,
           fps: props.fps as number,
         })}
+      />
+      <Composition
+        id="ProductDemo"
+        component={ProductDemo}
+        durationInFrames={PRODUCT_DEMO_DURATION}
+        fps={VIDEO.fps}
+        width={VIDEO.width}
+        height={VIDEO.height}
       />
     </>
   );
