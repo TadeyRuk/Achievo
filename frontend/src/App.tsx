@@ -21,6 +21,8 @@ import { ActivityForm } from './ActivityForm';
 import { PipelineVisualizer, type PipelineStep } from './PipelineVisualizer';
 import { WalletProfile } from './WalletProfile';
 import { RewardCard } from './RewardCard';
+import { TransactionFeedback } from './TransactionFeedback';
+import { hasSubmittedFeedback, type FeedbackPrompt } from './transactionFeedback';
 import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
 import { RecentPayouts } from './RecentPayouts';
 import { StudentProfile } from './StudentProfile';
@@ -89,6 +91,9 @@ export default function App() {
     base?: number; bonus?: number; effortScore?: number; reason?: string;
     flagged?: boolean; flagReason?: string;
   } | null>(null);
+  const [feedbackPrompt, setFeedbackPrompt] = useState<FeedbackPrompt | null>(null);
+  const [showRewardCard, setShowRewardCard] = useState(false);
+  const [lastPayoutActivity, setLastPayoutActivity] = useState<string | null>(null);
 
   // Reward History Local Storage - Lazy State Initialization
   const [history, setHistory] = useState<RewardHistoryItem[]>(() => {
@@ -118,6 +123,18 @@ export default function App() {
       return storedNext;
     });
   }, [history]);
+
+  // Dev-only: ?preview=feedback opens the post-payout feedback sheet with mock data.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    if (new URLSearchParams(window.location.search).get('preview') !== 'feedback') return;
+    setShowSplash(false);
+    setFeedbackPrompt({
+      txHash: 'b'.repeat(64),
+      reward: 12.5,
+      activity: 'Completed math homework',
+    });
+  }, []);
 
   // On-chain payout feed: durable ledger (get_history, contract storage — survives
   // past the RPC event-retention window) with tx hashes attached from getRewardEvents
@@ -424,7 +441,9 @@ export default function App() {
       }
 
       setTxHash(hash);
+      setLastPayoutActivity(serverActivity);
       posthog.capture('reward_paid', { amount: serverReward, activity: serverActivity, tx_hash: hash });
+      setShowRewardCard(true);
       setStep(3, { status: 'done', detail: `Settled: ${hash.slice(0, 12)}…` });
       setLogs(p => [...p,
         `✓ [Stellar Agent] Hash: ${hash.slice(0, 16)}…`,
@@ -464,6 +483,30 @@ export default function App() {
       setIsRunning(false);
     }
   };
+
+  const dismissRewardFlow = useCallback(() => {
+    setShowRewardCard(false);
+    if (txHash && rewardXlm !== null && !hasSubmittedFeedback(txHash)) {
+      setFeedbackPrompt({
+        txHash,
+        reward: rewardXlm,
+        activity: lastPayoutActivity ?? 'activity',
+      });
+    } else {
+      setTxHash(null);
+      setRewardXlm(null);
+      setRewardMeta(null);
+      setLastPayoutActivity(null);
+    }
+  }, [txHash, rewardXlm, lastPayoutActivity]);
+
+  const finishFeedbackFlow = useCallback(() => {
+    setFeedbackPrompt(null);
+    setTxHash(null);
+    setRewardXlm(null);
+    setRewardMeta(null);
+    setLastPayoutActivity(null);
+  }, []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -651,12 +694,34 @@ export default function App() {
 
         {/* Reward Modal */}
         <AnimatePresence>
-          {txHash && rewardXlm !== null && (
+          {showRewardCard && txHash && rewardXlm !== null && (
             <RewardCard
               reward={rewardXlm}
               txHash={txHash}
               breakdown={rewardMeta ?? undefined}
-              onClose={() => { setTxHash(null); setRewardXlm(null); setRewardMeta(null); }}
+              onClose={dismissRewardFlow}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Per-transaction user feedback */}
+        <AnimatePresence>
+          {feedbackPrompt && (
+            <TransactionFeedback
+              prompt={feedbackPrompt}
+              walletAddress={walletAddress}
+              onDone={(submitted, rating, hasComment) => {
+                if (submitted) {
+                  posthog.capture('transaction_feedback_submitted', {
+                    tx_hash: feedbackPrompt.txHash,
+                    rating,
+                    has_comment: hasComment,
+                  });
+                } else {
+                  posthog.capture('transaction_feedback_skipped', { tx_hash: feedbackPrompt.txHash });
+                }
+                finishFeedbackFlow();
+              }}
             />
           )}
         </AnimatePresence>

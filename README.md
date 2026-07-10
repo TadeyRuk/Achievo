@@ -276,6 +276,8 @@ events track the core funnel end-to-end:
 | `wallet_connected` | A wallet successfully connects (`handleConnect` in `App.tsx`) | `wallet_type` (Freighter/Albedo/xBull/Lobstr) |
 | `activity_submitted` | A student submits an activity description | `length` of the submission |
 | `reward_paid` | A reward transaction settles on-chain | `amount`, `activity`, `tx_hash` |
+| `transaction_feedback_submitted` | User rates a payout after the reward modal | `tx_hash`, `rating`, `has_comment` |
+| `transaction_feedback_skipped` | User skips the post-payout feedback sheet | `tx_hash` |
 
 Initialization is guarded on `VITE_POSTHOG_KEY` being present, so local/CI builds without the
 key run normally with analytics simply disabled — no PostHog account is required to build,
@@ -285,9 +287,14 @@ test, or develop the app. See [Environment Variables](#environment-variables) fo
 
 ## User Feedback
 
-<!-- TODO: replace with real tester feedback before submission. -->
+After every successful on-chain payout, students see a **Quick feedback** sheet (1–5 stars + optional comment). Responses are stored server-side via `POST /api/feedback`, keyed by transaction hash (one submission per payout). Summaries are available at `GET /api/feedback` for review.
 
-> Pending — real tester feedback notes to be added here.
+PostHog also tracks `transaction_feedback_submitted` and `transaction_feedback_skipped` events.
+
+| Event | When |
+|---|---|
+| `transaction_feedback_submitted` | User submits a star rating (and optional comment) |
+| `transaction_feedback_skipped` | User dismisses or skips the sheet |
 
 ---
 
