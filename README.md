@@ -227,9 +227,9 @@ vault/                      — Design docs (Obsidian)
 
 ## Demo Video
 
-🎥 **[Watch the Achievo app presentation](./achievo-app-presentation-v2.mp4)**
+🎥 **[Watch the Achievo product demo on Google Drive](https://drive.google.com/file/d/1zDNqKgDn3rzbQ-2GhFv26RG4xjkEjxNd/view?usp=sharing)**
 
-This 2:38 walkthrough introduces the mobile PWA, academic activity submission flow,
+Product walkthrough covering the mobile PWA, academic activity submission flow,
 5-agent reward pipeline, wallet proof step, Soroban payout confirmation, scholar
 rank progress, and CI status.
 
