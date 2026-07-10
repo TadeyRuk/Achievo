@@ -35,6 +35,25 @@ import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
 type Tab = 'home' | 'history' | 'wallet' | 'profile';
 
+function loadStoredProgression(): StoredProgression {
+  try {
+    const saved = localStorage.getItem("achievo_progression");
+    return saved ? (JSON.parse(saved) as StoredProgression) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Dev-only: ?preview=feedback opens the post-payout feedback sheet with mock data. */
+function devFeedbackPreview(): FeedbackPrompt | null {
+  if (!import.meta.env.DEV) return null;
+  if (new URLSearchParams(window.location.search).get('preview') !== 'feedback') return null;
+  return {
+    txHash: 'b'.repeat(64),
+    reward: 12.5,
+    activity: 'Completed math homework',
+  };
+}
 
 const makePipeline = (): PipelineStep[] => [
   { name: 'Activity Agent',     desc: 'Parsing your submission…',        status: 'idle' },
@@ -47,7 +66,8 @@ const makePipeline = (): PipelineStep[] => [
 function delay(ms: number) { return new Promise(r => setTimeout(r, ms)); }
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const devPreview = devFeedbackPreview();
+  const [showSplash, setShowSplash] = useState<boolean>(() => !devPreview);
   const [bootstrapProgress, setBootstrapProgress] = useState<number>(0);
 
   const [tab, setTab] = useState<Tab>('home');
@@ -91,7 +111,7 @@ export default function App() {
     base?: number; bonus?: number; effortScore?: number; reason?: string;
     flagged?: boolean; flagReason?: string;
   } | null>(null);
-  const [feedbackPrompt, setFeedbackPrompt] = useState<FeedbackPrompt | null>(null);
+  const [feedbackPrompt, setFeedbackPrompt] = useState<FeedbackPrompt | null>(() => devPreview);
   const [showRewardCard, setShowRewardCard] = useState(false);
   const [lastPayoutActivity, setLastPayoutActivity] = useState<string | null>(null);
 
@@ -107,34 +127,16 @@ export default function App() {
 
   // ProgressionAgent persisted freeze state (streak freezes). Reconciled against
   // history + time whenever history changes; persisted so freezes survive reloads.
-  const [progression, setProgression] = useState<StoredProgression>(() => {
-    try {
-      const saved = localStorage.getItem("achievo_progression");
-      return saved ? (JSON.parse(saved) as StoredProgression) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [progression, setProgression] = useState<StoredProgression>(loadStoredProgression);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProgression((prev) => {
       const { storedNext } = ProgressionAgent.reconcile(history, prev);
       try { localStorage.setItem("achievo_progression", JSON.stringify(storedNext)); } catch { /* ignore */ }
       return storedNext;
     });
   }, [history]);
-
-  // Dev-only: ?preview=feedback opens the post-payout feedback sheet with mock data.
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    if (new URLSearchParams(window.location.search).get('preview') !== 'feedback') return;
-    setShowSplash(false);
-    setFeedbackPrompt({
-      txHash: 'b'.repeat(64),
-      reward: 12.5,
-      activity: 'Completed math homework',
-    });
-  }, []);
 
   // On-chain payout feed: durable ledger (get_history, contract storage — survives
   // past the RPC event-retention window) with tx hashes attached from getRewardEvents

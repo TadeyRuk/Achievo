@@ -1,9 +1,16 @@
 {
-  "buildCommand": "cd frontend && npm install && npm run build",
+  "installCommand": "npm install && cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
     "api/reward.ts": {
       "maxDuration": 30
+    },
+    "api/payouts.ts": {
+      "maxDuration": 10
+    },
+    "api/feedback.ts": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
