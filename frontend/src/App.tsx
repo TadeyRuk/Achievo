@@ -40,7 +40,7 @@ const makePipeline = (): PipelineStep[] => [
   { name: 'Activity Agent',     desc: 'Parsing your submission…',        status: 'idle' },
   { name: 'Verification Agent', desc: 'Checking activity whitelist…',    status: 'idle' },
   { name: 'Reward Agent',       desc: 'Calculating XLM reward…',         status: 'idle' },
-  { name: 'Stellar Agent',      desc: 'Executing on-chain transaction…', status: 'idle' },
+  { name: 'Kouri Agent',      desc: 'Executing on-chain transaction…', status: 'idle' },
   { name: 'Feedback Agent',     desc: 'Formatting result…',              status: 'idle' },
 ];
 
@@ -375,12 +375,12 @@ export default function App() {
       setStep(2, { status: 'done', detail: rewardHint });
       setLogs(p => [...p,
         `✓ [Reward Agent] ${rewardHint}`,
-        "🤖 [Stellar Agent] Generating challenge transaction…",
+        "🤖 [Kouri Agent] Generating challenge transaction…",
       ]);
 
-      // Step 3 — Stellar Agent (nonce → sign → AI evaluate → send reward)
+      // Step 3 — Kouri Agent (nonce → sign → AI evaluate → send reward)
       setStep(3, { status: 'running', detail: 'Requesting wallet ownership proof…' });
-      setLogs(p => [...p, "⏳ [Stellar Agent] Fetching nonce…"]);
+      setLogs(p => [...p, "⏳ [Kouri Agent] Fetching nonce…"]);
       let hash: string;
       let serverReward: number = rwdPreview.reward;
       let serverActivity: string = actResult.activity;
@@ -395,14 +395,14 @@ export default function App() {
         }
 
         setStep(3, { detail: 'Sign the challenge in your wallet…' });
-        setLogs(p => [...p, "⏳ [Stellar Agent] Awaiting wallet signature…"]);
+        setLogs(p => [...p, "⏳ [Kouri Agent] Awaiting wallet signature…"]);
         const signResult = await StellarWalletsKit.signTransaction(nonceData.challengeXdr, {
           networkPassphrase: Networks.TESTNET,
           address: walletAddress,
         });
 
         setStep(3, { detail: 'AI evaluating activity + submitting to Stellar…' });
-        setLogs(p => [...p, "✓ [Stellar Agent] Signature received. AI evaluating + dispatching payout…"]);
+        setLogs(p => [...p, "✓ [Kouri Agent] Signature received. AI evaluating + dispatching payout…"]);
 
         const apiRes = await fetch('/api/reward', {
           method: 'POST',
@@ -436,7 +436,7 @@ export default function App() {
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
         setStep(3, { status: 'error', detail: 'Transaction failed.' });
-        setLogs(p => [...p, `❌ [Stellar Agent] ${msg}`]);
+        setLogs(p => [...p, `❌ [Kouri Agent] ${msg}`]);
         return;
       }
 
@@ -446,7 +446,7 @@ export default function App() {
       setShowRewardCard(true);
       setStep(3, { status: 'done', detail: `Settled: ${hash.slice(0, 12)}…` });
       setLogs(p => [...p,
-        `✓ [Stellar Agent] Hash: ${hash.slice(0, 16)}…`,
+        `✓ [Kouri Agent] Hash: ${hash.slice(0, 16)}…`,
         "🤖 [Feedback Agent] Generating confirmation…",
       ]);
 
@@ -763,7 +763,7 @@ export default function App() {
                       { num: "1", name: "Activity Agent",     desc: "Keyword pre-scan of your submission for a fast category hint." },
                       { num: "2", name: "Verification Agent", desc: "Confirms the activity is on the approved whitelist." },
                       { num: "3", name: "Reward Agent",       desc: "Groq AI classifies the activity and scores your effort (0–1) to calculate final XLM." },
-                      { num: "4", name: "Stellar Agent",      desc: "Admin key signs and submits send_reward() to the Soroban treasury contract on-chain." },
+                      { num: "4", name: "Kouri Agent",      desc: "Admin key signs and submits send_reward() to the Soroban treasury contract on-chain." },
                       { num: "5", name: "Feedback Agent",     desc: "Returns your tx hash and reward amount for display." },
                     ].map(s => (
                       <div key={s.num} className="flex gap-3 items-start p-3 rounded-[16px] bg-[var(--dah-surface-low)]">

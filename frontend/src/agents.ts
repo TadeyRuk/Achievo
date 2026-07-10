@@ -78,7 +78,7 @@ export function rewardAgent(activity: string): RewardResult {
   return { reward, currency: 'XLM' };
 }
 
-// ─── Agent 4: Stellar Agent (handled externally) ─────────────────────────────
+// ─── Agent 4: Kouri Agent (handled externally) ─────────────────────────────
 // Implemented via sendRewardOnChain() in contract.ts — it builds, signs,
 // and submits the Soroban send_reward transaction using the connected wallet.
 

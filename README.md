@@ -46,7 +46,7 @@ Students connect their wallet, describe what they did, and Achievo's AI pipeline
 
 ## Features
 
-- 🤖 **5-Agent AI Pipeline** — Activity → Verification → Reward → Stellar → Feedback
+- 🤖 **5-Agent AI Pipeline** — Activity → Verification → Reward → Kouri → Feedback
 - ⛓️ **On-Chain Payouts** — XLM sent via Soroban treasury contract, every transaction verifiable on StellarExpert
 - 🔐 **Wallet Ownership Proof** — nonce-based challenge/signature before every payout (prevents spoofing)
 - 📱 **PWA / Mobile Ready** — installable on iOS & Android, offline-capable, network-first service worker
@@ -70,7 +70,7 @@ Student connects wallet + submits activity description
          ├── Activity Agent    — classifies activity type via Groq AI
          ├── Verification Agent — checks against activity whitelist
          ├── Reward Agent      — base reward + AI effort bonus (0.0–1.0 score)
-         ├── Stellar Agent     — verifies wallet signature + calls send_reward() on Soroban
+         ├── Kouri Agent       — verifies wallet signature + calls send_reward() on Soroban
          └── Feedback Agent    — formats confirmation message
                     ↓
          Student receives XLM + sees tx hash + RewardCard
