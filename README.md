@@ -11,6 +11,10 @@
 
 AI-powered motion graphics generator that transforms natural language prompts into Remotion code.
 
+## Demo Video
+
+This project was used to produce the Achievo product demo video: [Watch on Google Drive](https://drive.google.com/file/d/1zDNqKgDn3rzbQ-2GhFv26RG4xjkEjxNd/view?usp=sharing)
+
 ## Architecture
 
 ```
