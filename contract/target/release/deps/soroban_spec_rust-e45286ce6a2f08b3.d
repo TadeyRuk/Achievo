@@ -1,0 +1,10 @@
+/home/tadeyruk/Documents/Projects/achievo/contract/target/release/deps/soroban_spec_rust-e45286ce6a2f08b3.d: /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/lib.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/syn_ext.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/trait.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/types.rs
+
+/home/tadeyruk/Documents/Projects/achievo/contract/target/release/deps/libsoroban_spec_rust-e45286ce6a2f08b3.rlib: /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/lib.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/syn_ext.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/trait.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/types.rs
+
+/home/tadeyruk/Documents/Projects/achievo/contract/target/release/deps/libsoroban_spec_rust-e45286ce6a2f08b3.rmeta: /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/lib.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/syn_ext.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/trait.rs /home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/types.rs
+
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/lib.rs:
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/syn_ext.rs:
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/trait.rs:
+/home/tadeyruk/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/soroban-spec-rust-26.1.0/src/types.rs:
