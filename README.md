@@ -45,6 +45,52 @@ Student contributions such as tutoring, volunteering, workshops, events, and par
 
 The admin secret remains server-side. A student wallet signs only the ownership challenge and receives rewards.
 
+## Agent Pipeline
+
+Achievo is **powered by Kouri** — a multi-agent evaluation stack where specialized agents handle parsing, verification, payout logic, settlement, and feedback. The **Kouri Agent** is the authoritative brain: every treasury payout is gated by its server-side decision.
+
+### Kouri Agent — authoritative evaluator
+
+The **Kouri Agent** runs server-side on Groq (`llama-3.1-8b-instant`) and is the single source of truth for reward eligibility and amount. After wallet ownership is proven, it:
+
+- classifies the submission into tutoring, workshop, volunteering, event, or participation
+- scores effort from `0.0` to `1.0` based on specificity, scope, impact, and detail
+- computes the final XLM amount (`base_reward + effort_score × max_bonus`)
+- returns a human-readable reason when a submission is rejected
+
+Client-side agents drive the live pipeline UI, but **only the Kouri Agent decision authorizes treasury disbursement**.
+
+### Specialist agents
+
+| Agent | Responsibility | Runtime |
+|---|---|---|
+| **Activity Agent** | Parses free-form text into an activity type and reward hint | Client |
+| **Verification Agent** | Validates the activity against the approved whitelist | Client |
+| **Reward Agent** | Estimates the canonical XLM payout for a verified activity | Client |
+| **Stellar Agent** | Issues the ownership challenge, collects the wallet signature, and submits the on-chain `send_reward` call | Client + server |
+| **Feedback Agent** | Formats the blockchain result into a student-facing confirmation | Client |
+
+```mermaid
+flowchart LR
+    Student[Student submission]
+    A1[Activity Agent]
+    A2[Verification Agent]
+    A3[Reward Agent]
+    Kouri[Kouri Agent<br/>Groq evaluation]
+    A4[Stellar Agent]
+    A5[Feedback Agent]
+    Treasury[Soroban treasury]
+
+    Student --> A1 --> A2 --> A3
+    A3 --> A4
+    A4 -->|Signed challenge + activity| Kouri
+    Kouri -->|Approved reward| A4
+    A4 --> Treasury
+    Treasury --> A5 --> Student
+```
+
+Client agents live in `frontend/src/agents.ts`. Kouri Agent evaluation runs in `api/reward.ts`.
+
 ## Builder Progression
 
 > Only progression status is published here. Challenge requirements, review criteria, and submission instructions are intentionally not reproduced.
@@ -90,13 +136,6 @@ gantt
   <img src="docs/screenshots/bf381d31-294b-42f6-96f0-6a00aa35031b.jpeg" width="22%" alt="Student profile" />
   <img src="docs/screenshots/bd77e0f7-3a15-4e2d-a8d2-45e3d079a76c.jpeg" width="22%" alt="Scholar milestones" />
   <img src="docs/screenshots/99aae065-bceb-4b2a-8f03-268720534581.jpeg" width="22%" alt="Avatar picker" />
-</p>
-
-### Responsive experience
-
-<p align="center">
-  <img src="docs/screenshots/mobile-home.png" width="24%" alt="Mobile full-bleed layout" />
-  <img src="docs/screenshots/desktop-phone-frame.png" width="48%" alt="Desktop phone-frame layout" />
 </p>
 
 ## System Architecture
@@ -233,7 +272,7 @@ Current automated coverage:
 | Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, Motion 12 |
 | Wallets | StellarWalletsKit, Horizon Testnet, Friendbot |
 | Backend | Vercel serverless TypeScript functions |
-| AI | Groq `llama-3.1-8b-instant` |
+| AI | **Kouri Agent** on Groq `llama-3.1-8b-instant` |
 | Smart contract | Rust, Soroban SDK 26.1, XLM SAC |
 | Analytics | PostHog |
 | Testing | Vitest, Testing Library, fast-check, Soroban test utilities |
