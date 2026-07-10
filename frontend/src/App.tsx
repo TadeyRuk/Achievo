@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import posthog from 'posthog-js';
 import { Networks } from '@stellar/stellar-sdk';
+import { Analytics } from '@vercel/analytics/react';
 import { getXlmBalance, fundWithFriendbot, StellarWalletsKit, ensureWalletSession, clearWalletSession } from './wallet';
 import {
   CONTRACT_ID,
@@ -998,6 +999,7 @@ export default function App() {
 
 
       </div>
+      <Analytics />
     </div>
   );
 }
