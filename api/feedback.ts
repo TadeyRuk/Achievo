@@ -1,18 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { appendFeedback, claimOnce, listFeedback } from './_lib/store';
+import { buildFeedbackSummary, type FeedbackEntry } from './_lib/feedbackSummary';
+import { notifyFeedbackTelegram } from './_lib/telegram';
 
 const TX_HASH_RE = /^[a-f0-9]{64}$/i;
 const MAX_COMMENT = 500;
 
-export type FeedbackRecord = {
-  txHash: string;
-  rating: number;
-  comment: string | null;
-  wallet: string | null;
-  reward: number | null;
-  activity: string | null;
-  createdAt: string;
-};
+export type FeedbackRecord = FeedbackEntry;
 
 function parseRating(raw: unknown): number | null {
   const n = typeof raw === 'number' ? raw : Number(raw);
@@ -68,29 +62,21 @@ function parseBody(req: VercelRequest): FeedbackRecord | { error: string } {
   };
 }
 
-function summarize(entries: FeedbackRecord[]) {
-  if (entries.length === 0) {
-    return { count: 0, averageRating: null, withComments: 0 };
+function parseEntries(raw: string[]): FeedbackRecord[] {
+  const entries: FeedbackRecord[] = [];
+  for (const line of raw) {
+    try {
+      entries.push(JSON.parse(line) as FeedbackRecord);
+    } catch { /* skip corrupt rows */ }
   }
-  const sum = entries.reduce((acc, e) => acc + e.rating, 0);
-  const withComments = entries.filter((e) => e.comment).length;
-  return {
-    count: entries.length,
-    averageRating: Math.round((sum / entries.length) * 10) / 10,
-    withComments,
-  };
+  return entries;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    const raw = await listFeedback(200);
-    const entries: FeedbackRecord[] = [];
-    for (const line of raw) {
-      try {
-        entries.push(JSON.parse(line) as FeedbackRecord);
-      } catch { /* skip corrupt rows */ }
-    }
-    return res.status(200).json({ ...summarize(entries), entries });
+    const entries = parseEntries(await listFeedback(200));
+    const summary = buildFeedbackSummary(entries);
+    return res.status(200).json({ ...summary, entries });
   }
 
   if (req.method !== 'POST') {
@@ -114,6 +100,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: `Failed to store feedback: ${(err as Error).message ?? String(err)}`,
     });
   }
+
+  // Telegram + rolling summary (best-effort; never fail the HTTP response).
+  try {
+    const all = parseEntries(await listFeedback(200));
+    const summary = buildFeedbackSummary(all);
+    void notifyFeedbackTelegram({
+      rating: parsed.rating,
+      comment: parsed.comment,
+      activity: parsed.activity,
+      reward: parsed.reward,
+      txHash: parsed.txHash,
+      summaryLine: summary.summaryLine,
+    });
+  } catch { /* ignore */ }
 
   return res.status(201).json({ ok: true });
 }

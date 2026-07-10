@@ -8,7 +8,22 @@
 
 Students connect their wallet, describe what they did, and Achievo's AI pipeline evaluates the submission and sends XLM directly to their wallet — no manual approval, no middleman.
 
-**[Live Demo →](https://achievo-rust.vercel.app)**
+**[Live Demo →](https://achievo-rust.vercel.app)** · Production deploy: `feat/persistent-agent-layer` @ [`03867f3`](https://github.com/TadeyRuk/Achievo/commit/03867f3)
+
+### Production health (verified 2026-07-10)
+
+| Check | Result |
+|---|---|
+| App loads | ✅ https://achievo-rust.vercel.app |
+| Wallet challenge | ✅ `GET /api/nonce?wallet=G...` returns `nonce`, `mac`, `challengeXdr` |
+| Reward API | ✅ `POST /api/reward` validates challenges (`NONCE_HMAC_SECRET` + `ADMIN_SECRET` configured) |
+| AI scoring | ✅ Groq-backed `ScoringAgent` (requires valid signed challenge to reach) |
+| Treasury contract | ✅ `CCQVKUU2…` — **1,000 testnet XLM** on-chain |
+| On-chain payouts (current contract) | ⚠️ **0** `send_reward` events yet — legacy QA used the [previous contract](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) |
+| User feedback stored | ⚠️ `GET /api/feedback` → `count: 0` (needs live testers) |
+| Payout ledger API | 🔜 `GET /api/payouts` on this branch — deploy to enable on production |
+
+**Quick smoke test:** connect Freighter on **Testnet**, submit *“I tutored calculus for one hour”*, approve the challenge signature when **Kouri Agent** runs — you should receive a tx hash and XLM (1 reward per wallet per 24h).
 
 ---
 
@@ -32,15 +47,14 @@ Students connect their wallet, describe what they did, and Achievo's AI pipeline
   <img src="docs/screenshots/desktop-phone-frame.png" width="45%" alt="Desktop — phone frame" />
 </p>
 
-**CI Pipeline (both jobs green):**
+**CI Pipeline (example passing run):**
 <p align="center">
-  <img src="docs/screenshots/ci-green.png" width="70%" alt="GitHub Actions CI — Frontend + Contract both passing" />
+  <img src="docs/screenshots/ci-green.png" width="70%" alt="GitHub Actions CI — Frontend + Contract jobs" />
 </p>
 
-**Analytics & Monitoring (PostHog):**
-<p align="center">
-  <img src="docs/screenshots/analytics-posthog.png" width="70%" alt="PostHog dashboard — pageviews, wallet_connected, activity_submitted, reward_paid events" />
-</p>
+> **Note:** Latest pushes on `feat/persistent-agent-layer` may fail ESLint (`setState` in `useEffect` in `App.tsx`). Contract + Vitest suites pass locally.
+
+**Analytics & Monitoring (PostHog):** Client events `wallet_connected`, `activity_submitted`, `reward_paid`, and transaction feedback are instrumented in `frontend/src/main.tsx`. Set `VITE_POSTHOG_KEY` on Vercel to enable. Capture a dashboard screenshot for submission proof before Level 4.
 
 ---
 
@@ -70,7 +84,7 @@ Student connects wallet + submits activity description
          ├── Activity Agent    — classifies activity type via Groq AI
          ├── Verification Agent — checks against activity whitelist
          ├── Reward Agent      — base reward + AI effort bonus (0.0–1.0 score)
-         ├── Kouri Agent       — verifies wallet signature + calls send_reward() on Soroban
+         ├── Kouri Agent       — nonce challenge → wallet signs → POST /api/reward → send_reward() on Soroban
          └── Feedback Agent    — formats confirmation message
                     ↓
          Student receives XLM + sees tx hash + RewardCard
@@ -170,6 +184,11 @@ XP is earned at **100 XP per XLM received**. Each rank has a badge with a 3D ani
 
 ## On-Chain Wallet Interactions
 
+> **Tester guide:** share [`docs/LEVEL4_TESTER_CHECKLIST.md`](docs/LEVEL4_TESTER_CHECKLIST.md) with classmates (Freighter Testnet + connect steps).  
+> **Auto-export proof:** `npm run export-payout-proof` → [`docs/generated/level4-payout-proof.md`](docs/generated/level4-payout-proof.md)
+
+The table below is a **snapshot** from June 2026 QA on the **legacy** contract. Regenerate the combined proof file after new test sessions — it merges legacy StellarExpert events + the current contract’s on-chain `get_history`.
+
 Every reward is a real `send_reward` call on the deployed treasury contract — each row below
 is an independently verifiable Soroban event, decoded directly from the contract's on-chain
 event log (topics `("reward", "sent")`).
@@ -187,14 +206,22 @@ event log (topics `("reward", "sent")`).
 | 9 | 2026-06-16 01:28 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 5.5 XLM |
 
 **9 verified on-chain reward transactions, 69.6 XLM disbursed, across 2 wallets during the
-June 14–16, 2026 dev/QA testing window.** Wallet diversity in this window is capped by the
-contract's own `1 reward per wallet per day` rate limit (`api/reward.ts`) — each wallet could
-only be paid once daily during solo testing. Every row is reproducible independently via the
-[contract's event log on StellarExpert](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) (previous contract deployment, prior to the 2026-07-06 redeploy above)
-or the Soroban RPC `getEvents` endpoint (see `getRewardEvents()` in `frontend/src/contract.ts`).
-Wallet-connect and activity-submission events are additionally tracked client-side via
-PostHog (see [Analytics & Monitoring](#analytics--monitoring)) as of this release, so live
-usage after deployment continues to grow verifiable wallet interactions beyond this table.
+June 14–16, 2026 dev/QA window** on the **legacy** contract (`CDLRRHTN…MSCSNM`). The **current**
+contract (`CCQVKUU2…`) has **0 payouts** as of 2026-07-10 — complete at least one live payout on
+[achievo-rust.vercel.app](https://achievo-rust.vercel.app) to populate `get_history` and the in-app feed.
+
+| Level 4 proof target | Current status |
+|---|---|
+| ≥10 on-chain transactions | 9/10 (legacy only) |
+| ≥10 unique wallets | 2/10 |
+
+Wallet diversity is capped by the `1 reward per wallet per day` rate limit in `api/reward.ts`.
+Regenerate counts with `npm run export-payout-proof`. Share
+[`docs/LEVEL4_TESTER_CHECKLIST.md`](docs/LEVEL4_TESTER_CHECKLIST.md) with classmates to close the gap.
+
+Legacy events: [StellarExpert (legacy contract)](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM).
+Live feed: Soroban RPC `getEvents` + `get_history` (see `frontend/src/contract.ts`, `RecentPayouts.tsx`).
+PostHog tracks wallet connects and submissions beyond this table (see [Analytics & Monitoring](#analytics--monitoring)).
 
 ---
 
@@ -204,7 +231,18 @@ usage after deployment continues to grow verifiable wallet interactions beyond t
 contract/                   — Soroban treasury contract (Rust)
 api/
   nonce.ts                  — Issues HMAC-signed wallet challenge nonces
-  reward.ts                 — 5-agent pipeline + admin signs send_reward tx
+  reward.ts                 — ScoringAgent + IntegrityAgent + admin signs send_reward tx
+  feedback.ts               — POST/GET user ratings (Redis); summaryMarkdown for Level 4
+  payouts.ts                — GET server-side payout ledger (after deploy)
+  _lib/store.ts             — Upstash Redis (rate limits, nonces, feedback, payouts)
+  _lib/telegram.ts          — Optional Telegram notifications
+  _agents/scoring.ts        — Groq activity classification + effort score
+  _agents/integrity.ts      — Duplicate / abuse soft-flags
+scripts/
+  export-payout-proof.mjs   — Auto-generate docs/generated/level4-payout-proof.md
+docs/
+  LEVEL4_TESTER_CHECKLIST.md
+  legacy-payouts.json       — Static legacy tx rows for proof export
 frontend/
   public/
     sw.js                   — Service worker (network-first, offline fallback)
@@ -254,9 +292,14 @@ cd contract && cargo test
 **Frontend tests (Vitest + fast-check):**
 ```bash
 cd frontend && npm test
-# 8 test files, 29 tests: pure helpers (computeStartLedger, stroopsToXlm,
-# decodeRewardEvent, filterByRecipient, mergePayouts) + RecentPayouts UI states,
-# property-based tests (fast-check) for correctness across full value ranges
+# 13 test files, 68 tests: contract helpers, RecentPayouts UI, feedback summary,
+# property-based tests (fast-check), agent utilities
+```
+
+**Payout proof export (Level 4):**
+```bash
+npm run export-payout-proof
+# → docs/generated/level4-payout-proof.md (legacy + current contract stats)
 ```
 
 > **Note on real-time event feed:** Soroban RPC does not expose SSE or WebSocket streams for contract events — `getEvents` polling is the supported mechanism. Achievo polls every 15 seconds using the Soroban RPC `getEvents` endpoint, filtered by the `(reward, sent)` topic and the connected wallet address. This is architecturally equivalent to event streaming for Soroban.
@@ -287,7 +330,20 @@ test, or develop the app. See [Environment Variables](#environment-variables) fo
 
 ## User Feedback
 
-After every successful on-chain payout, students see a **Quick feedback** sheet (1–5 stars + optional comment). Responses are stored server-side via `POST /api/feedback`, keyed by transaction hash (one submission per payout). Summaries are available at `GET /api/feedback` for review.
+After every successful on-chain payout, students see a **Quick feedback** sheet (1–5 stars + optional comment). Responses are stored server-side via `POST /api/feedback`, keyed by transaction hash (one submission per payout).
+
+**Live summary (for README / Level 4):** `GET /api/feedback` returns aggregate stats plus a ready-to-paste `summaryMarkdown` field:
+
+```bash
+curl -s https://achievo-rust.vercel.app/api/feedback | jq '{count, averageRating, summaryMarkdown, highlights}'
+```
+
+| Field | Purpose |
+|---|---|
+| `distribution` | Count per star rating (1–5) |
+| `highlights` | Bullet points for submission write-ups |
+| `summaryMarkdown` | Paste into README after testing |
+| `recentComments` | Latest written feedback (anonymized in UI) |
 
 PostHog also tracks `transaction_feedback_submitted` and `transaction_feedback_skipped` events.
 
@@ -295,6 +351,28 @@ PostHog also tracks `transaction_feedback_submitted` and `transaction_feedback_s
 |---|---|
 | `transaction_feedback_submitted` | User submits a star rating (and optional comment) |
 | `transaction_feedback_skipped` | User dismisses or skips the sheet |
+
+---
+
+## Telegram Activity Feed (optional)
+
+When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set on Vercel, every successful payout and every feedback submission posts to your Telegram channel or group — a live, visual ledger for demos and Level 4 proof.
+
+**Setup:**
+
+1. Message [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token.
+2. Create a channel (e.g. `Achievo Payouts`) or use a group; add the bot as **admin** (channels) or member (groups).
+3. Get the chat ID (`@userinfobot` for DMs, or forward a channel post to `@RawDataBot`).
+4. Add to Vercel → Settings → Environment Variables:
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID` (e.g. `-1001234567890` for channels)
+
+**Server-side payout log:** `GET /api/payouts` returns payouts recorded in Redis after each successful `POST /api/reward` (count, unique wallets, total XLM, entries). Complements on-chain `get_history` and Telegram history. **Requires deploying this branch** — not yet on production as of 2026-07-10.
+
+```bash
+curl -s https://achievo-rust.vercel.app/api/payouts | jq '{count, uniqueWallets, totalXlm}'
+# After deploy: same URL returns ledger stats
+```
 
 ---
 
@@ -339,6 +417,10 @@ cargo build --release --target wasm32v1-none
 | `ADMIN_SECRET` | Stellar secret key of the treasury admin account |
 | `GROQ_API_KEY` | Groq API key for AI activity evaluation |
 | `NONCE_HMAC_SECRET` | Secret for signing wallet challenge nonces |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis URL (rate limits, feedback, payout ledger) |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token |
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token from @BotFather (optional activity feed) |
+| `TELEGRAM_CHAT_ID` | Telegram channel/group chat ID (optional activity feed) |
 | `VITE_POSTHOG_KEY` | PostHog project API key (public, client-side). Omit to run with analytics disabled. |
 | `VITE_POSTHOG_HOST` | PostHog ingestion host. Optional — defaults to `https://us.i.posthog.com`. |
 

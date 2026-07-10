@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "vercel-build": "cd frontend && npm install && npm run build"
+    "vercel-build": "cd frontend && npm install && npm run build",
+    "export-payout-proof": "node scripts/export-payout-proof.mjs --write"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^13.3.0",

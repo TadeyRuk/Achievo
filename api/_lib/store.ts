@@ -154,3 +154,32 @@ export async function listFeedback(limit = 100): Promise<string[]> {
   if (!redis) return memFeedback.slice(0, cap);
   return (await redis.lrange<string>(FEEDBACK_KEY, 0, cap - 1)) ?? [];
 }
+
+// ── Global payout ledger (server-side tx log for stats / proof) ───────────────
+
+const PAYOUTS_KEY = 'payouts:ledger';
+const PAYOUTS_MAX = 1000;
+const PAYOUTS_TTL_SECONDS = 365 * 24 * 60 * 60;
+
+const memPayouts: string[] = [];
+
+/** Append a JSON payout record (newest-first, bounded). */
+export async function appendPayout(json: string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) {
+    memPayouts.unshift(json);
+    memPayouts.splice(PAYOUTS_MAX);
+    return;
+  }
+  await redis.lpush(PAYOUTS_KEY, json);
+  await redis.ltrim(PAYOUTS_KEY, 0, PAYOUTS_MAX - 1);
+  await redis.expire(PAYOUTS_KEY, PAYOUTS_TTL_SECONDS);
+}
+
+/** Return stored payout records, newest-first (capped). */
+export async function listPayouts(limit = 200): Promise<string[]> {
+  const cap = Math.max(1, Math.min(PAYOUTS_MAX, Math.floor(limit)));
+  const redis = getRedis();
+  if (!redis) return memPayouts.slice(0, cap);
+  return (await redis.lrange<string>(PAYOUTS_KEY, 0, cap - 1)) ?? [];
+}

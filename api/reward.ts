@@ -13,9 +13,10 @@ import {
   StrKey,
 } from '@stellar/stellar-sdk';
 import { createHmac } from 'crypto';
-import { getTimestamp, setTimestamp, claimOnce, listRecent, addRecent } from './_lib/store';
+import { getTimestamp, setTimestamp, claimOnce, listRecent, addRecent, appendPayout } from './_lib/store';
 import { ScoringAgent, type Evaluation } from './_agents/scoring';
 import { IntegrityAgent } from './_agents/integrity';
+import { notifyPayoutTelegram } from './_lib/telegram';
 
 const CONTRACT_ID = "CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS";
 const STROOP_FACTOR = 10_000_000;
@@ -262,6 +263,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       await addRecent(recentKey, IntegrityAgent.fingerprint(activityText.trim()), 20, 30 * 24 * 60 * 60);
     } catch { /* ignore */ }
+
+    // Server-side payout ledger + Telegram feed (best-effort).
+    const payoutRecord = {
+      txHash,
+      wallet,
+      amount: reward,
+      activity: evaluation.activity,
+      effortScore,
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      await appendPayout(JSON.stringify(payoutRecord));
+    } catch { /* ignore */ }
+    void notifyPayoutTelegram({
+      txHash,
+      wallet,
+      amount: reward,
+      activity: evaluation.activity,
+      effortScore,
+    });
 
     return res.status(200).json({
       txHash,

@@ -1,0 +1,74 @@
+[
+  {
+    "recipient": "GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED",
+    "amount": 3.5,
+    "activity": "reward",
+    "timestamp": 1781445900000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED",
+    "amount": 3.5,
+    "activity": "reward",
+    "timestamp": 1781446200000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED",
+    "amount": 14,
+    "activity": "reward",
+    "timestamp": 1781456880000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5",
+    "amount": 4.1,
+    "activity": "reward",
+    "timestamp": 1781457900000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5",
+    "amount": 6,
+    "activity": "reward",
+    "timestamp": 1781461080000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5",
+    "amount": 11,
+    "activity": "reward",
+    "timestamp": 1781461560000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5",
+    "amount": 11,
+    "activity": "reward",
+    "timestamp": 1781489700000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5",
+    "amount": 11,
+    "activity": "reward",
+    "timestamp": 1781511960000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  },
+  {
+    "recipient": "GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5",
+    "amount": 5.5,
+    "activity": "reward",
+    "timestamp": 1781573280000,
+    "contractId": "CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM",
+    "label": "legacy"
+  }
+]
