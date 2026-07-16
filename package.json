@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "vercel-build": "cd frontend && npm install && npm run build",
+    "check-contract-integration": "node scripts/check-contract-integration.mjs",
     "export-payout-proof": "node scripts/export-payout-proof.mjs --write"
   },
   "dependencies": {

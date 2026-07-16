@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: ["**"]
+    tags: ["v*"]
   pull_request:
     branches: ["**"]
 
@@ -24,6 +25,9 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Cross-check contract and frontend bindings
+        run: npm run check-contract-integration
 
       - name: Lint
         working-directory: frontend
@@ -67,3 +71,61 @@ jobs:
       - name: Build release WASM
         working-directory: contract
         run: cargo build --release --target wasm32v1-none
+
+      - name: Upload contract WASM
+        uses: actions/upload-artifact@v4
+        with:
+          name: achievo-reward-treasury-wasm
+          path: contract/target/wasm32v1-none/release/contract.wasm
+          if-no-files-found: error
+
+  # ── CD: publish the tested contract artifact on version tags ────────────────
+  publish-contract:
+    name: Publish contract release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [frontend, contract]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download tested contract WASM
+        uses: actions/download-artifact@v4
+        with:
+          name: achievo-reward-treasury-wasm
+
+      - name: Publish WASM to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh release create "$GITHUB_REF_NAME" contract.wasm --generate-notes --title "$GITHUB_REF_NAME"
+
+  # ── CD: deploy the tested frontend + API to Vercel on version tags ─────────
+  deploy-frontend:
+    name: Deploy frontend and API (Vercel production)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [frontend, contract]
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull production environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build deployment artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel production
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

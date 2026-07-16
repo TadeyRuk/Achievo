@@ -180,6 +180,25 @@ XP is earned at **100 XP per XLM received**. Each rank has a badge with a 3D ani
 > historical record from the previous contract deployment; the live app and
 > Recent Payouts feed now point at the contract ID above.
 
+### Contract–frontend integration
+
+The frontend uses the deployed treasury directly through the Stellar SDK and
+StellarWalletsKit. CI runs `npm run check-contract-integration` so a contract
+function rename cannot be merged without updating its TypeScript consumers.
+
+| Contract function | Rust implementation | TypeScript consumer |
+|---|---|---|
+| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `frontend/src/contract.ts`, `api/reward.ts` |
+| `get_balance()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
+| `get_admin()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
+| `get_disbursed()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
+| `get_history()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
+
+Wallet discovery, Testnet validation, and signing are implemented in
+`frontend/src/wallet.ts`. The full build → prepare → wallet-sign → submit →
+settlement-poll flow is implemented in `frontend/src/contract.ts`; production
+payouts use the matching server-side `send_reward` call in `api/reward.ts`.
+
 ---
 
 ## On-Chain Wallet Interactions
@@ -301,6 +320,20 @@ cd frontend && npm test
 npm run export-payout-proof
 # → docs/generated/level4-payout-proof.md (legacy + current contract stats)
 ```
+
+**Contract/frontend binding check:**
+```bash
+npm run check-contract-integration
+# Verifies Rust exports against frontend/src/contract.ts and api/reward.ts
+```
+
+### Continuous delivery
+
+`.github/workflows/ci.yml` publishes the tested Soroban WASM as a GitHub Release
+asset and deploys the tested frontend plus serverless API to Vercel production
+for version tags matching `v*` (for example, `v1.0.0`). The Vercel deployment
+job requires the repository secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and
+`VERCEL_PROJECT_ID`.
 
 > **Note on real-time event feed:** Soroban RPC does not expose SSE or WebSocket streams for contract events — `getEvents` polling is the supported mechanism. Achievo polls every 15 seconds using the Soroban RPC `getEvents` endpoint, filtered by the `(reward, sent)` topic and the connected wallet address. This is architecturally equivalent to event streaming for Soroban.
 
