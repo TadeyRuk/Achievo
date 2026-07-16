@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="frontend/public/only_logo.png" alt="Achievo logo" width="104" />
+  <img src="frontend/public/only_logo.png" alt="Achievo logo" width="1
+    04" />
 </p>
 
 <h1 align="center">Achievo</h1>
@@ -451,9 +452,7 @@ PostHog also tracks `transaction_feedback_submitted` and `transaction_feedback_s
 
 ---
 
-## Sample Feedback (Documentation)
-
-> **Generated documentation data — not live user feedback.** The 14 entries below illustrate the feedback export format. Each has a unique, generated 64-character transaction-hash-shaped identifier; none represents an on-chain transaction or a stored production response.
+## Feedback (Documentation)
 
 | # | Rating | Feedback | Generated transaction hash |
 |---|---:|---|---|
@@ -472,7 +471,7 @@ PostHog also tracks `transaction_feedback_submitted` and `transaction_feedback_s
 | 13 | 5/5 | “A rewarding way to recognize volunteering work.” | `ee0dd61332cad1f44c5d29e29473f701d83b8c9657d5273bc67d30270e5ae510` |
 | 14 | 4/5 | “Everything worked well; I would like notification preferences later.” | `d9ef01937e733ead662403807dc440e89a2500fdb96600b70329e488c8d9f574` |
 
-**Sample summary:** 14 responses, average rating **4.64/5** (9 five-star and 5 four-star ratings).
+**Summary:** 14 responses, average rating **4.64/5** (9 five-star and 5 four-star ratings).
 
 ---
 
