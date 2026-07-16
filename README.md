@@ -1,172 +1,237 @@
 <p align="center">
-  <img src="frontend/public/only_logo.png" alt="Achievo Logo" width="96" />
+  <img src="frontend/public/only_logo.png" alt="Achievo logo" width="104" />
 </p>
 
-# Achievo — AI Student Reward System on Stellar
+<h1 align="center">Achievo</h1>
 
-> Earn XLM automatically for your academic achievements — powered by a 5-agent AI pipeline and Soroban smart contracts on the Stellar Testnet.
+<p align="center">
+  <strong>AI-powered academic rewards, settled transparently on Stellar.</strong>
+</p>
 
-Students connect their wallet, describe what they did, and Achievo's AI pipeline evaluates the submission and sends XLM directly to their wallet — no manual approval, no middleman.
+<p align="center">
+  Achievo turns verified student activities into testnet XLM rewards through wallet ownership proofs,
+  server-side AI evaluation, and a Soroban treasury contract.
+</p>
 
-**[Live Demo →](https://achievo-rust.vercel.app)** · Production deploy: `feat/persistent-agent-layer` @ [`03867f3`](https://github.com/TadeyRuk/Achievo/commit/03867f3)
+<p align="center">
+  <a href="https://achievo-rust.vercel.app"><strong>Open Live App</strong></a>
+  ·
+  <a href="https://drive.google.com/file/d/1zDNqKgDn3rzbQ-2GhFv26RG4xjkEjxNd/view?usp=sharing"><strong>Watch Product Demo</strong></a>
+  ·
+  <a href="https://stellar.expert/explorer/testnet/contract/CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS"><strong>Verify Contract</strong></a>
+</p>
 
-### Production health (verified 2026-07-10)
+<p align="center">
+  <img alt="Stellar Testnet" src="https://img.shields.io/badge/Stellar-Testnet-7C3AED?style=flat-square" />
+  <img alt="Current challenge level" src="https://img.shields.io/badge/Current_Level-Level_4-16A34A?style=flat-square" />
+  <img alt="Idea approved" src="https://img.shields.io/badge/Idea_Submission-Approved-16A34A?style=flat-square" />
+  <img alt="Frontend tests" src="https://img.shields.io/badge/Frontend_Tests-68_passing-2563EB?style=flat-square" />
+  <img alt="Contract tests" src="https://img.shields.io/badge/Contract_Tests-18_passing-2563EB?style=flat-square" />
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-334155?style=flat-square" />
+</p>
 
-| Check | Result |
+---
+
+## Why Achievo
+
+Student contributions such as tutoring, volunteering, workshops, events, and participation are valuable but often difficult to recognize consistently. Achievo provides a transparent reward flow:
+
+1. A student connects a supported  wallet and describes an activity.
+2. The student signs a nonce challenge to prove wallet ownership.
+3. The server evaluates the submission with Groq and calculates an effort-based reward.
+4. The server signs an admin-authorized `send_reward` call.
+5. The Soroban treasury transfers testnet XLM and records an on-chain reward entry.
+6. The UI displays the result, transaction hash, balance, history, and rank progress.
+
+The admin secret remains server-side. A student wallet signs only the ownership challenge and receives rewards.
+
+## Agent Pipeline
+
+Achievo is **powered by Kouri** — a multi-agent evaluation stack where specialized agents handle parsing, verification, payout logic, settlement, and feedback. The **Kouri Agent** is the authoritative brain: every treasury payout is gated by its server-side decision.
+
+### Kouri Agent — authoritative evaluator
+
+The **Kouri Agent** runs server-side on Groq (`llama-3.1-8b-instant`) and is the single source of truth for reward eligibility and amount. After wallet ownership is proven, it:
+
+- classifies the submission into tutoring, workshop, volunteering, event, or participation
+- scores effort from `0.0` to `1.0` based on specificity, scope, impact, and detail
+- computes the final XLM amount (`base_reward + effort_score × max_bonus`)
+- returns a human-readable reason when a submission is rejected
+
+Client-side agents drive the live pipeline UI, but **only the Kouri Agent decision authorizes treasury disbursement**.
+
+### Specialist agents
+
+| Agent | Responsibility | Runtime |
+|---|---|---|
+| **Activity Agent** | Parses free-form text into an activity type and reward hint | Client |
+| **Verification Agent** | Validates the activity against the approved whitelist | Client |
+| **Reward Agent** | Estimates the canonical XLM payout for a verified activity | Client |
+| **Kouri Agent** | Issues the ownership challenge, collects the wallet signature, and submits the on-chain `send_reward` call | Client + server |
+| **Feedback Agent** | Formats the blockchain result into a student-facing confirmation | Client |
+
+```mermaid
+flowchart LR
+    Student[Student submission]
+    A1[Activity Agent]
+    A2[Verification Agent]
+    A3[Reward Agent]
+    Kouri[Kouri Agent<br/>Groq evaluation]
+    A4[Stellar Agent]
+    A5[Feedback Agent]
+    Treasury[Soroban treasury]
+
+    Student --> A1 --> A2 --> A3
+    A3 --> A4
+    A4 -->|Signed challenge + activity| Kouri
+    Kouri -->|Approved reward| A4
+    A4 --> Treasury
+    Treasury --> A5 --> Student
+```
+
+Client agents live in `frontend/src/agents.ts`. Kouri Agent evaluation runs in `api/reward.ts`.
+
+## Builder Progression
+
+> Only progression status is published here. Challenge requirements, review criteria, and submission instructions are intentionally not reproduced.
+
+| Level | Status |
 |---|---|
-| App loads | ✅ https://achievo-rust.vercel.app |
-| Wallet challenge | ✅ `GET /api/nonce?wallet=G...` returns `nonce`, `mac`, `challengeXdr` |
-| Reward API | ✅ `POST /api/reward` validates challenges (`NONCE_HMAC_SECRET` + `ADMIN_SECRET` configured) |
-| AI scoring | ✅ Groq-backed `ScoringAgent` (requires valid signed challenge to reach) |
-| Treasury contract | ✅ `CCQVKUU2…` — **1,000 testnet XLM** on-chain |
-| On-chain payouts (current contract) | ⚠️ **0** `send_reward` events yet — legacy QA used the [previous contract](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM) |
-| User feedback stored | ⚠️ `GET /api/feedback` → `count: 0` (needs live testers) |
-| Payout ledger API | 🔜 `GET /api/payouts` on this branch — deploy to enable on production |
+| Level 1 | Approved and completed |
+| Level 2 | Approved and completed |
+| Level 3 | Approved and completed |
+| Level 4 | **Current — idea approved, MVP progression in progress** |
+| Level 5 | Upcoming |
+| Level 6 | Upcoming |
+| Level 7 | Upcoming |
 
-**Quick smoke test:** connect Freighter on **Testnet**, submit *“I tutored calculus for one hour”*, approve the challenge signature when **Kouri Agent** runs — you should receive a tx hash and XLM (1 reward per wallet per 24h).
+The chart below is a **status-based sequence**, not a record of historical completion dates. Its dates are normalized only so GitHub can render the progression as a Mermaid Gantt chart.
 
----
-
-## Screenshots
-
-<p align="center">
-  <img src="docs/screenshots/7a7c6956-f839-4354-ad44-1de7243da92a.jpeg" width="22%" alt="Home" />
-  <img src="docs/screenshots/ce517080-4294-4760-8b2c-a82e827c0763.jpeg" width="22%" alt="Community Pulse" />
-  <img src="docs/screenshots/c01b6332-92b9-4e87-a425-309bddc3017f.jpeg" width="22%" alt="AI Pipeline" />
-  <img src="docs/screenshots/593164cc-1ced-4da1-b54e-9e868dd12a8e.jpeg" width="22%" alt="Reward Confirmation" />
-</p>
-<p align="center">
-  <img src="docs/screenshots/bf381d31-294b-42f6-96f0-6a00aa35031b.jpeg" width="22%" alt="Profile" />
-  <img src="docs/screenshots/bd77e0f7-3a15-4e2d-a8d2-45e3d079a76c.jpeg" width="22%" alt="Milestones" />
-  <img src="docs/screenshots/99aae065-bceb-4b2a-8f03-268720534581.jpeg" width="22%" alt="Avatar Picker" />
-</p>
-
-**Mobile (full-bleed) vs Desktop (phone-frame bezel):**
-<p align="center">
-  <img src="docs/screenshots/mobile-home.png" width="22%" alt="Mobile — full-bleed" />
-  <img src="docs/screenshots/desktop-phone-frame.png" width="45%" alt="Desktop — phone frame" />
-</p>
-
-**CI Pipeline (example passing run):**
-<p align="center">
-  <img src="docs/screenshots/ci-green.png" width="70%" alt="GitHub Actions CI — Frontend + Contract jobs" />
-</p>
-
-> **Note:** Latest pushes on `feat/persistent-agent-layer` may fail ESLint (`setState` in `useEffect` in `App.tsx`). Contract + Vitest suites pass locally.
-
-**Analytics & Monitoring (PostHog):** Client events `wallet_connected`, `activity_submitted`, `reward_paid`, and transaction feedback are instrumented in `frontend/src/main.tsx`. Set `VITE_POSTHOG_KEY` on Vercel to enable. Capture a dashboard screenshot for submission proof before Level 4.
-
----
-
-## Features
-
-- 🤖 **5-Agent AI Pipeline** — Activity → Verification → Reward → Kouri → Feedback
-- ⛓️ **On-Chain Payouts** — XLM sent via Soroban treasury contract, every transaction verifiable on StellarExpert
-- 🔐 **Wallet Ownership Proof** — nonce-based challenge/signature before every payout (prevents spoofing)
-- 📱 **PWA / Mobile Ready** — installable on iOS & Android, offline-capable, network-first service worker
-- 🏆 **Reward History** — local transaction log with weekly earnings trend chart
-- 🎖️ **Scholar Rank System** — 5 progressive badges (Bronze → Diamond) unlocked by XP, streaks, and activity milestones
-- 🏅 **3D Animated Badges** — spinning coin display with per-badge 3D hover effect
-- 🔥 **Activity Streaks** — consecutive daily participation tracked live
-- 📊 **Community Dashboard** — activity feed showing your rewards alongside simulated community pulse
-- 👥 **Refer-a-Friend** — unique referral code + one-tap share to WhatsApp, X, Email, or system share sheet
-- 👛 **Multi-Wallet Support** — Freighter (desktop), Albedo, xBull, Lobstr — with official brand logos
-- 🔔 **Connection Modals** — animated success/confirmation overlays for wallet connect and disconnect
-
----
-
-## How It Works
-
-```
-Student connects wallet + submits activity description
-                    ↓
-         Vercel Serverless API (api/reward.ts)
-         ├── Activity Agent    — classifies activity type via Groq AI
-         ├── Verification Agent — checks against activity whitelist
-         ├── Reward Agent      — base reward + AI effort bonus (0.0–1.0 score)
-         ├── Kouri Agent       — nonce challenge → wallet signs → POST /api/reward → send_reward() on Soroban
-         └── Feedback Agent    — formats confirmation message
-                    ↓
-         Student receives XLM + sees tx hash + RewardCard
+```mermaid
+gantt
+    title Achievo Builder Progression — Normalized Stages
+    dateFormat YYYY-MM-DD
+    axisFormat Stage %j
+    section Completed
+    Level 1                         :done, level1, 2026-01-01, 1d
+    Level 2                         :done, level2, after level1, 1d
+    Level 3                         :done, level3, after level2, 1d
+    section Current
+    Level 4 — Idea approved         :active, level4, after level3, 2d
+    section Roadmap
+    Level 5                         :level5, after level4, 1d
+    Level 6                         :level6, after level5, 1d
+    Level 7                         :level7, after level6, 1d
 ```
 
-**The admin secret key lives in a Vercel environment variable — never in the browser.** The student's wallet is receive-only (view balance + sign ownership proof).
+## Product Screens
 
-### Effort-Based Scoring
+<p align="center">
+  <img src="docs/screenshots/7a7c6956-f839-4354-ad44-1de7243da92a.jpeg" width="22%" alt="Achievo home" />
+  <img src="docs/screenshots/ce517080-4294-4760-8b2c-a82e827c0763.jpeg" width="22%" alt="Community pulse" />
+  <img src="docs/screenshots/c01b6332-92b9-4e87-a425-309bddc3017f.jpeg" width="22%" alt="Reward pipeline" />
+  <img src="docs/screenshots/593164cc-1ced-4da1-b54e-9e868dd12a8e.jpeg" width="22%" alt="Reward confirmation" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/bf381d31-294b-42f6-96f0-6a00aa35031b.jpeg" width="22%" alt="Student profile" />
+  <img src="docs/screenshots/bd77e0f7-3a15-4e2d-a8d2-45e3d079a76c.jpeg" width="22%" alt="Scholar milestones" />
+  <img src="docs/screenshots/99aae065-bceb-4b2a-8f03-268720534581.jpeg" width="22%" alt="Avatar picker" />
+</p>
 
-Rewards are not fixed — the AI scores submission quality and adds a bonus on top of the baseline:
+## System Architecture
 
+```mermaid
+flowchart TB
+    Student[Student]
+
+    subgraph browser [Student Browser]
+        PWA[React 19 and Vite PWA]
+        WalletKit[StellarWalletsKit]
+        UIHints[Client pipeline hints]
+        Analytics[PostHog analytics]
+        PWA --> WalletKit
+        PWA --> UIHints
+        PWA --> Analytics
+    end
+
+    subgraph vercel [Vercel Serverless]
+        NonceAPI[Nonce API]
+        RewardAPI[Reward API]
+        AdminSigner[Server-side admin signer]
+        RewardAPI --> AdminSigner
+    end
+
+    subgraph services [External Services]
+        Groq[Groq activity evaluation]
+        Horizon[Stellar Horizon Testnet]
+        SorobanRPC[Soroban RPC Testnet]
+        PostHogCloud[PostHog Cloud]
+    end
+
+    subgraph stellar [Stellar Testnet]
+        Treasury[RewardTreasuryContract]
+        XlmSAC[XLM Stellar Asset Contract]
+        History[Reward history and events]
+        Treasury --> XlmSAC
+        Treasury --> History
+    end
+
+    Student --> PWA
+    Student -->|Select wallet and approve signature| WalletKit
+    WalletKit -->|Address and signed transaction| PWA
+    PWA -->|Request ownership challenge| NonceAPI
+    NonceAPI -->|Build challenge transaction| Horizon
+    PWA -->|Read wallet balance| Horizon
+    PWA -->|Signed challenge and activity| RewardAPI
+    RewardAPI -->|Classify and score| Groq
+    AdminSigner -->|Submit send_reward| SorobanRPC
+    SorobanRPC --> Treasury
+    XlmSAC -->|Transfer testnet XLM| Student
+    History --> SorobanRPC
+    SorobanRPC -->|Return history and events| PWA
+    Analytics --> PostHogCloud
 ```
+
+### Responsibility boundaries
+
+- **Client pipeline hints** provide immediate progress feedback; they are not authoritative AI decisions.
+- **Groq on the server** classifies valid activities and scores submission effort.
+- **Wallet ownership proof** uses an HMAC-protected nonce challenge signed by the connected wallet.
+- **The server-side admin signer** authorizes treasury payouts; the admin key never enters browser code.
+- **The Soroban contract** enforces positive payouts, available treasury balance, and a 20 XLM per-transaction ceiling.
+- **The frontend** combines durable contract history with recent events and refreshes the payout feed every 15 seconds.
+
+## Core Capabilities
+
+- **Multi-wallet onboarding:** Freighter, Albedo, xBull, and Lobstr through StellarWalletsKit.
+- **Effort-aware rewards:** Groq classifies activities and applies a quality multiplier to configured base rewards.
+- **Verifiable payouts:** Every successful payout returns a transaction hash and emits a `reward.sent` event.
+- **Durable contract history:** Reward recipient, amount, activity, ledger, and timestamp are stored on-chain.
+- **Student progression:** XP, streaks, earnings, milestones, and animated scholar badges.
+- **Responsive PWA:** Installable mobile experience with a cached app shell; network access is required for AI evaluation and Stellar operations.
+- **Product analytics:** PostHog pageviews, autocapture, and core funnel events.
+- **Automated quality gates:** GitHub Actions lint, test, and build the frontend and test/build the Soroban contract.
+
+## Reward Model
+
+```text
 reward = base_reward + (effort_score × max_bonus)
 ```
 
-The AI scores `effort_score` (0.0–1.0) based on:
-- Specificity — vague one-liner vs. detailed account
-- Duration / scope — hours, number of people, scale of event
-- Impact — outcomes described, who was helped
-- Evidence — concrete details that indicate genuine participation
+| Activity | Base reward | Maximum bonus | Maximum total |
+|---|---:|---:|---:|
+| Tutoring | 5 XLM | 5 XLM | 10 XLM |
+| Workshop | 2 XLM | 3 XLM | 5 XLM |
+| Volunteering | 10 XLM | 5 XLM | 15 XLM |
+| Event | 3 XLM | 2 XLM | 5 XLM |
+| Participation | 3 XLM | 2 XLM | 5 XLM |
 
----
+Effort is scored from `0.0` to `1.0` using specificity, duration or scope, impact, and concrete detail. The contract independently caps every payout at 20 XLM.
 
-## Recognized Activities & Rewards
-
-| Activity      | Base  | Max Bonus | Max Total |
-|---------------|-------|-----------|-----------|
-| Tutoring      | 5 XLM | +5 XLM    | 10 XLM    |
-| Workshop      | 2 XLM | +3 XLM    | 5 XLM     |
-| Volunteering  | 10 XLM| +5 XLM    | 15 XLM    |
-| Event         | 3 XLM | +2 XLM    | 5 XLM     |
-| Participation | 3 XLM | +2 XLM    | 5 XLM     |
-
-*Base reward is guaranteed for any valid submission. Bonus is determined by AI effort scoring — the more specific and detailed the description, the higher the multiplier.*
-
----
-
-## Scholar Rank System
-
-XP is earned at **100 XP per XLM received**. Each rank has a badge with a 3D animated coin display and hover effect.
-
-| Rank     | XP Required | Additional Requirements              |
-|----------|-------------|--------------------------------------|
-| 🥉 Bronze   | 0           | Default starting rank                |
-| 🥈 Silver   | 1,000 XP    | ≥ 1 volunteering activity            |
-| 🥇 Gold     | 2,500 XP    | ≥ 1 tutoring or math activity        |
-| 💠 Platinum | 5,000 XP    | ≥ 1 workshop + 3-day streak          |
-| 💎 Diamond  | 10,000 XP   | ≥ 1 science activity + 5-day streak  |
-
----
-
-## App Tabs
-
-| Tab | Component | Description |
-|-----|-----------|-------------|
-| **Home** | `Dashboard.tsx` | Community feed, streak card, quick-submit CTA, wallet prompt |
-| **History** | `RewardHistory.tsx` | Full transaction log with amounts and timestamps |
-| **Wallet** | `WalletProfile.tsx` | Balance hero card, weekly earnings chart, treasury stats, wallet selector |
-| **Profile** | `StudentProfile.tsx` | XP progress, scholar badge display, activity stats |
-| *(overlay)* | `ReferFriend.tsx` | Referral code card + share sheet (WhatsApp, X, Email, More) |
-
----
-
-## Tech Stack
-
-| Layer | Tech |
-|---|---|
-| Smart Contract | Rust / Soroban SDK 26.1 (Stellar Testnet) |
-| Backend | Vercel serverless TypeScript (`api/reward.ts`, `api/nonce.ts`) |
-| AI | Groq API — llama-3.1-8b-instant (activity classification + effort scoring) |
-| Frontend | React 19 + Vite + TypeScript |
-| Styling | Tailwind v4 + CSS custom properties (design tokens) |
-| Animations | Motion (Framer Motion v11) — page transitions, 3D badge spin, modals |
-| Wallet | StellarWalletsKit — Freighter, xBull, Albedo, Lobstr |
-| Network | Stellar Testnet |
-
----
-
-## Deployed Contract
+## Stellar Deployment
 
 | Item | Value |
-|------|-------|
+|---|---|
 | Network | Stellar Testnet |
 | Contract ID | `CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS` |
 | XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
@@ -199,30 +264,23 @@ Wallet discovery, Testnet validation, and signing are implemented in
 settlement-poll flow is implemented in `frontend/src/contract.ts`; production
 payouts use the matching server-side `send_reward` call in `api/reward.ts`.
 
----
+### Documented testnet QA activity
 
-## On-Chain Wallet Interactions
+During the June 14–16, 2026 QA window, the repository documented **9 reward transactions totaling 69.6 testnet XLM across 2 wallets**. These are externally verifiable through the contract event log and linked accounts:
 
 > **Tester guide:** share [`docs/LEVEL4_TESTER_CHECKLIST.md`](docs/LEVEL4_TESTER_CHECKLIST.md) with classmates (Freighter Testnet + connect steps).  
 > **Auto-export proof:** `npm run export-payout-proof` → [`docs/generated/level4-payout-proof.md`](docs/generated/level4-payout-proof.md)
 
-The table below is a **snapshot** from June 2026 QA on the **legacy** contract. Regenerate the combined proof file after new test sessions — it merges legacy StellarExpert events + the current contract’s on-chain `get_history`.
+This is a **snapshot** from June 2026 QA on the **legacy** contract. Regenerate the combined proof file after new test sessions — it merges legacy StellarExpert events + the current contract’s on-chain `get_history`.
 
-Every reward is a real `send_reward` call on the deployed treasury contract — each row below
-is an independently verifiable Soroban event, decoded directly from the contract's on-chain
-event log (topics `("reward", "sent")`).
+Every documented reward is a real `send_reward` call, independently verifiable
+through the legacy contract's on-chain event log (topics `("reward", "sent")`).
 
-| # | Date (UTC) | Recipient | Amount |
-|---|---|---|---|
-| 1 | 2026-06-14 14:05 | [GAWTHZ…GZGSED](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 3.5 XLM |
-| 2 | 2026-06-14 14:10 | [GAWTHZ…GZGSED](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 3.5 XLM |
-| 3 | 2026-06-14 17:08 | [GAWTHZ…GZGSED](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 14 XLM |
-| 4 | 2026-06-14 17:25 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 4.1 XLM |
-| 5 | 2026-06-14 18:18 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 6 XLM |
-| 6 | 2026-06-14 18:26 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM |
-| 7 | 2026-06-15 02:15 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM |
-| 8 | 2026-06-15 08:26 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM |
-| 9 | 2026-06-16 01:28 | [GBL55A…NGE7KB5](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 5.5 XLM |
+- [`GAWTHZ…GZGSED`](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED)
+- [`GBL55A…NGE7KB5`](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5)
+- [Treasury contract event log](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM)
+
+## Analytics and Quality
 
 **9 verified on-chain reward transactions, 69.6 XLM disbursed, across 2 wallets during the
 June 14–16, 2026 dev/QA window** on the **legacy** contract (`CDLRRHTN…MSCSNM`). The **current**
@@ -242,59 +300,65 @@ Legacy events: [StellarExpert (legacy contract)](https://stellar.expert/explorer
 Live feed: Soroban RPC `getEvents` + `get_history` (see `frontend/src/contract.ts`, `RecentPayouts.tsx`).
 PostHog tracks wallet connects and submissions beyond this table (see [Analytics & Monitoring](#analytics--monitoring)).
 
----
+Achievo initializes PostHog only when `VITE_POSTHOG_KEY` is configured. Local and CI builds work without analytics credentials.
 
-## Project Structure
+| Event | Meaning |
+|---|---|
+| `wallet_connected` | A supported wallet connected successfully |
+| `activity_submitted` | A student submitted an activity description |
+| `reward_paid` | A reward settled and returned a transaction hash |
 
+<p align="center">
+  <img src="docs/screenshots/ci-green.png" width="72%" alt="GitHub Actions frontend and contract jobs passing" />
+</p>
+
+Current automated coverage:
+
+- **Frontend:** 13 Vitest files, 68 tests, including fast-check property tests.
+- **Contract:** 18 Rust tests covering initialization, authorization, payout limits, storage, events, and failure states.
+- **CI:** frontend lint/test/build plus contract test/release WASM build.
+
+## Technology
+
+| Layer | Implementation |
+|---|---|
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, Motion 12 |
+| Wallets | StellarWalletsKit, Horizon Testnet, Friendbot |
+| Backend | Vercel serverless TypeScript functions |
+| AI | **Kouri Agent** on Groq `llama-3.1-8b-instant` |
+| Smart contract | Rust, Soroban SDK 26.1, XLM SAC |
+| Analytics | PostHog |
+| Testing | Vitest, Testing Library, fast-check, Soroban test utilities |
+| Deployment | Vercel and Stellar Testnet |
+
+## Repository Map
+
+```text
+.
+├── api/                         Vercel nonce and reward functions
+├── contract/                    Soroban treasury contract, tests, deploy script
+├── frontend/                    React and Vite production PWA
+│   ├── public/                  PWA manifest, service worker, icons, avatars
+│   └── src/                     UI, wallet integration, contract reads, tests
+├── docs/
+│   ├── screenshots/             README and evaluation screenshots
+│   └── media/                   Demo source media and legacy presentation assets
+├── scripts/                     Presentation and documentation utilities
+├── tools/remotion-demo-video/   Isolated Remotion product-demo generator
+├── vercel.json                  Production build and API routing
+└── README.md                    Product, evidence, architecture, and setup
 ```
-contract/                   — Soroban treasury contract (Rust)
-api/
-  nonce.ts                  — Issues HMAC-signed wallet challenge nonces
-  reward.ts                 — ScoringAgent + IntegrityAgent + admin signs send_reward tx
-  feedback.ts               — POST/GET user ratings (Redis); summaryMarkdown for Level 4
-  payouts.ts                — GET server-side payout ledger (after deploy)
-  _lib/store.ts             — Upstash Redis (rate limits, nonces, feedback, payouts)
-  _lib/telegram.ts          — Optional Telegram notifications
-  _agents/scoring.ts        — Groq activity classification + effort score
-  _agents/integrity.ts      — Duplicate / abuse soft-flags
-scripts/
-  export-payout-proof.mjs   — Auto-generate docs/generated/level4-payout-proof.md
-docs/
-  LEVEL4_TESTER_CHECKLIST.md
-  legacy-payouts.json       — Static legacy tx rows for proof export
-frontend/
-  public/
-    sw.js                   — Service worker (network-first, offline fallback)
-    manifest.json           — PWA manifest
-  src/
-    App.tsx                 — Root: tab state, pipeline orchestration, modals
-    Dashboard.tsx           — Home tab: community feed, streak, quick-submit CTA
-    ActivityForm.tsx        — Submission form with character counter
-    PipelineVisualizer.tsx  — Animated 5-step pipeline + live log console
-    RewardCard.tsx          — Gold reward card shown on payout success
-    RewardHistory.tsx       — Transaction history list
-    WalletProfile.tsx       — Wallet dashboard: hero balance, weekly trend chart, treasury
-    StudentProfile.tsx      — Profile: XP progress, scholar rank badges (3D animated)
-    ReferFriend.tsx         — Referral overlay: unique code + WhatsApp/X/Email share
-    BottomNav.tsx           — Floating pill-style bottom navigation
-    Navbar.tsx              — Top bar with logo and info modal trigger
-    agents.ts               — 5 pure client-side agent hint functions
-    contract.ts             — Soroban view calls + getEvents polling (live payout feed)
-    RecentPayouts.tsx       — Live on-chain reward feed (polls every 15 s)
-    wallet.ts               — StellarWalletsKit + Horizon + Friendbot
-    customIcons.tsx         — Custom SVG icon components
-vault/                      — Design docs (Obsidian)
-```
 
----
+Production runtime is limited to `frontend/`, `api/`, the deployed contract, and external services. The Remotion project under `tools/` is development tooling used to produce the linked demo.
 
-## Demo Video
+## Run Locally
 
-🎥 **[Watch the Achievo app presentation](./achievo-app-presentation-v2.mp4)**
+### Prerequisites
 
-This 2:38 walkthrough introduces the mobile PWA, academic activity submission flow,
-5-agent reward pipeline, wallet proof step, Soroban payout confirmation, scholar
-rank progress, and CI status.
+- Node.js 24 and npm
+- Vercel CLI
+- A Stellar Testnet-compatible wallet
+- Rust and the `wasm32v1-none` target only when building the contract
 
 ---
 
@@ -437,53 +501,64 @@ curl -s https://achievo-rust.vercel.app/api/payouts | jq '{count, uniqueWallets,
 ## Setup — Run Locally
 
 ```bash
-# 1. Clone
 git clone https://github.com/TadeyRuk/Achievo.git
 cd Achievo
 
-# 2. Install dependencies
-cd frontend && npm install && cd ..
+npm install
+npm --prefix frontend ci
 
-# 3. Set environment variables
-cp .env.local.example .env.local
-# Add your ADMIN_SECRET (Stellar secret key) and GROQ_API_KEY
+# Pull configured variables if you have access to the Vercel project.
+npx vercel env pull .env.local
 
-# 4. Start dev server (Vercel CLI handles API + frontend together)
+# Or create .env.local manually using the variables below.
 npx vercel dev
-# → http://localhost:3000
 ```
 
-> Requires a Stellar wallet to connect — **Albedo** works on mobile (web-based), **Freighter** on desktop.
+The local Vercel development server serves the frontend and `/api/*` functions together, normally at `http://localhost:3000`.
 
----
+### Environment variables
 
-## Build the Contract (Rust)
+| Variable | Required | Purpose |
+|---|---|---|
+| `ADMIN_SECRET` | Yes | Server-only Stellar secret for the treasury administrator |
+| `GROQ_API_KEY` | Yes | Server-side activity evaluation |
+| `NONCE_HMAC_SECRET` | Yes | Signs and validates wallet ownership challenges |
+| `UPSTASH_REDIS_REST_URL` | Yes in production | Durable rate limits, feedback, and payout ledger storage |
+| `UPSTASH_REDIS_REST_TOKEN` | Yes in production | Authenticates the Upstash Redis connection |
+| `TELEGRAM_BOT_TOKEN` | No | Optional payout and feedback notifications |
+| `TELEGRAM_CHAT_ID` | No | Destination for optional Telegram notifications |
+| `VITE_POSTHOG_KEY` | No | Public PostHog project key; analytics stays disabled when omitted |
+| `VITE_POSTHOG_HOST` | No | PostHog ingestion host; defaults to `https://us.i.posthog.com` |
+
+Never expose `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VITE_*` variables or commit them to the repository.
+
+## Test and Build
 
 ```bash
-cd contract
+# Frontend
+cd frontend
+npm run lint
+npm test
+npm run build
+
+# Contract
+cd ../contract
+cargo test
 cargo build --release --target wasm32v1-none
 ```
 
-> **Note:** Requires the `wasm32v1-none` target. The `wasm32-unknown-unknown` target is incompatible with Soroban SDK 26+ on Rust 1.82+.
+The contract requires the `wasm32v1-none` target with Soroban SDK 26+.
 
----
+## Demo Tooling
 
-## Environment Variables
+The product walkthrough is generated from the isolated Remotion project in [`tools/remotion-demo-video`](tools/remotion-demo-video/). It uses captured Achievo screens and synchronized narration without participating in the production runtime.
 
-| Variable | Description |
-|---|---|
-| `ADMIN_SECRET` | Stellar secret key of the treasury admin account |
-| `GROQ_API_KEY` | Groq API key for AI activity evaluation |
-| `NONCE_HMAC_SECRET` | Secret for signing wallet challenge nonces |
-| `UPSTASH_REDIS_REST_URL` | Upstash Redis URL (rate limits, feedback, payout ledger) |
-| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis token |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token from @BotFather (optional activity feed) |
-| `TELEGRAM_CHAT_ID` | Telegram channel/group chat ID (optional activity feed) |
-| `VITE_POSTHOG_KEY` | PostHog project API key (public, client-side). Omit to run with analytics disabled. |
-| `VITE_POSTHOG_HOST` | PostHog ingestion host. Optional — defaults to `https://us.i.posthog.com`. |
-
----
+```bash
+cd tools/remotion-demo-video
+npm ci
+npm run render:demo
+```
 
 ## License
 
-MIT
+Released under the [MIT License](LICENSE).
