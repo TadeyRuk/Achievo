@@ -116,6 +116,15 @@ for (const file of walk(path.join(root, 'api'))) {
     if (fileRel.includes('/_server/features/') && (spec.includes('@vercel/node') || spec.includes('/infrastructure/'))) {
       fail(file, `feature core must not import Vercel or infrastructure (${spec})`);
     }
+    if (
+      fileRel.includes('/_server/features/') &&
+      (spec.includes('telegram') ||
+        spec.includes('googleForms') ||
+        spec.includes('submitSendReward') ||
+        spec.includes('treasurySigner'))
+    ) {
+      fail(file, `feature core must use ports, not concrete sinks/signers (${spec})`);
+    }
     if (fileRel.includes('/_server/infrastructure/') && (spec.includes('/features/') || spec.includes('/composition/'))) {
       fail(file, `infrastructure must not import features/composition (${spec})`);
     }

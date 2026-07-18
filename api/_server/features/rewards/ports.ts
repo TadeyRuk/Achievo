@@ -65,7 +65,8 @@ export interface NoncePorts extends StoreErrorPort {
 }
 
 export interface RewardPorts extends StoreErrorPort {
-  adminSecret?: string;
+  /** True when secrets required for payout are configured (admin via signer + nonce). */
+  payoutConfigured(): boolean;
   nonceSecret?: string;
   isValidWallet(wallet: string): boolean;
   hashIntent(activityText: string): string;
@@ -102,8 +103,8 @@ export interface RewardPorts extends StoreErrorPort {
     reward: number,
   ): Promise<{ ok: true; reservation: BudgetReservation } | { ok: false; error: string }>;
   releaseBudgets(reservation: BudgetReservation | null): Promise<void>;
+  /** TreasurySigner port — must not require callers to pass raw admin secrets. */
   submitReward(input: {
-    adminSecret: string;
     wallet: string;
     rewardXlm: number;
     activity: RewardActivity;
@@ -135,6 +136,8 @@ export interface PayoutsPorts {
 
 export interface ReconcilePorts {
   cronSecret?: string;
+  /** When true, missing cronSecret must deny all requests. */
+  production: boolean;
   listPending(): Promise<PendingPayout[]>;
   removePending(txHash: string): Promise<void>;
   transactionStatus(txHash: string): Promise<'success' | 'failed' | 'pending'>;

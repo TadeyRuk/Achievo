@@ -213,7 +213,7 @@ export function useRewardPipeline({
       setLastPayoutActivity(serverActivity);
       trackRewardPaid({
         amount: serverReward,
-        activity: serverActivity,
+        activityCategory: serverActivity,
         txHash: hash,
       });
       setShowRewardCard(true);

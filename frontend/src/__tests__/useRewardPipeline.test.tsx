@@ -133,7 +133,7 @@ describe('useRewardPipeline SDK errors', () => {
     );
     expect(mocks.trackRewardPaid).toHaveBeenCalledWith({
       amount: 4,
-      activity: 'tutoring',
+      activityCategory: 'tutoring',
       txHash: 'pending-hash',
     });
     expect(fetchBalance).toHaveBeenCalledWith('GABC');

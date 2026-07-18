@@ -14,7 +14,10 @@
 | Server HTTP boundary | [`api/_server/http/`](../api/_server/http/) |
 | Feature use cases / ports | [`api/_server/features/`](../api/_server/features/) |
 | Redis / Stellar / Forms / Telegram | [`api/_server/infrastructure/`](../api/_server/infrastructure/) |
+| Treasury signer adapter (local/remote) | [`api/_server/infrastructure/treasurySigner.ts`](../api/_server/infrastructure/treasurySigner.ts) |
+| Isolated signer service (Phase 2) | [`services/signer/`](../services/signer/) |
 | Route composition wiring | [`api/_server/composition/`](../api/_server/composition/) |
+| Mainnet readiness checklist | [`docs/MAINNET.md`](MAINNET.md) |
 | API tests | [`api/__tests__/`](../api/__tests__/) |
 | Shared domain + contracts + SDK | [`packages/`](../packages/) |
 | Soroban contract | [`contract/`](../contract/) |

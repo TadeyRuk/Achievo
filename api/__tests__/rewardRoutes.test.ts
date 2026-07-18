@@ -23,9 +23,10 @@ function request(body: unknown): HttpRequest {
 
 function createPorts(): RewardPorts & NoncePorts & PayoutsPorts & ReconcilePorts {
   return {
-    adminSecret: 'SADMIN',
+    payoutConfigured: vi.fn().mockReturnValue(true),
     nonceSecret: 'nonce-secret',
     cronSecret: undefined,
+    production: false,
     isValidWallet: vi.fn().mockReturnValue(true),
     hashIntent: vi.fn().mockReturnValue('a'.repeat(64)),
     verifyChallenge: vi.fn().mockReturnValue({ ok: true }),
@@ -178,6 +179,21 @@ describe('reward feature route', () => {
 });
 
 describe('reconcile feature route', () => {
+  it('fails closed in production when CRON_SECRET is missing', async () => {
+    const ports = createPorts();
+    ports.production = true;
+    ports.cronSecret = undefined;
+    const result = await createReconcileRoute(ports)({
+      method: 'GET',
+      headers: {},
+      query: {},
+      body: undefined,
+      clientIp: 'unknown',
+    });
+    expect(result.status).toBe(503);
+    expect(ports.listPending).not.toHaveBeenCalled();
+  });
+
   it('settles a confirmed pending payout and removes it', async () => {
     const ports = createPorts();
     vi.mocked(ports.listPending).mockResolvedValue([

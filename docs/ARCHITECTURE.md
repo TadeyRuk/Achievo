@@ -113,8 +113,9 @@ Root handlers under `api/*.ts` are thin Vercel adapters. Behavior lives in
 | `features/feedback` | Transaction + general feedback use cases |
 | `features/identity` | Identity bind/session routes |
 | `features/health` | Health probe route |
-| `infrastructure/` | Redis store, Stellar challenge/submit, evaluator, integrity, Forms, Telegram |
+| `infrastructure/` | Redis store, Stellar challenge/submit, treasury signer adapter, evaluator, integrity, Forms, Telegram |
 | `composition/` | Route-specific port wiring (one module per endpoint family) |
+| `services/signer/` | Optional isolated signer (Phase 2) holding `ADMIN_SECRET` |
 
 Reward-family composition is split so `/api/payouts` does not import evaluator,
 Stellar submit, integrity, or Telegram modules.

@@ -18,6 +18,9 @@ const reconcilePorts: ReconcilePorts = {
   get cronSecret() {
     return process.env.CRON_SECRET;
   },
+  get production() {
+    return process.env.VERCEL_ENV === 'production';
+  },
   listPending: listPendingReconcile,
   removePending: removePendingReconcile,
   async transactionStatus(txHash) {

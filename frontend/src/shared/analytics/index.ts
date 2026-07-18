@@ -1,5 +1,9 @@
 import posthog from 'posthog-js';
 
+/**
+ * Allowed PostHog properties: lengths, categories, tx hashes, booleans, enums.
+ * Never send: raw activity text, full wallets, session tokens, display names.
+ */
 export function initializeAnalytics(): void {
   const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
   if (!key) return;
@@ -8,7 +12,8 @@ export function initializeAnalytics(): void {
     api_host:
       (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? 'https://us.i.posthog.com',
     capture_pageview: true,
-    autocapture: true,
+    // Autocapture can pick up labeled text in the DOM; keep it off for privacy.
+    autocapture: false,
   });
 }
 
@@ -18,12 +23,12 @@ export function trackActivitySubmitted(length: number): void {
 
 export function trackRewardPaid(properties: {
   amount: number;
-  activity: string;
+  activityCategory: string;
   txHash: string;
 }): void {
   posthog.capture('reward_paid', {
     amount: properties.amount,
-    activity: properties.activity,
+    activity_category: properties.activityCategory,
     tx_hash: properties.txHash,
   });
 }

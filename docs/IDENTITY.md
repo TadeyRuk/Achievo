@@ -33,7 +33,23 @@ Identity {
 
 - `GET /api/payouts` returns **redacted** wallets (`GABC…WXYZ`) and optional `identityId` — never full address lists.
 - `GET /api/identity?wallet=` returns a redacted wallet + id metadata.
+- Identity ids are **opaque** (HMAC-SHA256 of wallet + server pepper) — they must not embed G-address fragments.
 - No school SSO / KYC in this phase; the abstraction is ready for later account recovery without baking PII into the ledger.
+
+## Privacy sinks
+
+What may leave the student device / API, and required redaction:
+
+| Sink | Allowed | Forbidden |
+|------|---------|-----------|
+| PostHog | Event names, lengths, activity **category**, tx hash | Raw activity text, full wallet, session tokens |
+| Telegram ops | Redacted wallet, amount, category/hash prefix, tx URL | Full G-address, full activity prose |
+| Google Forms | Feedback fields per setup doc | Secrets, session tokens |
+| Groq scoring | Activity text (required for evaluation) | Persist Groq prompts in our logs |
+| Redis | Wallet keys, identity records, hashes | Display names (hash only) |
+| Client `localStorage` | Session token, identity id, local history cache | Never sync raw display name to server |
+
+SPA sessions cannot use httpOnly cookies without a dedicated cookie session endpoint; Phase 1 clears `localStorage` session on wallet disconnect and relies on server MAC + expiry.
 
 ## Hybrid identity rate claims (current)
 

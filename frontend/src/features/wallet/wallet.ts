@@ -2,6 +2,7 @@ import { StellarWalletsKit, Networks } from "@creit.tech/stellar-wallets-kit";
 import { defaultModules } from "@creit.tech/stellar-wallets-kit/modules/utils";
 import { Horizon } from "@stellar/stellar-sdk";
 import { HORIZON_URL } from "@achievo/shared";
+import { clearIdentitySession } from "../../shared/lib/sessionIdentity";
 
 export const horizonServer = new Horizon.Server(HORIZON_URL);
 
@@ -31,6 +32,7 @@ export async function clearWalletSession(): Promise<void> {
     /* ignore */
   }
   localStorage.removeItem('achievo_wallet_id');
+  clearIdentitySession();
 }
 
 export { StellarWalletsKit, Networks };

@@ -86,8 +86,8 @@ export function createRewardRoute(ports: RewardPorts): HttpRoute {
       if (input.intentHash && input.intentHash.toLowerCase() !== intentHash) {
         return error(400, 'Activity text does not match challenge intent.');
       }
-      if (!ports.adminSecret || !ports.nonceSecret) {
-        return error(500, 'Server configuration error.');
+      if (!ports.payoutConfigured() || !ports.nonceSecret) {
+        return error(503, 'Server configuration error.');
       }
       const proof = ports.verifyChallenge({
         wallet,
@@ -143,7 +143,6 @@ export function createRewardRoute(ports: RewardPorts): HttpRoute {
       }
       budgetReservation = budgets.reservation;
       const submitted = await ports.submitReward({
-        adminSecret: ports.adminSecret,
         wallet,
         rewardXlm: reward,
         activity,
@@ -163,7 +162,7 @@ export function createRewardRoute(ports: RewardPorts): HttpRoute {
         }
         void ports
           .notifyOps(
-            `⏳ Pending reconcile\nTx: <code>${submitted.txHash}</code>\nWallet: ${wallet}\nAmount: ${reward} XLM`,
+            `⏳ Pending reconcile\nTx: <code>${submitted.txHash}</code>\nAmount: ${reward} XLM\nCategory: <code>${activity}</code>`,
           )
           .catch(() => undefined);
         rateClaims = null;
@@ -321,10 +320,11 @@ export function createPayoutsRoute(ports: PayoutsPorts): HttpRoute {
 export function createReconcileRoute(ports: ReconcilePorts): HttpRoute {
   return async (request) => {
     if (request.method !== 'POST' && request.method !== 'GET') return methodNotAllowed();
-    if (
-      ports.cronSecret?.trim() &&
-      (request.headers.authorization ?? '') !== `Bearer ${ports.cronSecret.trim()}`
-    ) {
+    const cronSecret = ports.cronSecret?.trim() ?? '';
+    if (ports.production && !cronSecret) {
+      return error(503, 'CRON_SECRET is required in production.');
+    }
+    if (cronSecret && (request.headers.authorization ?? '') !== `Bearer ${cronSecret}`) {
       return error(401, 'Unauthorized');
     }
 
@@ -362,7 +362,7 @@ export function createReconcileRoute(ports: ReconcilePorts): HttpRoute {
           if (ports.now().getTime() - Date.parse(entry.createdAt) > 15 * 60 * 1000) {
             void ports
               .notifyOps(
-                `⏰ Pending >15m\n<code>${entry.txHash}</code>\n${entry.rewardXlm} XLM → ${entry.wallet}`,
+                `⏰ Pending >15m\n<code>${entry.txHash}</code>\n${entry.rewardXlm} XLM · category <code>${entry.activity}</code>`,
               )
               .catch(() => undefined);
           }

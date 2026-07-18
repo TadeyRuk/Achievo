@@ -1,0 +1,19 @@
+{
+  "name": "@achievo/signer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@achievo/shared": "*",
+    "@stellar/stellar-sdk": "^15.1.0",
+    "@vercel/node": "^5.1.5"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.9"
+  }
+}

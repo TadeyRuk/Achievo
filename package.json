@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "frontend"
+    "frontend",
+    "services/*"
   ],
   "scripts": {
     "build:packages": "npm run build -w @achievo/shared && npm run build -w @achievo/contracts && npm run build -w @achievo/stellar && npm run build -w @achievo/identity && npm run build -w @achievo/sdk",

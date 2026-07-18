@@ -38,4 +38,7 @@ To bump:
 |-------------|-----|
 | Vercel Preview / staging alias | Tag smoke before prod |
 | Vercel Production | Live PWA + API |
+| Achievo signer (separate Vercel project) | Holds `ADMIN_SECRET`; see [`services/signer`](../services/signer/) |
 | GitHub `production` environment | Protects deploy secrets |
+
+Mainnet / real-value cutover: [`MAINNET.md`](MAINNET.md).

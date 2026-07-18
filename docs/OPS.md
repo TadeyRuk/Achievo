@@ -18,6 +18,12 @@ Repo secrets required for the workflow:
 - `ACHIEVO_BASE_URL` — production (or staging) origin, e.g. `https://achievo.example.com`
 - `CRON_SECRET` — same value as the app’s `CRON_SECRET` env on Vercel
 
+In production, missing `CRON_SECRET` fails closed (503) on `/api/reconcile`.
+
+## Isolated signer (Phase 2)
+
+When `SIGNER_URL` + `SIGNER_HMAC_SECRET` are set on the Achievo API, payouts are signed by [`services/signer`](../services/signer/) (separate Vercel project). Omit `ADMIN_SECRET` from the web/API project in that mode. See the signer README for env split and rotation.
+
 ## Ambiguous submits
 
 If confirmation polling times out, budgets are **not** released. The tx hash is stored pending until reconcile confirms SUCCESS (keep reservation) or FAILED (ops alert; manual budget review).

@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes } from 'crypto';
-import { identityIdFromWallet, type Identity } from '@achievo/identity';
+import type { Identity } from '@achievo/identity';
 import { getJson, setJson, StoreUnavailableError } from './store';
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -10,6 +10,16 @@ function walletIndexKey(wallet: string): string {
 
 function identityKey(id: string): string {
   return `identity:id:${id}`;
+}
+
+/** Opaque HMAC identity id — does not embed G-address fragments. */
+export function mintIdentityId(wallet: string): string {
+  const pepper =
+    process.env.IDENTITY_ID_PEPPER?.trim() ||
+    process.env.NONCE_HMAC_SECRET?.trim() ||
+    'achievo-dev-identity-pepper';
+  const digest = createHmac('sha256', pepper).update(wallet.trim()).digest('hex');
+  return `id_${digest.slice(0, 24)}`;
 }
 
 export function hashDisplayName(name: string): string {
@@ -37,7 +47,8 @@ export async function bindIdentity(
     return next;
   }
 
-  const id = identityIdFromWallet(wallet);
+  // Existing wallet→id index wins for already-bound testnet users (legacy fragment ids).
+  const id = mintIdentityId(wallet);
   const identity: Identity = {
     id,
     walletPublicKey: wallet,

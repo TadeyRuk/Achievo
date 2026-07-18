@@ -25,7 +25,6 @@ import {
 import {
   hashActivityIntent,
   StrKey,
-  submitSendReward,
   verifyChallenge,
 } from '../infrastructure/stellar';
 import {
@@ -33,10 +32,14 @@ import {
   ScoringAgent,
 } from '../infrastructure/evaluator';
 import { IntegrityAgent } from '../infrastructure/integrity';
+import {
+  signAndSubmitReward,
+  treasurySignerConfigured,
+} from '../infrastructure/treasurySigner';
 
 const rewardPorts: RewardPorts = {
-  get adminSecret() {
-    return process.env.ADMIN_SECRET;
+  payoutConfigured() {
+    return treasurySignerConfigured() && Boolean(process.env.NONCE_HMAC_SECRET?.trim());
   },
   get nonceSecret() {
     return process.env.NONCE_HMAC_SECRET;
@@ -73,7 +76,7 @@ const rewardPorts: RewardPorts = {
   addRecent,
   reserveBudgets: reserveDailyBudgets,
   releaseBudgets: releaseDailyBudgets,
-  submitReward: submitSendReward,
+  submitReward: signAndSubmitReward,
   markPending: markPendingReconcile,
   bindIdentity,
   issueSession: issueSessionToken,
