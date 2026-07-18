@@ -8,9 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@achievo/shared": "*",
+    "@achievo/stellar": "*",
+    "@achievo/identity": "*",
     "@creit.tech/stellar-wallets-kit": "^2.3.0",
     "@stellar/stellar-sdk": "^15.1.0",
     "@tailwindcss/vite": "^4.3.1",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Send, AlertCircle, Zap, ArrowLeft, GraduationCap, Lightbulb, HandHeart, Calendar, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { estimateMaxReward } from "@achievo/shared";
 
 interface ActivityFormProps {
   text: string;
@@ -22,7 +23,7 @@ const CATEGORIES = [
     id: "tutoring",
     label: "Tutoring",
     desc: "Mentoring & peer support",
-    xlm: 5,
+    xlm: estimateMaxReward("tutoring"),
     icon: GraduationCap,
     hint: "I tutored a classmate in math today for 2 hours. We covered calculus limits and worked through practice problems."
   },
@@ -30,7 +31,7 @@ const CATEGORIES = [
     id: "workshop",
     label: "Workshop",
     desc: "Skill-building sessions",
-    xlm: 8,
+    xlm: estimateMaxReward("workshop"),
     icon: Lightbulb,
     hint: "I attended a workshop on blockchain development today. I learned about Stellar and Soroban smart contracts."
   },
@@ -38,7 +39,7 @@ const CATEGORIES = [
     id: "volunteering",
     label: "Volunteering",
     desc: "Community service",
-    xlm: 10,
+    xlm: estimateMaxReward("volunteering"),
     icon: HandHeart,
     hint: "I volunteered at the campus library today for 3 hours. I helped organize the science section and assisted visitors."
   },
@@ -46,7 +47,7 @@ const CATEGORIES = [
     id: "event",
     label: "Event Participation",
     desc: "Attending official events",
-    xlm: 3,
+    xlm: estimateMaxReward("event"),
     icon: Calendar,
     hint: "I participated in the university debate championship today. Our team discussed public policy and critical debate rules."
   }
@@ -259,7 +260,7 @@ export function ActivityForm({
                       {/* Reward button inside card */}
                       <div className="flex items-center justify-center gap-1.5 py-2.5 bg-[#ffbe42] hover:brightness-105 text-[#00162b] font-extrabold text-[12px] uppercase tracking-wider rounded-full shadow-sm">
                         <CoinIcon />
-                        <span>+{cat.xlm} XLM</span>
+                        <span>up to +{cat.xlm} XLM</span>
                       </div>
                     </motion.div>
                   );
@@ -366,7 +367,7 @@ export function ActivityForm({
                     <span className="text-gray-500 font-semibold">Est. Reward:</span>
                     <span className="font-extrabold text-[#001540] bg-[#ffbe42]/20 px-2.5 py-0.5 rounded-full text-[12px] flex items-center gap-1">
                       <CoinIcon />
-                      +{currentCategoryObj?.xlm || 0} XLM
+                      up to +{currentCategoryObj?.xlm || 0} XLM
                     </span>
                   </div>
 

@@ -25,8 +25,8 @@
   <img alt="Stellar Testnet" src="https://img.shields.io/badge/Stellar-Testnet-7C3AED?style=flat-square" />
   <img alt="Current challenge level" src="https://img.shields.io/badge/Current_Level-Level_5-16A34A?style=flat-square" />
   <img alt="Idea approved" src="https://img.shields.io/badge/Idea_Submission-Approved-16A34A?style=flat-square" />
-  <img alt="Frontend tests" src="https://img.shields.io/badge/Frontend_Tests-68_passing-2563EB?style=flat-square" />
-  <img alt="Contract tests" src="https://img.shields.io/badge/Contract_Tests-18_passing-2563EB?style=flat-square" />
+  <img alt="Frontend tests" src="https://img.shields.io/badge/Frontend_Tests-112_passing-2563EB?style=flat-square" />
+  <img alt="Contract tests" src="https://img.shields.io/badge/Contract_Tests-23_passing-2563EB?style=flat-square" />
   <img alt="License" src="https://img.shields.io/badge/License-MIT-334155?style=flat-square" />
 </p>
 
@@ -297,7 +297,7 @@ Regenerate counts with `npm run export-payout-proof`. Share
 [`docs/LEVEL4_TESTER_CHECKLIST.md`](docs/LEVEL4_TESTER_CHECKLIST.md) with classmates to close the gap.
 
 Legacy events: [StellarExpert (legacy contract)](https://stellar.expert/explorer/testnet/contract/CDLRRHTNRQ2BGA7ESIXAMIQ2YNL3IF5PP5K6GPH2WR3IEYL7INMSCSNM).
-Live feed: Soroban RPC `getEvents` + `get_history` (see `frontend/src/contract.ts`, `RecentPayouts.tsx`).
+Live history: Soroban RPC `getEvents` + contract `get_history`, merged in `useRewardHistory` via `@achievo/stellar` (`getWalletRewardHistory`). See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 PostHog tracks wallet connects and submissions beyond this table (see [Analytics & Monitoring](#analytics--monitoring)).
 
 Achievo initializes PostHog only when `VITE_POSTHOG_KEY` is configured. Local and CI builds work without analytics credentials.
@@ -314,9 +314,9 @@ Achievo initializes PostHog only when `VITE_POSTHOG_KEY` is configured. Local an
 
 Current automated coverage:
 
-- **Frontend:** 13 Vitest files, 68 tests, including fast-check property tests.
+- **Frontend / API helpers:** Vitest suite (shared rewards, stellar decode/merge, API nonce/reward/feedback, component smoke), including fast-check property tests.
 - **Contract:** 18 Rust tests covering initialization, authorization, payout limits, storage, events, and failure states.
-- **CI:** frontend lint/test/build plus contract test/release WASM build.
+- **CI:** build `@achievo/*` packages, contract/frontend binding check, frontend lint/test/build, contract test/release WASM.
 
 ## Technology
 
@@ -335,21 +335,27 @@ Current automated coverage:
 
 ```text
 .
-├── api/                         Vercel nonce and reward functions
+├── api/                         Vercel handlers + _lib (server-only)
+├── packages/
+│   ├── shared/                  @achievo/shared — rewards, caps, constants, types
+│   ├── stellar/                 @achievo/stellar — RPC/Horizon views + decode
+│   └── identity/                @achievo/identity — identity types + redact helpers
 ├── contract/                    Soroban treasury contract, tests, deploy script
 ├── frontend/                    React and Vite production PWA
 │   ├── public/                  PWA manifest, service worker, icons, avatars
-│   └── src/                     UI, wallet integration, contract reads, tests
+│   └── src/                     UI, hooks, wallet kit, tests
 ├── docs/
+│   ├── ARCHITECTURE.md          Package graph + authority diagram
 │   ├── screenshots/             README and evaluation screenshots
 │   └── media/                   Demo source media and legacy presentation assets
-├── scripts/                     Presentation and documentation utilities
-├── tools/remotion-demo-video/   Isolated Remotion product-demo generator
+├── scripts/                     Integration checks and utilities
+├── tools/remotion-demo-video/   Isolated Remotion demo generator (not a workspace)
 ├── vercel.json                  Production build and API routing
+├── .env.example                 Server + VITE_* variable template
 └── README.md                    Product, evidence, architecture, and setup
 ```
 
-Production runtime is limited to `frontend/`, `api/`, the deployed contract, and external services. The Remotion project under `tools/` is development tooling used to produce the linked demo.
+Production runtime is limited to `frontend/`, `api/`, `packages/`, the deployed contract, and external services. Remotion under `tools/` is demo tooling only — see [`tools/remotion-demo-video/README.md`](tools/remotion-demo-video/README.md).
 
 ## Run Locally
 
@@ -372,11 +378,11 @@ cd contract && cargo test
 # 18 tests: initialize, send_reward, per-tx cap, on-chain history, edge cases, event emission
 ```
 
-**Frontend tests (Vitest + fast-check):**
+**Workspace tests (Vitest + fast-check):**
 ```bash
-cd frontend && npm test
-# Vitest frontend suite: contract helpers, RecentPayouts UI, feedback APIs,
-# property-based tests (fast-check), agent utilities
+npm test
+# Builds packages, then runs Vitest: shared rewards, stellar helpers,
+# API nonce/reward/feedback, pipeline UI, property tests
 ```
 
 **Payout proof export (Level 4):**
@@ -385,10 +391,10 @@ npm run export-payout-proof
 # → docs/generated/level4-payout-proof.md (legacy + current contract stats)
 ```
 
-**Contract/frontend binding check:**
+**Contract / package binding check:**
 ```bash
 npm run check-contract-integration
-# Verifies Rust exports against frontend/src/contract.ts and api/reward.ts
+# Verifies Rust exports against @achievo/stellar views and api/reward.ts
 ```
 
 ### Continuous delivery
@@ -507,12 +513,12 @@ git clone https://github.com/TadeyRuk/Achievo.git
 cd Achievo
 
 npm install
-npm --prefix frontend ci
+npm run build:packages
 
 # Pull configured variables if you have access to the Vercel project.
 npx vercel env pull .env.local
 
-# Or create .env.local manually using the variables below.
+# Or copy .env.example → .env.local and fill values.
 npx vercel dev
 ```
 
@@ -539,14 +545,14 @@ Never expose `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VIT
 ## Test and Build
 
 ```bash
-# Frontend
-cd frontend
+# Workspace
 npm run lint
 npm test
-npm run build
+npm run typecheck
+npm run vercel-build
 
 # Contract
-cd ../contract
+cd contract
 cargo test
 cargo build --release --target wasm32v1-none
 ```
@@ -555,7 +561,7 @@ The contract requires the `wasm32v1-none` target with Soroban SDK 26+.
 
 ## Demo Tooling
 
-The product walkthrough is generated from the isolated Remotion project in [`tools/remotion-demo-video`](tools/remotion-demo-video/). It uses captured Achievo screens and synchronized narration without participating in the production runtime.
+The product walkthrough is generated from the isolated Remotion project in [`tools/remotion-demo-video`](tools/remotion-demo-video/). It is **tooling only** (not an npm workspace member, not in CI product jobs). See [`tools/remotion-demo-video/README.md`](tools/remotion-demo-video/README.md).
 
 ```bash
 cd tools/remotion-demo-video

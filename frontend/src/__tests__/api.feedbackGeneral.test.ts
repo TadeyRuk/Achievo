@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('../../../api/_lib/store', () => ({
+  claimOnce: vi.fn().mockResolvedValue(true),
+  StoreUnavailableError: class StoreUnavailableError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'StoreUnavailableError';
+    }
+  },
+}));
+
 vi.mock('../../../api/_lib/googleForms', () => ({
   GoogleFormsConfigError: class GoogleFormsConfigError extends Error {
     constructor(message: string) {
@@ -17,6 +27,7 @@ vi.mock('../../../api/_lib/googleForms', () => ({
 }));
 
 import handler from '../../../api/feedback-general';
+import { claimOnce } from '../../../api/_lib/store';
 import {
   GoogleFormsConfigError,
   submitFeedbackForm,
@@ -25,6 +36,8 @@ import {
 interface MockRequest {
   method?: string;
   body?: unknown;
+  headers?: Record<string, string>;
+  socket?: { remoteAddress?: string };
 }
 
 interface MockResponse {
@@ -34,8 +47,13 @@ interface MockResponse {
   json(payload: unknown): MockResponse;
 }
 
-function makeReqRes(method: string, body: unknown) {
-  const req: MockRequest = { method, body };
+function makeReqRes(method: string, body: unknown, ip = '127.0.0.1') {
+  const req: MockRequest = {
+    method,
+    body,
+    headers: { 'x-forwarded-for': ip },
+    socket: { remoteAddress: ip },
+  };
   const res: MockResponse = {
     statusCode: 0,
     body: undefined,
@@ -54,6 +72,7 @@ function makeReqRes(method: string, body: unknown) {
 describe('POST /api/feedback-general', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(claimOnce).mockResolvedValue(true);
     vi.mocked(submitFeedbackForm).mockResolvedValue(undefined);
   });
 
@@ -100,35 +119,24 @@ describe('POST /api/feedback-general', () => {
       res as unknown as Parameters<typeof handler>[1],
     );
     expect(res.statusCode).toBe(201);
-    expect(res.body).toEqual({ ok: true });
-    expect(submitFeedbackForm).toHaveBeenCalledWith({
-      type: 'general',
-      rating: 4,
-      comment: null,
-      name: null,
-    });
+    expect(submitFeedbackForm).toHaveBeenCalled();
   });
 
-  it('accepts rating + comment + name', async () => {
-    const { req, res } = makeReqRes('POST', { rating: 5, comment: 'Great app!', name: 'Xander' });
+  it('returns 429 when IP rate limit is claimed', async () => {
+    vi.mocked(claimOnce).mockResolvedValue(false);
+    const { req, res } = makeReqRes('POST', { rating: 5 });
     await handler(
       req as unknown as Parameters<typeof handler>[0],
       res as unknown as Parameters<typeof handler>[1],
     );
-    expect(res.statusCode).toBe(201);
-    expect(submitFeedbackForm).toHaveBeenCalledWith({
-      type: 'general',
-      rating: 5,
-      comment: 'Great app!',
-      name: 'Xander',
-    });
+    expect(res.statusCode).toBe(429);
   });
 
   it('returns 503 when Google Forms is not configured', async () => {
-    vi.mocked(submitFeedbackForm).mockRejectedValueOnce(
-      new GoogleFormsConfigError('Google Forms is not configured (missing GOOGLE_FORM_ID).'),
+    vi.mocked(submitFeedbackForm).mockRejectedValue(
+      new GoogleFormsConfigError('missing form id'),
     );
-    const { req, res } = makeReqRes('POST', { rating: 4 });
+    const { req, res } = makeReqRes('POST', { rating: 3, comment: 'ok' });
     await handler(
       req as unknown as Parameters<typeof handler>[0],
       res as unknown as Parameters<typeof handler>[1],

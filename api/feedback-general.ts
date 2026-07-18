@@ -4,9 +4,11 @@ import {
   GoogleFormsSubmitError,
   submitFeedbackForm,
 } from './_lib/googleForms';
+import { claimOnce, StoreUnavailableError } from './_lib/store';
 
 const MAX_COMMENT = 500;
 const MAX_NAME = 40;
+const GENERAL_FEEDBACK_IP_TTL = 60;
 
 type GeneralFeedbackRecord = {
   rating: number;
@@ -51,6 +53,14 @@ function parseBody(req: VercelRequest): GeneralFeedbackRecord | { error: string 
   return { rating, comment, name };
 }
 
+function getClientIp(req: VercelRequest): string {
+  return (
+    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
+    req.socket?.remoteAddress ??
+    'unknown'
+  );
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -62,8 +72,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const ip = getClientIp(req);
+    if (ip !== 'unknown') {
+      const allowed = await claimOnce(`rate:feedback-general:ip:${ip}`, GENERAL_FEEDBACK_IP_TTL);
+      if (!allowed) {
+        return res.status(429).json({ error: 'Too many feedback submissions. Wait a moment and retry.' });
+      }
+    }
+
     await submitFeedbackForm({ type: 'general', ...parsed });
   } catch (err) {
+    if (err instanceof StoreUnavailableError) {
+      return res.status(503).json({ error: err.message });
+    }
     if (err instanceof GoogleFormsConfigError) {
       return res.status(503).json({ error: err.message });
     }

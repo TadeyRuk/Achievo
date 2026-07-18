@@ -4,8 +4,8 @@
   "description": "Earn XLM rewards automatically on Stellar Testnet for your student achievements.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#15121b",
-  "theme_color": "#7c3aed",
+  "background_color": "#00162b",
+  "theme_color": "#000666",
   "orientation": "portrait",
   "icons": [
     {

@@ -4,7 +4,7 @@ import { submitGeneralFeedback } from "./generalFeedback";
 import { FeedbackRatingRow } from "./FeedbackRatingRow";
 import { FeedbackThankYou } from "./FeedbackThankYou";
 import { IOSSheet } from "./IOSSheet";
-import { liquidGlassSurface } from "./liquidGlass";
+import { LiquidGlassPill } from "./liquidGlass";
 import { reducedMotionTransition } from "./sheetMotion";
 
 interface GeneralFeedbackProps {
@@ -101,15 +101,16 @@ export function GeneralFeedback({ userName, onClose }: GeneralFeedbackProps) {
               <p className="text-[13px] font-medium text-[var(--dah-error)] text-center">{error}</p>
             )}
 
-            <button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={submitting}
-              style={liquidGlassSurface}
-              className="w-full flex items-center justify-center py-3.5 rounded-full text-[var(--dah-primary)] text-[17px] font-semibold disabled:opacity-50 active:opacity-80 transition-opacity"
-            >
-              {submitting ? "Sending…" : "Submit"}
-            </button>
+            <LiquidGlassPill className="w-full">
+              <button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={submitting}
+                className="w-full flex items-center justify-center py-3.5 rounded-full text-[var(--dah-primary)] text-[17px] font-semibold disabled:opacity-50 active:opacity-80 transition-opacity"
+              >
+                {submitting ? "Sending…" : "Submit"}
+              </button>
+            </LiquidGlassPill>
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,9 +1,9 @@
 import { StellarWalletsKit, Networks } from "@creit.tech/stellar-wallets-kit";
 import { defaultModules } from "@creit.tech/stellar-wallets-kit/modules/utils";
 import { Horizon } from "@stellar/stellar-sdk";
+import { HORIZON_URL } from "@achievo/shared";
 
-// Initialize the Horizon server for Testnet
-export const horizonServer = new Horizon.Server("https://horizon-testnet.stellar.org");
+export const horizonServer = new Horizon.Server(HORIZON_URL);
 
 // Initialize the static Stellar Wallets Kit
 StellarWalletsKit.init({

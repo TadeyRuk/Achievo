@@ -25,17 +25,21 @@ out/
 .next/
 contract/target/
 
-# Ignore all markdown files except README.md
-**/*.md
-!**/README.md
-
 # Ignore Obsidian vault and local tools
 vault/
 assets/
 .playwright-mcp/
 achievo-ui.png
 .vercel
-.env*
+
+# Env files (keep .env.example tracked)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Package build outputs
+packages/*/dist/
 
 # Local tooling / IDE
 .kiro/

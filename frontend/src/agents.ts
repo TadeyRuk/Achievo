@@ -1,15 +1,22 @@
 /**
- * Achievo Agent Pipeline
- * Five pure, deterministic functions that process a student activity
- * submission into an XLM reward decision — no external dependencies.
+ * Achievo Agent Pipeline — client-side hints only.
+ * Server Groq evaluation in api/reward.ts is authoritative for payouts.
  */
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+import {
+  ACTIVITY_WHITELIST,
+  estimateBaseReward,
+  estimateMaxReward,
+  isKnownActivity,
+} from '@achievo/shared';
 
 export interface ActivityResult {
   activity: string;
   valid: boolean;
-  suggestedReward: number; // in XLM
+  /** Base reward hint (not max). */
+  suggestedReward: number;
+  /** Max possible after effort bonus — for UI estimates. */
+  maxReward: number;
 }
 
 export interface VerificationResult {
@@ -18,7 +25,7 @@ export interface VerificationResult {
 }
 
 export interface RewardResult {
-  reward: number; // in XLM
+  reward: number;
   currency: 'XLM';
 }
 
@@ -27,41 +34,24 @@ export interface FeedbackResult {
   type: 'success' | 'failure';
 }
 
-// ─── Reward table ─────────────────────────────────────────────────────────────
-
-const REWARD_TABLE: Record<string, number> = {
-  tutoring:      5,
-  workshop:      8,
-  volunteering:  10,
-  event:         3,
-  participation: 3,
-};
-
-const ACTIVITY_WHITELIST = Object.keys(REWARD_TABLE);
-
-// ─── Agent 1: Activity Agent ──────────────────────────────────────────────────
-// Parses free-form student text into a structured activity type + reward hint.
-
 export function activityAgent(text: string): ActivityResult {
   const lower = text.toLowerCase();
   const matched = ACTIVITY_WHITELIST.find((keyword) => lower.includes(keyword));
 
   if (!matched) {
-    return { activity: 'unknown', valid: false, suggestedReward: 0 };
+    return { activity: 'unknown', valid: false, suggestedReward: 0, maxReward: 0 };
   }
 
   return {
     activity: matched,
     valid: true,
-    suggestedReward: REWARD_TABLE[matched],
+    suggestedReward: estimateBaseReward(matched),
+    maxReward: estimateMaxReward(matched),
   };
 }
 
-// ─── Agent 2: Verification Agent ─────────────────────────────────────────────
-// Validates the activity type against the approved whitelist.
-
 export function verificationAgent(activity: string): VerificationResult {
-  if (activity === 'unknown' || !ACTIVITY_WHITELIST.includes(activity)) {
+  if (activity === 'unknown' || !isKnownActivity(activity)) {
     return {
       status: 'rejected',
       reason: `"${activity}" is not a recognized activity. Allowed: ${ACTIVITY_WHITELIST.join(', ')}.`,
@@ -70,20 +60,11 @@ export function verificationAgent(activity: string): VerificationResult {
   return { status: 'approved' };
 }
 
-// ─── Agent 3: Reward Decision Agent ──────────────────────────────────────────
-// Assigns the canonical XLM reward for a verified activity type.
-
+/** Preview estimate — uses max (base + max bonus) so UI never overstates server payout. */
 export function rewardAgent(activity: string): RewardResult {
-  const reward = REWARD_TABLE[activity] ?? 0;
+  const reward = estimateMaxReward(activity);
   return { reward, currency: 'XLM' };
 }
-
-// ─── Agent 4: Kouri Agent (handled externally) ─────────────────────────────
-// Implemented via sendRewardOnChain() in contract.ts — it builds, signs,
-// and submits the Soroban send_reward transaction using the connected wallet.
-
-// ─── Agent 5: Transaction Feedback Agent ─────────────────────────────────────
-// Formats the blockchain result into a human-readable UI message.
 
 export function feedbackAgent(result: {
   success: boolean;

@@ -1,23 +1,50 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite'
+import path from 'node:path'
+import { createHash } from 'node:crypto'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
+function swCacheHashPlugin(): Plugin {
+  const buildHash = createHash('sha256')
+    .update(String(Date.now()))
+    .digest('hex')
+    .slice(0, 12)
+
+  return {
+    name: 'sw-cache-hash',
+    writeBundle(options) {
+      const outDir = options.dir ?? path.resolve(__dirname, 'dist')
+      const swPath = path.join(outDir, 'sw.js')
+      if (!existsSync(swPath)) return
+      const src = readFileSync(swPath, 'utf8')
+      writeFileSync(swPath, src.replaceAll('__BUILD_HASH__', buildHash), 'utf8')
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), swCacheHashPlugin()],
+  resolve: {
+    alias: {
+      '@achievo/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
+      '@achievo/stellar': path.resolve(__dirname, '../packages/stellar/src/index.ts'),
+      '@achievo/identity': path.resolve(__dirname, '../packages/identity/src/index.ts'),
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     server: {
       deps: {
-        // These wallet/SDK packages ship CommonJS entry points whose named
-        // exports break Vitest's default externalization. Inlining lets Vite
-        // transform them so transitive imports (e.g. contract.ts → wallet.ts)
-        // resolve in the test environment.
         inline: [
           '@creit.tech/stellar-wallets-kit',
           '@stellar/freighter-api',
+          '@achievo/shared',
+          '@achievo/stellar',
+          '@achievo/identity',
         ],
       },
     },

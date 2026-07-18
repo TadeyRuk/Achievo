@@ -2,6 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../../api/_lib/store', () => ({
   claimOnce: vi.fn().mockResolvedValue(true),
+  releaseClaim: vi.fn().mockResolvedValue(undefined),
+  StoreUnavailableError: class StoreUnavailableError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'StoreUnavailableError';
+    }
+  },
 }));
 
 vi.mock('../../../api/_lib/googleForms', () => ({

@@ -1,28 +1,29 @@
 import { readFile } from 'node:fs/promises';
 
 const contractPath = 'contract/src/lib.rs';
-const frontendContractPath = 'frontend/src/contract.ts';
+const stellarViewsPath = 'packages/stellar/src/views.ts';
 const walletPath = 'frontend/src/wallet.ts';
 const rewardApiPath = 'api/reward.ts';
 
-const [rust, frontend, wallet, rewardApi] = await Promise.all([
+const [rust, stellarViews, wallet, rewardApi] = await Promise.all([
   readFile(contractPath, 'utf8'),
-  readFile(frontendContractPath, 'utf8'),
+  readFile(stellarViewsPath, 'utf8'),
   readFile(walletPath, 'utf8'),
   readFile(rewardApiPath, 'utf8'),
 ]);
 
-// These are the contract methods intentionally bound by the application. Keeping
-// the mapping here makes a Rust rename fail CI instead of failing after deploy.
 const bindings = {
-  send_reward: ['frontend', 'api'],
-  get_balance: ['frontend'],
-  get_admin: ['frontend'],
-  get_disbursed: ['frontend'],
-  get_history: ['frontend'],
+  send_reward: ['api'],
+  get_balance: ['stellar'],
+  get_admin: ['stellar'],
+  get_disbursed: ['stellar'],
+  get_history: ['stellar'],
 };
 
-const sources = { frontend, api: rewardApi };
+// Daily-cap views are contract-authoritative; API enforces Redis budgets separately.
+const rustOnlyExports = ['get_daily_disbursed', 'get_recipient_daily', 'get_day'];
+
+const sources = { stellar: stellarViews, api: rewardApi };
 const errors = [];
 
 for (const [functionName, consumers] of Object.entries(bindings)) {
@@ -39,17 +40,26 @@ for (const [functionName, consumers] of Object.entries(bindings)) {
   }
 }
 
-if (!frontend.includes('@stellar/stellar-sdk')) {
-  errors.push(`${frontendContractPath} must use @stellar/stellar-sdk`);
-}
-if (!frontend.includes('StellarWalletsKit.signTransaction')) {
-  errors.push(`${frontendContractPath} must sign contract transactions through StellarWalletsKit`);
+if (!stellarViews.includes('@stellar/stellar-sdk')) {
+  errors.push(`${stellarViewsPath} must use @stellar/stellar-sdk`);
 }
 if (!wallet.includes('@creit.tech/stellar-wallets-kit')) {
   errors.push(`${walletPath} must configure StellarWalletsKit`);
 }
 if (!wallet.includes('Networks.TESTNET')) {
   errors.push(`${walletPath} must explicitly select Stellar Testnet`);
+}
+if (!rewardApi.includes("'send_reward'") && !rewardApi.includes('"send_reward"')) {
+  errors.push(`${rewardApiPath} must call send_reward`);
+}
+if (!rewardApi.includes('HeuristicScoringAgent') || !rewardApi.includes('reserveBudget')) {
+  errors.push(`${rewardApiPath} must use heuristic fallback and daily budget reservation`);
+}
+for (const fn of rustOnlyExports) {
+  const rustExport = new RegExp(`pub\\s+fn\\s+${fn}\\s*\\(`);
+  if (!rustExport.test(rust)) {
+    errors.push(`${contractPath} does not export ${fn}()`);
+  }
 }
 
 if (errors.length > 0) {
@@ -59,5 +69,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Contract/frontend integration verified: ${Object.keys(bindings).join(', ')}`,
+  `Contract integration verified: ${Object.keys(bindings).join(', ')}`,
 );

@@ -13,18 +13,14 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { CustomTrophy, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from "./customIcons";
-import { ProgressionAgent } from "./agents/progression";
+import type { RewardHistoryItem } from "@achievo/shared";
+import { ProgressionAgent, type StoredProgression } from "./agents/progression";
 
-export interface RewardHistoryItem {
-  id: string;
-  activity: string;
-  reward: number;
-  txHash: string;
-  timestamp: number;
-}
+export type { RewardHistoryItem };
 
 interface RewardHistoryProps {
   history: RewardHistoryItem[];
+  progression?: StoredProgression;
 }
 
 const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -64,7 +60,7 @@ const itemVariants = {
   }
 };
 
-export function RewardHistory({ history }: RewardHistoryProps) {
+export function RewardHistory({ history, progression: stored }: RewardHistoryProps) {
   const sortedHistory = [...history].sort((a, b) => b.timestamp - a.timestamp);
 
   const getIcon = (act: string) => {
@@ -81,8 +77,8 @@ export function RewardHistory({ history }: RewardHistoryProps) {
     });
   };
 
-  // Progression — single source of truth via ProgressionAgent
-  const progression = ProgressionAgent.state(history);
+  // Progression — freeze-aware when stored progression is provided
+  const progression = ProgressionAgent.state(history, stored ?? {});
   const streak = progression.streak;
 
   // Activity milestones counts

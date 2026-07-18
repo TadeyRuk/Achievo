@@ -1,13 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { redactWallet } from '@achievo/identity';
 import { listPayouts } from './_lib/store';
-import { truncateWallet, stellarExpertTxUrl } from './_lib/telegram';
+import { stellarExpertTxUrl } from './_lib/telegram';
 
 export type PayoutRecord = {
   txHash: string;
   wallet: string;
+  identityId?: string | null;
   amount: number;
   activity: string;
   effortScore: number | null;
+  scoringMode?: string | null;
   createdAt: string;
 };
 
@@ -23,8 +26,11 @@ function parsePayouts(raw: string[]): PayoutRecord[] {
 
 function summarizePayouts(entries: PayoutRecord[]) {
   const uniqueWallets = new Set(entries.map((e) => e.wallet)).size;
+  const uniqueIdentities = new Set(
+    entries.map((e) => e.identityId).filter((id): id is string => Boolean(id)),
+  ).size;
   const totalXlm = Math.round(entries.reduce((s, e) => s + e.amount, 0) * 10) / 10;
-  return { count: entries.length, uniqueWallets, totalXlm };
+  return { count: entries.length, uniqueWallets, uniqueIdentities, totalXlm };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -35,11 +41,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const entries = parsePayouts(await listPayouts(200));
   const stats = summarizePayouts(entries);
 
-  const tableRows = entries.slice(0, 50).map((e, i) => ({
+  // Public feed: never expose full wallet addresses.
+  const publicEntries = entries.map((e) => ({
+    txHash: e.txHash,
+    wallet: redactWallet(e.wallet),
+    identityId: e.identityId ?? null,
+    amount: e.amount,
+    activity: e.activity,
+    effortScore: e.effortScore,
+    scoringMode: e.scoringMode ?? null,
+    createdAt: e.createdAt,
+  }));
+
+  const tableRows = publicEntries.slice(0, 50).map((e, i) => ({
     n: i + 1,
     date: e.createdAt.slice(0, 16).replace('T', ' '),
-    wallet: truncateWallet(e.wallet),
-    walletFull: e.wallet,
+    wallet: e.wallet,
+    identityId: e.identityId,
     amount: e.amount,
     activity: e.activity,
     txUrl: stellarExpertTxUrl(e.txHash),
@@ -48,10 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   return res.status(200).json({
     ...stats,
-    entries,
+    entries: publicEntries,
     tableRows,
-    telegramConfigured: Boolean(
-      process.env.TELEGRAM_BOT_TOKEN?.trim() && process.env.TELEGRAM_CHAT_ID?.trim(),
-    ),
   });
 }

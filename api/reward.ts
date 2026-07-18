@@ -9,38 +9,39 @@ import {
   BASE_FEE,
   Keypair,
   Transaction,
-  Horizon,
   StrKey,
 } from '@stellar/stellar-sdk';
 import { createHmac } from 'crypto';
-import { getTimestamp, setTimestamp, claimOnce, listRecent, addRecent, appendPayout } from './_lib/store';
+import {
+  BASE_REWARD,
+  CONTRACT_ID,
+  DAILY_RECIPIENT_CAP_XLM,
+  DAILY_TREASURY_CAP_XLM,
+  MAX_ACTIVITY_TEXT_LENGTH,
+  MAX_BONUS,
+  MAX_REWARD_PER_TX_XLM,
+  STROOP_FACTOR,
+  isKnownActivity,
+  utcDayKey,
+} from '@achievo/shared';
+import {
+  claimOnce,
+  releaseClaim,
+  listRecent,
+  addRecent,
+  appendPayout,
+  reserveBudget,
+  StoreUnavailableError,
+} from './_lib/store';
+import { challengeMacPayload, hashActivityIntent } from './_lib/intent';
 import { ScoringAgent, type Evaluation } from './_agents/scoring';
+import { HeuristicScoringAgent } from './_agents/heuristic';
 import { IntegrityAgent } from './_agents/integrity';
 import { notifyPayoutTelegram } from './_lib/telegram';
+import { horizonServer, rpcServer } from './_lib/stellarServers';
+import { bindIdentity, issueSessionToken } from './_lib/identity';
 
-const CONTRACT_ID = "CCQVKUU2AYYWLKEUNZ47NXYLUB4SLN5YEB3EHQ76TCI5X4K5VEIW5PDS";
-const STROOP_FACTOR = 10_000_000;
-
-const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
-const horizonServer = new Horizon.Server("https://horizon-testnet.stellar.org");
-
-const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
-
-const BASE_REWARD: Record<string, number> = {
-  tutoring:      5,
-  workshop:      2,
-  volunteering:  10,
-  event:         3,
-  participation: 3,
-};
-
-const MAX_BONUS: Record<string, number> = {
-  tutoring:      5,
-  workshop:      3,
-  volunteering:  5,
-  event:         2,
-  participation: 2,
-};
+const RATE_LIMIT_TTL_SECONDS = 24 * 60 * 60;
 
 function getClientIp(req: VercelRequest): string {
   return (
@@ -57,9 +58,10 @@ function verifyChallenge(
   expiry: number,
   mac: string,
   signedXdr: string,
+  intentHash: string,
 ): { ok: boolean; error?: string } {
   const expectedMac = createHmac('sha256', nonceSecret)
-    .update(`${nonce}:${expiry}`)
+    .update(challengeMacPayload(nonce, expiry, intentHash))
     .digest('hex');
   if (expectedMac !== mac) return { ok: false, error: 'Invalid challenge token.' };
 
@@ -83,19 +85,17 @@ function verifyChallenge(
   }
 
   const keypair = Keypair.fromPublicKey(wallet);
-  
-  // 1. Verify against Testnet hash
+
   const txHashTestnet = tx.hash();
-  let signed = tx.signatures.some(sig => {
+  let signed = tx.signatures.some((sig) => {
     try { return keypair.verify(txHashTestnet, sig.signature()); } catch { return false; }
   });
 
-  // 2. Verify against Public hash (some wallets like LOBSTR or mainnet profiles sign on public network)
   if (!signed) {
     try {
       const txPublic = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC) as Transaction;
       const txHashPublic = txPublic.hash();
-      signed = txPublic.signatures.some(sig => {
+      signed = txPublic.signatures.some((sig) => {
         try { return keypair.verify(txHashPublic, sig.signature()); } catch { return false; }
       });
     } catch { /* ignore */ }
@@ -109,94 +109,171 @@ function verifyChallenge(
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { activityText, wallet, nonce, expiry, mac, signedXdr } = req.body as {
+  const { activityText, wallet, nonce, expiry, mac, signedXdr, intentHash: bodyIntent } = req.body as {
     activityText?: string;
     wallet?: string;
     nonce?: string;
     expiry?: number;
     mac?: string;
     signedXdr?: string;
+    intentHash?: string;
   };
 
-  if (!wallet || !StrKey.isValidEd25519PublicKey(wallet)) {
-    return res.status(400).json({ error: 'Invalid Stellar wallet address.' });
-  }
+  let walletRateKey: string | null = null;
+  let ipRateKey: string | null = null;
+  let treasuryBudgetKey: string | null = null;
+  let recipientBudgetKey: string | null = null;
+  let budgetUnits = 0;
 
-  if (!activityText || activityText.trim().length < 5) {
-    return res.status(400).json({ error: 'Activity description too short.' });
-  }
-
-  if (!nonce || !expiry || !mac || !signedXdr) {
-    return res.status(400).json({ error: 'Missing wallet ownership proof. Please retry.' });
-  }
-
-  const adminSecret = process.env.ADMIN_SECRET;
-  const nonceSecret = process.env.NONCE_HMAC_SECRET;
-  if (!adminSecret || !nonceSecret) return res.status(500).json({ error: 'Server configuration error.' });
-
-  const proof = verifyChallenge(nonceSecret, wallet, nonce, expiry, mac, signedXdr);
-  if (!proof.ok) return res.status(401).json({ error: proof.error });
-
-  // 1. Single-use nonce check (prevent replay attacks)
-  const nonceKey = `nonce:${nonce}`;
-  const claimed = await claimOnce(nonceKey, 300); // 5 min TTL matching nonce expiry
-  if (!claimed) {
-    return res.status(401).json({ error: 'Challenge nonce has already been used.' });
-  }
-
-  // 2. Rate limit check
-  const ip = getClientIp(req);
-  const now = Date.now();
-  const walletLimitKey = `rate:wallet:${wallet}`;
-  const ipLimitKey = `rate:ip:${ip}`;
-
-  const walletTs = await getTimestamp(walletLimitKey);
-  if (walletTs && now - walletTs < RATE_LIMIT_MS) {
-    const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - walletTs)) / 3_600_000);
-    return res.status(429).json({ error: `Rate limit: 1 reward per day. Try again in ${hoursLeft}h.` });
-  }
-  if (ip !== 'unknown') {
-    const ipTs = await getTimestamp(ipLimitKey);
-    if (ipTs && now - ipTs < RATE_LIMIT_MS) {
-      const hoursLeft = Math.ceil((RATE_LIMIT_MS - (now - ipTs)) / 3_600_000);
-      return res.status(429).json({ error: `Rate limit reached for your IP. Try again in ${hoursLeft}h.` });
+  const releaseBudgets = async () => {
+    if (treasuryBudgetKey && budgetUnits) {
+      await reserveBudget(
+        treasuryBudgetKey,
+        -budgetUnits,
+        DAILY_TREASURY_CAP_XLM * 10,
+        48 * 60 * 60,
+      ).catch(() => undefined);
+      treasuryBudgetKey = null;
     }
-  }
-
-  // ScoringAgent — explainable, authoritative evaluation
-  let evaluation: Evaluation;
-  try {
-    evaluation = await ScoringAgent.evaluate(activityText.trim());
-  } catch (err) {
-    return res.status(502).json({ error: `AI evaluation failed: ${(err as Error).message}` });
-  }
-
-  if (!evaluation.valid || !(evaluation.activity in BASE_REWARD)) {
-    return res.status(422).json({
-      error: `Activity not eligible for reward. ${evaluation.rationale}`,
-      activity: evaluation.activity,
-    });
-  }
-
-  // IntegrityAgent — trust & anti-abuse (near-duplicate soft-flag today)
-  const recentKey = `recent:wallet:${wallet}`;
-  let recent: string[] = [];
-  try {
-    recent = await listRecent(recentKey);
-  } catch {
-    recent = []; // integrity is best-effort; never block a payout on store errors
-  }
-  const integrity = IntegrityAgent.assess(activityText.trim(), { recent });
-
-  const effortScore = Math.round(evaluation.score * integrity.effortMultiplier * 1000) / 1000;
-  const base = BASE_REWARD[evaluation.activity];
-  const bonus = Math.round(effortScore * MAX_BONUS[evaluation.activity] * 10) / 10;
-  // Belt-and-suspenders: mirrors the contract's on-chain MAX_REWARD_PER_TX (20 XLM)
-  // so a legitimately-computed reward is never rejected on-chain in normal operation.
-  const MAX_REWARD_XLM = 20;
-  const reward = Math.min(Math.round((base + bonus) * 10) / 10, MAX_REWARD_XLM);
+    if (recipientBudgetKey && budgetUnits) {
+      await reserveBudget(
+        recipientBudgetKey,
+        -budgetUnits,
+        DAILY_RECIPIENT_CAP_XLM * 10,
+        48 * 60 * 60,
+      ).catch(() => undefined);
+      recipientBudgetKey = null;
+    }
+  };
 
   try {
+    if (!wallet || !StrKey.isValidEd25519PublicKey(wallet)) {
+      return res.status(400).json({ error: 'Invalid Stellar wallet address.' });
+    }
+
+    const trimmed = typeof activityText === 'string' ? activityText.trim() : '';
+    if (trimmed.length < 5) {
+      return res.status(400).json({ error: 'Activity description too short.' });
+    }
+    if (trimmed.length > MAX_ACTIVITY_TEXT_LENGTH) {
+      return res.status(400).json({
+        error: `Activity description must be at most ${MAX_ACTIVITY_TEXT_LENGTH} characters.`,
+      });
+    }
+
+    if (!nonce || !expiry || !mac || !signedXdr) {
+      return res.status(400).json({ error: 'Missing wallet ownership proof. Please retry.' });
+    }
+
+    const intentHash = hashActivityIntent(trimmed);
+    if (bodyIntent && bodyIntent.toLowerCase() !== intentHash) {
+      return res.status(400).json({ error: 'Activity text does not match challenge intent.' });
+    }
+
+    const adminSecret = process.env.ADMIN_SECRET;
+    const nonceSecret = process.env.NONCE_HMAC_SECRET;
+    if (!adminSecret || !nonceSecret) {
+      return res.status(500).json({ error: 'Server configuration error.' });
+    }
+
+    const proof = verifyChallenge(
+      nonceSecret, wallet, nonce, expiry, mac, signedXdr, intentHash,
+    );
+    if (!proof.ok) return res.status(401).json({ error: proof.error });
+
+    const nonceKey = `nonce:${nonce}`;
+    const claimed = await claimOnce(nonceKey, 300);
+    if (!claimed) {
+      return res.status(401).json({ error: 'Challenge nonce has already been used.' });
+    }
+
+    // Atomic rate-limit claims (release on failure so failed txs don't burn the day).
+    const ip = getClientIp(req);
+    walletRateKey = `rate:wallet:${wallet}`;
+    const walletClaimed = await claimOnce(walletRateKey, RATE_LIMIT_TTL_SECONDS);
+    if (!walletClaimed) {
+      return res.status(429).json({ error: 'Rate limit: 1 reward per day. Try again tomorrow.' });
+    }
+    if (ip !== 'unknown') {
+      ipRateKey = `rate:ip:${ip}`;
+      const ipClaimed = await claimOnce(ipRateKey, RATE_LIMIT_TTL_SECONDS);
+      if (!ipClaimed) {
+        await releaseClaim(walletRateKey);
+        walletRateKey = null;
+        return res.status(429).json({ error: 'Rate limit reached for your IP. Try again tomorrow.' });
+      }
+    }
+
+    let evaluation: Evaluation;
+    let scoringMode: 'groq' | 'heuristic' = 'groq';
+    try {
+      evaluation = await ScoringAgent.evaluate(trimmed);
+    } catch {
+      // Groq timeout / 5xx / parse — fall back to base-only heuristic (never skip integrity).
+      evaluation = HeuristicScoringAgent.evaluate(trimmed);
+      scoringMode = 'heuristic';
+    }
+
+    if (!evaluation.valid || !isKnownActivity(evaluation.activity)) {
+      await releaseClaim(walletRateKey);
+      if (ipRateKey) await releaseClaim(ipRateKey);
+      return res.status(422).json({
+        error: `Activity not eligible for reward. ${evaluation.rationale}`,
+        activity: evaluation.activity,
+        scoringMode,
+      });
+    }
+
+    const recentKey = `recent:wallet:${wallet}`;
+    let recent: string[] = [];
+    try {
+      recent = await listRecent(recentKey);
+    } catch {
+      recent = [];
+    }
+    const integrity = IntegrityAgent.assess(trimmed, { recent });
+
+    // Heuristic path: base reward only (score forced to 0 by HeuristicScoringAgent).
+    const effortScore = Math.round(evaluation.score * integrity.effortMultiplier * 1000) / 1000;
+    const base = BASE_REWARD[evaluation.activity];
+    const bonus = Math.round(effortScore * MAX_BONUS[evaluation.activity] * 10) / 10;
+    const reward = Math.min(Math.round((base + bonus) * 10) / 10, MAX_REWARD_PER_TX_XLM);
+
+    // API-side daily budgets (0.1 XLM units) — fail closed before signing.
+    const day = utcDayKey();
+    budgetUnits = Math.round(reward * 10);
+    const budgetTtl = 48 * 60 * 60;
+    treasuryBudgetKey = `budget:treasury:day:${day}`;
+    const treasuryOk = await reserveBudget(
+      treasuryBudgetKey,
+      budgetUnits,
+      DAILY_TREASURY_CAP_XLM * 10,
+      budgetTtl,
+    );
+    if (!treasuryOk) {
+      treasuryBudgetKey = null;
+      await releaseClaim(walletRateKey);
+      if (ipRateKey) await releaseClaim(ipRateKey);
+      return res.status(429).json({
+        error: `Daily treasury budget (${DAILY_TREASURY_CAP_XLM} XLM) exceeded. Try again tomorrow.`,
+      });
+    }
+    recipientBudgetKey = `budget:recipient:day:${day}:${wallet}`;
+    const recipientOk = await reserveBudget(
+      recipientBudgetKey,
+      budgetUnits,
+      DAILY_RECIPIENT_CAP_XLM * 10,
+      budgetTtl,
+    );
+    if (!recipientOk) {
+      await releaseBudgets();
+      await releaseClaim(walletRateKey);
+      if (ipRateKey) await releaseClaim(ipRateKey);
+      return res.status(429).json({
+        error: `Daily recipient budget (${DAILY_RECIPIENT_CAP_XLM} XLM) exceeded. Try again tomorrow.`,
+      });
+    }
+
     const adminKeypair = Keypair.fromSecret(adminSecret);
     const adminAddress = adminKeypair.publicKey();
     const rewardStroops = BigInt(Math.round(reward * STROOP_FACTOR));
@@ -224,6 +301,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (sendResponse.status === 'ERROR') {
       const errStr = JSON.stringify(sendResponse.errorResult);
+      await releaseBudgets();
+      await releaseClaim(walletRateKey);
+      if (ipRateKey) await releaseClaim(ipRateKey);
+      if (errStr.includes('Daily treasury cap') || errStr.includes('Daily recipient cap')) {
+        return res.status(429).json({ error: 'On-chain daily payout cap exceeded. Try again tomorrow.' });
+      }
       if (errStr.includes('opNOACCOUNT') || errStr.includes('not found')) {
         return res.status(404).json({ error: 'Contract or account not found on Stellar testnet.' });
       }
@@ -232,7 +315,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const txHash = sendResponse.hash;
 
-    // Poll for transaction settlement on-chain
     let attempts = 0;
     let txResponse = null;
     while (attempts < 10) {
@@ -242,35 +324,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (txResponse.status === rpc.Api.GetTransactionStatus.SUCCESS) {
         break;
       } else if (txResponse.status === rpc.Api.GetTransactionStatus.FAILED) {
+        await releaseBudgets();
+        await releaseClaim(walletRateKey);
+        if (ipRateKey) await releaseClaim(ipRateKey);
         throw new Error(`Transaction execution failed on-chain: ${JSON.stringify(txResponse)}`);
       }
       attempts++;
     }
 
     if (!txResponse || txResponse.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
-      throw new Error("Transaction polling timed out. The payout may still succeed later.");
+      await releaseBudgets();
+      await releaseClaim(walletRateKey);
+      if (ipRateKey) await releaseClaim(ipRateKey);
+      throw new Error('Transaction polling timed out. The payout may still succeed later.');
     }
 
-    // Record rate limits durably now that the transaction has settled successfully
-    const ttlSeconds = RATE_LIMIT_MS / 1000;
-    await setTimestamp(walletLimitKey, now, ttlSeconds);
-    if (ip !== 'unknown') {
-      await setTimestamp(ipLimitKey, now, ttlSeconds);
-    }
+    // Rate slots + budgets already claimed — keep them on success.
+    walletRateKey = null;
+    ipRateKey = null;
+    treasuryBudgetKey = null;
+    recipientBudgetKey = null;
 
-    // Record this submission's fingerprint for IntegrityAgent duplicate detection
-    // (bounded, 30-day retention). Best-effort — never fail the response on this.
     try {
-      await addRecent(recentKey, IntegrityAgent.fingerprint(activityText.trim()), 20, 30 * 24 * 60 * 60);
+      await addRecent(recentKey, IntegrityAgent.fingerprint(trimmed), 20, 30 * 24 * 60 * 60);
     } catch { /* ignore */ }
 
-    // Server-side payout ledger + Telegram feed (best-effort).
+    let identityId: string | null = null;
+    let sessionToken: string | null = null;
+    try {
+      const identity = await bindIdentity(wallet);
+      identityId = identity.id;
+      sessionToken = issueSessionToken(identity).token;
+    } catch { /* identity bind is best-effort after payout */ }
+
     const payoutRecord = {
       txHash,
       wallet,
+      identityId,
       amount: reward,
       activity: evaluation.activity,
       effortScore,
+      scoringMode,
       createdAt: new Date().toISOString(),
     };
     try {
@@ -296,10 +390,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       flagged: integrity.flagged,
       flagReason: integrity.reasons[0] ?? null,
       integrityReasons: integrity.reasons,
+      scoringMode,
+      identityId,
+      sessionToken,
     });
-
   } catch (err) {
+    if (err instanceof StoreUnavailableError) {
+      return res.status(503).json({ error: err.message });
+    }
+    await releaseBudgets();
+    if (walletRateKey) await releaseClaim(walletRateKey).catch(() => undefined);
+    if (ipRateKey) await releaseClaim(ipRateKey).catch(() => undefined);
+
     const msg = (err as Error).message ?? String(err);
+    if (msg.includes('Daily treasury') || msg.includes('Daily recipient')) {
+      return res.status(429).json({ error: 'On-chain daily payout cap exceeded. Try again tomorrow.' });
+    }
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('balance')) {
       return res.status(402).json({ error: 'Insufficient treasury balance to cover this reward.' });
     }

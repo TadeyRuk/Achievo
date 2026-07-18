@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
 import { mergePayouts, DEFAULT_ACTIVITY_LABEL } from '../contract'
 import type { RewardEvent } from '../contract'
-import type { RewardHistoryItem } from '../RewardHistory'
+import type { RewardHistoryItem } from '@achievo/shared'
 import { publicKeyFromByte } from '../test/stellarAddresses'
 
 // A small pool of sample wallet addresses so recipients are realistic and

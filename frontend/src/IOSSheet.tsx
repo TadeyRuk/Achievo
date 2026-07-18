@@ -6,7 +6,7 @@ import {
   type PanInfo,
 } from "motion/react";
 import { iosEase, iosSpring, reducedMotionTransition } from "./sheetMotion";
-import { liquidGlassSurface } from "./liquidGlass";
+import { liquidGlassSheet } from "./liquidGlass";
 
 const DISMISS_OFFSET_Y = 120;
 const DISMISS_VELOCITY_Y = 800;
@@ -31,6 +31,7 @@ export function IOSSheet({
   const reduceMotion = useReducedMotion();
   const dragControls = useDragControls();
   const draggable = !reduceMotion;
+  const isGlass = variant === "glass";
 
   const backdropTransition = reduceMotion
     ? reducedMotionTransition
@@ -53,9 +54,22 @@ export function IOSSheet({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={backdropTransition}
-      className="absolute inset-0 z-[70] flex items-end bg-black/40 backdrop-blur-md"
-      onClick={onDismiss}
+      className="absolute inset-0 z-[70] flex items-end"
     >
+      {/* Scrim is a SIBLING of the sheet so glass backdrop-filter can sample the app,
+          not a pre-blurred parent layer (which reads as opaque milk). */}
+      <motion.div
+        aria-hidden
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={backdropTransition}
+        className={`absolute inset-0 ${
+          isGlass ? "bg-black/25" : "bg-black/40 backdrop-blur-md"
+        }`}
+        onClick={onDismiss}
+      />
+
       <motion.div
         role="dialog"
         aria-modal="true"
@@ -70,10 +84,10 @@ export function IOSSheet({
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0.05, bottom: 0.45 }}
         onDragEnd={draggable ? handleDragEnd : undefined}
-        className={`w-full max-h-[85%] flex flex-col rounded-t-[28px] overflow-hidden ${
-          variant === "solid" ? "bg-white" : ""
+        className={`relative z-10 w-full max-h-[85%] flex flex-col rounded-t-[28px] overflow-hidden ${
+          isGlass ? "" : "bg-white"
         } ${className}`}
-        style={variant === "glass" ? liquidGlassSurface : undefined}
+        style={isGlass ? liquidGlassSheet : undefined}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -82,7 +96,11 @@ export function IOSSheet({
             if (draggable) dragControls.start(e);
           }}
         >
-          <div className="w-9 h-1 rounded-full bg-[var(--dah-outline-variant)]" />
+          <div
+            className={`w-9 h-1 rounded-full ${
+              isGlass ? "bg-black/20" : "bg-[var(--dah-outline-variant)]"
+            }`}
+          />
         </div>
         <div className="overflow-y-auto flex-1 min-h-0 px-6 pb-8 pt-1">
           {children}

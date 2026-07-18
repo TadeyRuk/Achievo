@@ -2,13 +2,24 @@
   "name": "achievo",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "frontend"
+  ],
   "scripts": {
-    "vercel-build": "cd frontend && npm install && npm run build",
+    "build:packages": "npm run build -w @achievo/shared && npm run build -w @achievo/stellar && npm run build -w @achievo/identity",
+    "vercel-build": "npm run build:packages && npm run build -w frontend",
     "check-contract-integration": "node scripts/check-contract-integration.mjs",
     "export-payout-proof": "node scripts/export-payout-proof.mjs --write",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "npm run build:packages && npm test -w frontend",
+    "lint": "npm run lint -w frontend",
+    "typecheck": "npm run typecheck -w @achievo/shared && npm run typecheck -w @achievo/stellar && npm run typecheck -w @achievo/identity && npm run typecheck -w frontend"
   },
   "dependencies": {
+    "@achievo/shared": "*",
+    "@achievo/stellar": "*",
+    "@achievo/identity": "*",
     "@stellar/stellar-sdk": "^15.1.0",
     "@upstash/redis": "^1.38.0"
   },
@@ -22,5 +33,8 @@
     "frontend/src/**/*.{ts,tsx}": [
       "npx --prefix frontend eslint --fix"
     ]
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

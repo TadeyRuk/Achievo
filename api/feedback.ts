@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { claimOnce } from './_lib/store';
+import { claimOnce, releaseClaim, StoreUnavailableError } from './_lib/store';
 import {
   GoogleFormsConfigError,
   GoogleFormsSubmitError,
@@ -89,14 +89,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: parsed.error });
   }
 
-  const claimed = await claimOnce(`feedback:tx:${parsed.txHash}`, 365 * 24 * 60 * 60);
-  if (!claimed) {
-    return res.status(409).json({ error: 'Feedback already submitted for this transaction.' });
-  }
+  const claimKey = `feedback:tx:${parsed.txHash}`;
+  let claimed = false;
 
   try {
+    claimed = await claimOnce(claimKey, 365 * 24 * 60 * 60);
+    if (!claimed) {
+      return res.status(409).json({ error: 'Feedback already submitted for this transaction.' });
+    }
+
     await submitFeedbackForm({ type: 'transaction', ...parsed });
   } catch (err) {
+    if (claimed) {
+      await releaseClaim(claimKey).catch(() => undefined);
+    }
+    if (err instanceof StoreUnavailableError) {
+      return res.status(503).json({ error: err.message });
+    }
     if (err instanceof GoogleFormsConfigError) {
       return res.status(503).json({ error: err.message });
     }
