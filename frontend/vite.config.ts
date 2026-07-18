@@ -28,6 +28,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), swCacheHashPlugin()],
   resolve: {
     alias: {
+      '@achievo/contracts': path.resolve(__dirname, '../packages/contracts/src/index.ts'),
+      '@achievo/sdk': path.resolve(__dirname, '../packages/sdk/src/index.ts'),
       '@achievo/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
       '@achievo/stellar': path.resolve(__dirname, '../packages/stellar/src/index.ts'),
       '@achievo/identity': path.resolve(__dirname, '../packages/identity/src/index.ts'),
@@ -42,6 +44,8 @@ export default defineConfig({
         inline: [
           '@creit.tech/stellar-wallets-kit',
           '@stellar/freighter-api',
+          '@achievo/contracts',
+          '@achievo/sdk',
           '@achievo/shared',
           '@achievo/stellar',
           '@achievo/identity',

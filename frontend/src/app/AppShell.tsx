@@ -6,9 +6,12 @@ import {
   type SetStateAction,
 } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import posthog from 'posthog-js';
 import { Analytics } from '@vercel/analytics/react';
 import type { RewardHistoryItem } from '@achievo/shared';
+import {
+  trackTransactionFeedbackSkipped,
+  trackTransactionFeedbackSubmitted,
+} from '../shared/analytics';
 import { Navbar } from '../shared/ui/Navbar';
 import { BottomNav } from '../shared/ui/BottomNav';
 import { ActivityForm } from '../features/earn/ActivityForm';
@@ -368,15 +371,13 @@ export function AppShell(props: AppShellProps) {
               walletAddress={wallet.walletAddress}
               onDone={(submitted, rating, hasComment) => {
                 if (submitted) {
-                  posthog.capture('transaction_feedback_submitted', {
-                    tx_hash: pipeline.feedbackPrompt!.txHash,
+                  trackTransactionFeedbackSubmitted({
+                    txHash: pipeline.feedbackPrompt!.txHash,
                     rating,
-                    has_comment: hasComment,
+                    hasComment,
                   });
                 } else {
-                  posthog.capture('transaction_feedback_skipped', {
-                    tx_hash: pipeline.feedbackPrompt!.txHash,
-                  });
+                  trackTransactionFeedbackSkipped(pipeline.feedbackPrompt!.txHash);
                 }
                 pipeline.finishFeedbackFlow();
               }}

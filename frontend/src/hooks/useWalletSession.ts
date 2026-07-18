@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import posthog from 'posthog-js';
 import { CONTRACT_ID } from '@achievo/shared';
 import { getTreasuryInfo, type TreasuryInfo } from '@achievo/stellar';
+import { trackWalletConnected } from '../shared/analytics';
 import {
   clearWalletSession,
   ensureWalletSession,
@@ -71,7 +71,7 @@ export function useWalletSession() {
     try {
       const address = await ensureWalletSession(id);
       setWalletAddress(address);
-      posthog.capture('wallet_connected', { wallet_type: id });
+      trackWalletConnected(id);
       setWalletId(id);
       localStorage.setItem('achievo_wallet_id', id);
       await fetchBalance(address);

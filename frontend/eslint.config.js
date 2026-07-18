@@ -31,7 +31,7 @@ export default defineConfig([
           ],
           patterns: [
             {
-              group: ['**/api/**', '../../api/**', '../../../api/**'],
+              group: ['../../api/**', '../../../api/**', '../../../../api/**'],
               message: 'frontend must not import from api/',
             },
             {
@@ -55,7 +55,7 @@ export default defineConfig([
         {
           patterns: [
             {
-              group: ['**/api/**', '../../api/**', '../../../api/**'],
+              group: ['../../api/**', '../../../api/**', '../../../../api/**'],
               message: 'frontend must not import from api/',
             },
           ],
@@ -83,7 +83,7 @@ export default defineConfig([
           ],
           patterns: [
             {
-              group: ['**/api/**', '../../api/**', '../../../api/**'],
+              group: ['../../api/**', '../../../api/**', '../../../../api/**'],
               message: 'frontend must not import from api/',
             },
             {

@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import posthog from "posthog-js";
+import {
+  trackOnboardingFinished,
+  trackOnboardingStep,
+  trackOnboardingWelcomeShown,
+} from '../../shared/analytics';
 import {
   clearOnboardingDone,
   hasCompletedOnboarding,
@@ -40,7 +44,7 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
     setTabHop(false);
     lastTabRef.current = null;
     setTab("home");
-    posthog.capture(reason === "skipped" ? "onboarding_skipped" : "onboarding_completed");
+    trackOnboardingFinished(reason);
   }, [setTab]);
 
   const goToStep = useCallback((index: number) => {
@@ -51,7 +55,7 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
     setTabHop(hop);
     setTab(step.tab);
     setStepIndex(index);
-    posthog.capture("onboarding_step", { id: step.id, index });
+    trackOnboardingStep(step.id, index);
   }, [setTab]);
 
   const startWelcome = useCallback(() => {
@@ -60,7 +64,7 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
     setTabHop(false);
     lastTabRef.current = "home";
     setPhase("welcome");
-    posthog.capture("onboarding_welcome_shown");
+    trackOnboardingWelcomeShown();
   }, [setTab]);
 
   const startTour = useCallback(() => {

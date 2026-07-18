@@ -1,10 +1,11 @@
 import { useCallback, useState } from 'react';
-import posthog from 'posthog-js';
 import { activityAgent, feedbackAgent, rewardAgent } from '../features/earn/agents';
 import { signChallengeXdr } from '../features/wallet/wallet';
 import type { PipelineStep } from '../features/earn/PipelineVisualizer';
 import type { RewardHistoryItem } from '@achievo/shared';
 import { hasSubmittedFeedback, type FeedbackPrompt } from '../features/feedback/transactionFeedback';
+import { trackActivitySubmitted, trackRewardPaid } from '../shared/analytics';
+import { achievoClient } from '../shared/api/achievoClient';
 import { persistIdentitySession } from '../shared/lib/sessionIdentity';
 
 export function makePipeline(): PipelineStep[] {
@@ -21,21 +22,13 @@ function delay(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function hashActivityIntent(activityText: string): Promise<string> {
-  const data = new TextEncoder().encode(activityText.trim());
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return [...new Uint8Array(digest)]
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
 export type RewardMeta = {
   base?: number;
   bonus?: number;
   effortScore?: number;
   reason?: string;
   flagged?: boolean;
-  flagReason?: string;
+  flagReason?: string | null;
 };
 
 type Params = {
@@ -85,7 +78,7 @@ export function useRewardPipeline({
     const textToSubmit = overrideText ? overrideText.trim() : activityText.trim();
     if (!walletAddress || !textToSubmit || isRunning) return;
 
-    posthog.capture('activity_submitted', { length: textToSubmit.length });
+    trackActivitySubmitted(textToSubmit.length);
 
     setIsRunning(true);
     setTxHash(null);
@@ -143,91 +136,50 @@ export function useRewardPipeline({
       let serverActivity = actResult.activity;
 
       try {
-        const intentHash = await hashActivityIntent(textToSubmit);
-        const nonceRes = await fetch(
-          `/api/nonce?wallet=${encodeURIComponent(walletAddress)}&intentHash=${intentHash}`,
-        );
-        const nonceRaw = await nonceRes.text();
-        let nonceData: {
-          nonce?: string;
-          expiry?: number;
-          mac?: string;
-          challengeXdr?: string;
-          error?: string;
-        };
-        try {
-          nonceData = JSON.parse(nonceRaw);
-        } catch {
-          throw new Error(`Nonce API error ${nonceRes.status}: server returned non-JSON`);
-        }
-        if (!nonceRes.ok || !nonceData.challengeXdr) {
-          throw new Error(nonceData.error ?? `Nonce API error ${nonceRes.status}`);
-        }
+        const data = await achievoClient.submitActivity({
+          wallet: walletAddress,
+          activityText: textToSubmit,
+          signChallenge: async (challengeXdr) => {
+            if (!challengeXdr) {
+              throw new Error('Nonce API error 200');
+            }
+            setStep(3, { detail: 'Sign the challenge in your wallet…' });
+            setLogs((p) => [...p, '⏳ [Kouri Agent] Awaiting wallet signature…']);
+            if (!walletId) {
+              throw new Error('Connect Freighter on the Wallet tab before submitting.');
+            }
+            const signedXdr = await signChallengeXdr(walletId, challengeXdr);
 
-        setStep(3, { detail: 'Sign the challenge in your wallet…' });
-        setLogs((p) => [...p, '⏳ [Kouri Agent] Awaiting wallet signature…']);
-        if (!walletId) {
-          throw new Error('Connect Freighter on the Wallet tab before submitting.');
-        }
-        const signedXdr = await signChallengeXdr(walletId, nonceData.challengeXdr);
-
-        setStep(3, { detail: 'AI evaluating activity + submitting to Stellar…' });
-        setLogs((p) => [
-          ...p,
-          '✓ [Kouri Agent] Signature received. AI evaluating + dispatching payout…',
-        ]);
-
-        const apiRes = await fetch('/api/reward', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            activityText: textToSubmit,
-            wallet: walletAddress,
-            nonce: nonceData.nonce,
-            expiry: nonceData.expiry,
-            mac: nonceData.mac,
-            signedXdr: signedXdr,
-            intentHash,
-          }),
+            setStep(3, { detail: 'AI evaluating activity + submitting to Stellar…' });
+            setLogs((p) => [
+              ...p,
+              '✓ [Kouri Agent] Signature received. AI evaluating + dispatching payout…',
+            ]);
+            return signedXdr;
+          },
         });
-        const rewardRaw = await apiRes.text();
-        let data: {
-          txHash?: string;
-          reward?: number;
-          base?: number;
-          bonus?: number;
-          effortScore?: number;
-          activity?: string;
-          reason?: string;
-          flagged?: boolean;
-          flagReason?: string;
-          identityId?: string;
-          sessionToken?: string;
-          scoringMode?: string;
-          error?: string;
-        };
-        try {
-          data = JSON.parse(rewardRaw);
-        } catch {
-          throw new Error(`Reward API error ${apiRes.status}: server returned non-JSON`);
-        }
-        if (!apiRes.ok || !data.txHash) {
-          throw new Error(data.error ?? `Reward API error ${apiRes.status}`);
+
+        if (!data.txHash) {
+          throw new Error('Reward API error 200');
         }
         hash = data.txHash;
-        if (typeof data.identityId === 'string' && typeof data.sessionToken === 'string') {
+        if (
+          'identityId' in data
+          && typeof data.identityId === 'string'
+          && typeof data.sessionToken === 'string'
+        ) {
           persistIdentitySession(data.identityId, data.sessionToken);
         }
         serverReward = data.reward ?? rwdPreview.reward;
         serverActivity = data.activity ?? actResult.activity;
         setRewardXlm(serverReward);
         setRewardMeta({
-          base: data.base,
-          bonus: data.bonus,
-          effortScore: data.effortScore,
-          reason: data.reason,
-          flagged: data.flagged,
-          flagReason: data.flagReason,
+          base: 'base' in data ? data.base : undefined,
+          bonus: 'bonus' in data ? data.bonus : undefined,
+          effortScore: 'effortScore' in data ? data.effortScore : undefined,
+          reason: 'reason' in data ? data.reason : undefined,
+          flagged: 'flagged' in data ? data.flagged : undefined,
+          flagReason: 'flagReason' in data ? data.flagReason : undefined,
         });
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
@@ -239,10 +191,10 @@ export function useRewardPipeline({
 
       setTxHash(hash);
       setLastPayoutActivity(serverActivity);
-      posthog.capture('reward_paid', {
+      trackRewardPaid({
         amount: serverReward,
         activity: serverActivity,
-        tx_hash: hash,
+        txHash: hash,
       });
       setShowRewardCard(true);
       setStep(3, { status: 'done', detail: `Settled: ${hash.slice(0, 12)}…` });

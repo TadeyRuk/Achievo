@@ -12,6 +12,8 @@
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {
+    "@achievo/contracts": "*",
+    "@achievo/sdk": "*",
     "@achievo/shared": "*",
     "@achievo/stellar": "*",
     "@achievo/identity": "*",

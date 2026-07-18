@@ -2,7 +2,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import type { RewardHistoryItem } from '@achievo/shared';
+import { ApiError, type HealthApiSuccess } from '@achievo/sdk';
 import { iosContentScale } from '../shared/lib/sheetMotion';
+import { achievoClient } from '../shared/api/achievoClient';
 import { getUserName, hasUserName } from '../features/profile/userIdentity';
 import { useOnboarding } from '../features/onboarding/useOnboarding';
 import { useWalletSession } from '../hooks/useWalletSession';
@@ -128,11 +130,12 @@ export default function App() {
     let cancelled = false;
     const probe = async () => {
       try {
-        const res = await fetch('/api/health');
-        const data = (await res.json()) as { rewardsPaused?: boolean };
+        const data = await achievoClient.getHealth();
         if (!cancelled) setRewardsPaused(Boolean(data.rewardsPaused));
-      } catch {
-        if (!cancelled) setRewardsPaused(false);
+      } catch (error) {
+        if (cancelled) return;
+        const data = error instanceof ApiError ? error.body as Partial<HealthApiSuccess> : undefined;
+        setRewardsPaused(Boolean(data?.rewardsPaused));
       }
     };
     void probe();
