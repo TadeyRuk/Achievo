@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { submitGeneralFeedback } from "./generalFeedback";
 import { FeedbackRatingRow } from "./FeedbackRatingRow";
 import { FeedbackThankYou } from "./FeedbackThankYou";
 import { IOSSheet } from "./IOSSheet";
 import { reducedMotionTransition } from "./sheetMotion";
+
+/** Shared Liquid Glass material (matches Navbar refresh pill — iOS 26 Regular approx). */
+const liquidGlassSurface: CSSProperties = {
+  background:
+    "linear-gradient(155deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.48) 45%, rgba(255,255,255,0.58) 100%)",
+  backdropFilter: "blur(48px) saturate(180%)",
+  WebkitBackdropFilter: "blur(48px) saturate(180%)",
+  boxShadow:
+    "0 4px 24px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(255,255,255,0.55), inset 0 0.5px 0 rgba(255,255,255,0.85), inset 0 -0.5px 0 rgba(0,0,0,0.04)",
+};
 
 interface GeneralFeedbackProps {
   userName: string;
@@ -104,7 +114,8 @@ export function GeneralFeedback({ userName, onClose }: GeneralFeedbackProps) {
               type="button"
               onClick={() => void handleSubmit()}
               disabled={submitting}
-              className="w-full py-3.5 rounded-full bg-[var(--dah-primary)] text-white text-[17px] font-semibold disabled:opacity-50 active:opacity-80 transition-opacity"
+              style={liquidGlassSurface}
+              className="w-full py-3.5 rounded-full text-[var(--dah-primary)] text-[17px] font-semibold disabled:opacity-50 active:opacity-80 transition-opacity"
             >
               {submitting ? "Sending…" : "Submit"}
             </button>
