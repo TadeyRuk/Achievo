@@ -502,3 +502,28 @@ export const ProgressionAgent = {
     };
   },
 };
+
+/** Screen-facing progression snapshot owned by the app composition root. */
+export type ProgressionViewModel = {
+  stored: StoredProgression;
+  state: ProgressionState;
+  getNextWin: (todayCount: number, now?: Date) => NextWin;
+};
+
+/**
+ * Build the single progression view-model path screens should consume.
+ * Prefer this over calling ProgressionAgent from feature screens.
+ */
+export function buildProgressionViewModel(
+  history: ProgressionHistoryItem[],
+  stored: StoredProgression = {},
+  now: Date = new Date(),
+): ProgressionViewModel {
+  const state = ProgressionAgent.state(history, stored, now);
+  return {
+    stored,
+    state,
+    getNextWin: (todayCount: number, at: Date = new Date()) =>
+      ProgressionAgent.getNextWin(history, stored, at, todayCount),
+  };
+}

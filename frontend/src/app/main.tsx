@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import '../index.css'
 import App from './App'
 import { initializeAnalytics } from '../shared/analytics'
-import { ErrorBoundary } from '../shared/ui/ErrorBoundary'
+import { ErrorBoundary } from '../shared/ui'
 
 // Analytics — PostHog. Guarded on key presence so builds without a key
 // (local dev, CI) run fine with analytics simply disabled.

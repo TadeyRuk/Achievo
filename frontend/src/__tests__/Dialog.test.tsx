@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { Dialog } from '../shared/ui/Dialog';
+import { Dialog } from '../shared/ui';
 
 describe('Dialog', () => {
   it('exposes dialog semantics and closes on Escape', () => {

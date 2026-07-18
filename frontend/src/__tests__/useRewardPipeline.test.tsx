@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useRewardPipeline } from '../hooks/useRewardPipeline';
+import { useRewardPipeline } from '../app/model/useRewardPipeline';
 
 const mocks = vi.hoisted(() => ({
   signChallengeXdr: vi.fn(),
@@ -9,11 +9,15 @@ const mocks = vi.hoisted(() => ({
   trackRewardPaid: vi.fn(),
 }));
 
-vi.mock('../features/wallet/wallet', () => ({
-  signChallengeXdr: mocks.signChallengeXdr,
-}));
+vi.mock('../features/wallet', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../features/wallet')>();
+  return {
+    ...actual,
+    signChallengeXdr: mocks.signChallengeXdr,
+  };
+});
 
-vi.mock('../shared/api/achievoClient', () => ({
+vi.mock('../shared/api', () => ({
   achievoClient: {
     submitActivity: mocks.submitActivity,
   },

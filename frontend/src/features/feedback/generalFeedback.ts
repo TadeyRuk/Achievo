@@ -1,6 +1,6 @@
 /** Client helper for the always-available general feedback channel. */
 import { ApiError } from '@achievo/sdk';
-import { achievoClient } from '../../shared/api/achievoClient';
+import { achievoClient } from '../../shared/api';
 
 export type GeneralFeedbackPayload = {
   rating: number;

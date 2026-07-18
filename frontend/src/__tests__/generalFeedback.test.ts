@@ -1,12 +1,12 @@
 import { ApiError } from '@achievo/sdk';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { submitGeneralFeedback } from '../features/feedback/generalFeedback';
+import { submitGeneralFeedback } from '../features/feedback';
 
 const mocks = vi.hoisted(() => ({
   submitGeneralFeedback: vi.fn(),
 }));
 
-vi.mock('../shared/api/achievoClient', () => ({
+vi.mock('../shared/api', () => ({
   achievoClient: {
     submitGeneralFeedback: mocks.submitGeneralFeedback,
   },

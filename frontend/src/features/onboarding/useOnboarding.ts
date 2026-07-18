@@ -126,3 +126,18 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
     replay,
   };
 }
+
+/** Explicit shell-facing contract for onboarding overlays. */
+export type OnboardingViewModel = {
+  phase: OnboardingPhase;
+  stepIndex: number;
+  currentStep: (typeof TOUR_STEPS)[number] | null;
+  isLastStep: boolean;
+  active: boolean;
+  tabHop: boolean;
+  totalSteps: number;
+  startTour: () => void;
+  next: () => void;
+  skip: () => void;
+  replay: () => void;
+};

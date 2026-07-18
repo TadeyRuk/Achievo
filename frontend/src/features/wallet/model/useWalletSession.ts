@@ -1,15 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CONTRACT_ID } from '@achievo/shared';
 import { getTreasuryInfo, type TreasuryInfo } from '@achievo/stellar';
-import { trackWalletConnected } from '../shared/analytics';
+import { trackWalletConnected } from '../../../shared/analytics';
 import {
   clearWalletSession,
   ensureWalletSession,
   fundWithFriendbot,
   getXlmBalance,
-} from '../features/wallet/wallet';
+} from '../wallet';
 
-export function useWalletSession() {
+export type WalletSessionViewModel = {
+  walletAddress: string | null;
+  walletId: string | null;
+  isFunded: boolean;
+  isConnecting: boolean;
+  treasuryInfo: TreasuryInfo | null;
+  walletError: string | null;
+  treasuryError: string | null;
+  bootstrapProgress: number;
+  fetchBalance: (address: string) => Promise<void>;
+  loadTreasury: () => Promise<void>;
+  connect: (id: string) => Promise<boolean>;
+  disconnect: () => Promise<void>;
+  fund: () => Promise<void>;
+  refresh: () => Promise<void>;
+  setWalletError: (error: string | null) => void;
+};
+
+export function useWalletSession(): WalletSessionViewModel {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [walletId, setWalletId] = useState<string | null>(() =>
     localStorage.getItem('achievo_wallet_id'),

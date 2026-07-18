@@ -4,13 +4,13 @@ import {
   feedbackStorageKey,
   isValidRating,
   submitTransactionFeedback,
-} from '../features/feedback/transactionFeedback';
+} from '../features/feedback';
 
 const mocks = vi.hoisted(() => ({
   submitTransactionFeedback: vi.fn(),
 }));
 
-vi.mock('../shared/api/achievoClient', () => ({
+vi.mock('../shared/api', () => ({
   achievoClient: {
     submitTransactionFeedback: mocks.submitTransactionFeedback,
   },

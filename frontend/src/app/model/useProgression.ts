@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ProgressionAgent, type StoredProgression } from '../shared/lib/progression';
 import type { RewardHistoryItem } from '@achievo/shared';
-import { getIdentityId } from '../shared/lib/sessionIdentity';
+import {
+  ProgressionAgent,
+  buildProgressionViewModel,
+  getIdentityId,
+  type ProgressionViewModel,
+  type StoredProgression,
+} from '../../shared/lib';
 
 function progressionStorageKey(): string {
   const id = getIdentityId();
@@ -17,12 +22,14 @@ function loadStoredProgression(): StoredProgression {
   }
 }
 
-export function useProgression(history: RewardHistoryItem[]) {
-  const [progression, setProgression] = useState<StoredProgression>(loadStoredProgression);
+export type { ProgressionViewModel };
+
+export function useProgression(history: RewardHistoryItem[]): ProgressionViewModel {
+  const [stored, setStored] = useState<StoredProgression>(loadStoredProgression);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setProgression((prev) => {
+    setStored((prev) => {
       const { storedNext } = ProgressionAgent.reconcile(history, prev);
       try {
         localStorage.setItem(progressionStorageKey(), JSON.stringify(storedNext));
@@ -31,5 +38,5 @@ export function useProgression(history: RewardHistoryItem[]) {
     });
   }, [history]);
 
-  return progression;
+  return buildProgressionViewModel(history, stored);
 }

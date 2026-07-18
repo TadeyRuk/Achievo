@@ -9,25 +9,23 @@ import {
   CustomGraduationHat,
   CustomTrophy,
   CustomMedal,
-} from "../../shared/ui/customIcons";
-import type { StoredProgression } from "../../shared/lib/progression";
-import { ProgressionAgent } from "../../shared/lib/progression";
+} from "../../shared/ui";
+import type { ProgressionViewModel } from "../../shared/lib";
 import type { RewardHistoryItem } from "@achievo/shared";
 
 type BadgeCollectionProps = {
   history: RewardHistoryItem[];
-  progression?: StoredProgression;
+  progression: ProgressionViewModel;
   itemVariants: Variants;
 };
 
 export function BadgeCollection({ history, progression, itemVariants }: BadgeCollectionProps) {
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
   const totalSubmissions = history.length;
-  const prog = ProgressionAgent.state(history, progression ?? {});
-  const isSilverUnlocked = prog.unlocks.silver;
-  const isGoldUnlocked = prog.unlocks.gold;
-  const isPlatinumUnlocked = prog.unlocks.platinum;
-  const isDiamondUnlocked = prog.unlocks.diamond;
+  const isSilverUnlocked = progression.state.unlocks.silver;
+  const isGoldUnlocked = progression.state.unlocks.gold;
+  const isPlatinumUnlocked = progression.state.unlocks.platinum;
+  const isDiamondUnlocked = progression.state.unlocks.diamond;
 
   const badges = [
     {
@@ -114,7 +112,7 @@ export function BadgeCollection({ history, progression, itemVariants }: BadgeCol
       id: "community_savior",
       name: "Community Savior",
       desc: "Logged 3 volunteering sessions to support your community.",
-      unlocked: prog.counts.volunteering >= 3,
+      unlocked: progression.state.counts.volunteering >= 3,
       rimColor: "from-emerald-400 via-emerald-100 to-teal-600",
       innerColor: "from-emerald-700 via-emerald-800 to-teal-950",
       iconColor: "text-emerald-100",
@@ -124,7 +122,7 @@ export function BadgeCollection({ history, progression, itemVariants }: BadgeCol
       id: "giga_brain",
       name: "Giga Brain",
       desc: "Completed 5 tutoring sessions to enlighten your peers.",
-      unlocked: prog.counts.tutoring >= 5,
+      unlocked: progression.state.counts.tutoring >= 5,
       rimColor: "from-sky-400 via-sky-100 to-indigo-600",
       innerColor: "from-sky-700 via-sky-800 to-indigo-950",
       iconColor: "text-sky-100",

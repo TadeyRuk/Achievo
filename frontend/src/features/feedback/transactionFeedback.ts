@@ -1,6 +1,6 @@
 /** Client + API helpers for per-transaction user feedback. */
 import { ApiError } from '@achievo/sdk';
-import { achievoClient } from '../../shared/api/achievoClient';
+import { achievoClient } from '../../shared/api';
 
 export type TransactionFeedbackPayload = {
   txHash: string;

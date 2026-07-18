@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getUserName, setUserName, hasUserName, USER_NAME_KEY } from '../features/profile/userIdentity';
+import { getUserName, setUserName, hasUserName, USER_NAME_KEY } from '../features/profile'
 
 describe('userIdentity', () => {
   beforeEach(() => {

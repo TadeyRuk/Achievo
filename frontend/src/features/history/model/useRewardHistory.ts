@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RewardHistoryItem } from '@achievo/shared';
 import { getWalletRewardHistory } from '@achievo/stellar';
+import { mergeChainIntoLocal } from './mergeChainIntoLocal';
 
 function loadLocalHistory(): RewardHistoryItem[] {
   try {
@@ -17,34 +18,15 @@ function persistLocal(history: RewardHistoryItem[]) {
   } catch { /* ignore */ }
 }
 
-/** Merge on-chain ledger rows with local optimistic cache (chain wins on txHash). */
-export function mergeChainIntoLocal(
-  local: RewardHistoryItem[],
-  chain: Awaited<ReturnType<typeof getWalletRewardHistory>>,
-): RewardHistoryItem[] {
-  const byHash = new Map<string, RewardHistoryItem>();
+export type RewardHistoryViewModel = {
+  history: RewardHistoryItem[];
+  historyError: string | null;
+  isSyncing: boolean;
+  syncFromChain: () => Promise<void>;
+  prependLocal: (item: RewardHistoryItem) => void;
+};
 
-  for (const row of chain) {
-    const txHash = row.txHash ?? `ledger:${row.ledger}:${row.recipient}`;
-    byHash.set(txHash, {
-      id: txHash,
-      activity: row.activity,
-      reward: row.amount,
-      txHash,
-      timestamp: row.timestamp,
-    });
-  }
-
-  for (const item of local) {
-    if (!byHash.has(item.txHash)) {
-      byHash.set(item.txHash, item);
-    }
-  }
-
-  return [...byHash.values()].sort((a, b) => b.timestamp - a.timestamp);
-}
-
-export function useRewardHistory(walletAddress: string | null) {
+export function useRewardHistory(walletAddress: string | null): RewardHistoryViewModel {
   const [history, setHistory] = useState<RewardHistoryItem[]>(loadLocalHistory);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);

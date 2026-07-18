@@ -1,12 +1,11 @@
 import { useCallback, useState } from 'react';
-import { activityAgent, feedbackAgent, rewardAgent } from '../features/earn/agents';
-import { signChallengeXdr } from '../features/wallet/wallet';
-import type { PipelineStep } from '../features/earn/PipelineVisualizer';
 import type { RewardHistoryItem } from '@achievo/shared';
-import { hasSubmittedFeedback, type FeedbackPrompt } from '../features/feedback/transactionFeedback';
-import { trackActivitySubmitted, trackRewardPaid } from '../shared/analytics';
-import { achievoClient } from '../shared/api/achievoClient';
-import { persistIdentitySession } from '../shared/lib/sessionIdentity';
+import { activityAgent, feedbackAgent, rewardAgent, type PipelineStep } from '../../features/earn';
+import { signChallengeXdr } from '../../features/wallet';
+import { hasSubmittedFeedback, type FeedbackPrompt } from '../../features/feedback';
+import { trackActivitySubmitted, trackRewardPaid } from '../../shared/analytics';
+import { achievoClient } from '../../shared/api';
+import { persistIdentitySession } from '../../shared/lib';
 
 export function makePipeline(): PipelineStep[] {
   return [
@@ -41,6 +40,27 @@ type Params = {
   loadTreasury: () => Promise<void>;
 };
 
+/** Explicit shell-facing contract for the reward submission pipeline. */
+export type RewardPipelineViewModel = {
+  pipeline: PipelineStep[];
+  isRunning: boolean;
+  logs: string[];
+  rewardXlm: number | null;
+  txHash: string | null;
+  rewardMeta: RewardMeta | null;
+  showRewardCard: boolean;
+  feedbackPrompt: FeedbackPrompt | null;
+  setFeedbackPrompt: (prompt: FeedbackPrompt | null) => void;
+  pipelineError: string | null;
+  handleSubmit: (overrideText?: string) => Promise<void>;
+  dismissRewardFlow: () => void;
+  finishFeedbackFlow: () => void;
+  resetPipeline: () => void;
+  setTxHash: (hash: string | null) => void;
+  setRewardXlm: (reward: number | null) => void;
+  setShowRewardCard: (show: boolean) => void;
+};
+
 export function useRewardPipeline({
   walletAddress,
   walletId,
@@ -49,7 +69,7 @@ export function useRewardPipeline({
   onPayout,
   fetchBalance,
   loadTreasury,
-}: Params) {
+}: Params): RewardPipelineViewModel {
   const [pipeline, setPipeline] = useState<PipelineStep[]>(makePipeline);
   const [isRunning, setIsRunning] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);

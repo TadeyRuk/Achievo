@@ -12,15 +12,15 @@ import {
   Award 
 } from "lucide-react";
 import { motion } from "motion/react";
-import { CustomTrophy, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from '../../shared/ui/customIcons';
+import { CustomTrophy, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from '../../shared/ui';
 import type { RewardHistoryItem } from "@achievo/shared";
-import { ProgressionAgent, type StoredProgression } from '../../shared/lib/progression';
+import type { ProgressionViewModel } from '../../shared/lib';
 
 export type { RewardHistoryItem };
 
 interface RewardHistoryProps {
   history: RewardHistoryItem[];
-  progression?: StoredProgression;
+  progression: ProgressionViewModel;
 }
 
 const ACTIVITY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -60,7 +60,7 @@ const itemVariants = {
   }
 };
 
-export function RewardHistory({ history, progression: stored }: RewardHistoryProps) {
+export function RewardHistory({ history, progression }: RewardHistoryProps) {
   const sortedHistory = [...history].sort((a, b) => b.timestamp - a.timestamp);
 
   const getIcon = (act: string) => {
@@ -77,18 +77,17 @@ export function RewardHistory({ history, progression: stored }: RewardHistoryPro
     });
   };
 
-  // Progression — freeze-aware when stored progression is provided
-  const progression = ProgressionAgent.state(history, stored ?? {});
-  const streak = progression.streak;
+  // Progression — freeze-aware view-model from app composition
+  const streak = progression.state.streak;
 
   // Activity milestones counts
-  const volunteeringCount = progression.counts.volunteering;
-  const workshopCount = progression.counts.workshop;
-  const scienceCount = progression.counts.science;
+  const volunteeringCount = progression.state.counts.volunteering;
+  const workshopCount = progression.state.counts.workshop;
+  const scienceCount = progression.state.counts.science;
 
-  const totalXP = progression.xp;
-  const rank = progression.rankInfo;
-  const progressPercent = progression.progressPercent;
+  const totalXP = progression.state.xp;
+  const rank = progression.state.rankInfo;
+  const progressPercent = progression.state.progressPercent;
 
   const milestones = [
     {
@@ -119,7 +118,7 @@ export function RewardHistory({ history, progression: stored }: RewardHistoryPro
     {
       id: "mastermind",
       name: "Mastermind",
-      unlocked: progression.counts.tutoringOrMath >= 1,
+      unlocked: progression.state.counts.tutoringOrMath >= 1,
       icon: Brain,
       activeBg: "bg-[#e2e6ff]",
       activeIconColor: "text-[#102a9c]"

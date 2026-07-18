@@ -3,16 +3,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import type { RewardHistoryItem } from '@achievo/shared';
 import { ApiError, type HealthApiSuccess } from '@achievo/sdk';
-import { iosContentScale } from '../shared/lib/sheetMotion';
-import { achievoClient } from '../shared/api/achievoClient';
-import { getUserName, hasUserName } from '../features/profile/userIdentity';
-import { useOnboarding } from '../features/onboarding/useOnboarding';
-import { useWalletSession } from '../hooks/useWalletSession';
-import { useRewardHistory } from '../hooks/useRewardHistory';
-import { useProgression } from '../hooks/useProgression';
-import { useRewardPipeline } from '../hooks/useRewardPipeline';
-import type { FeedbackPrompt } from '../features/feedback/transactionFeedback';
-import { AppShell, type Tab } from './AppShell';
+import { iosContentScale } from '../shared/lib';
+import { achievoClient } from '../shared/api';
+import { getUserName, hasUserName } from '../features/profile';
+import { useOnboarding } from '../features/onboarding';
+import { useWalletSession } from '../features/wallet';
+import { useRewardHistory } from '../features/history';
+import type { FeedbackPrompt } from '../features/feedback';
+import { useProgression } from './model/useProgression';
+import { useRewardPipeline } from './model/useRewardPipeline';
+import { AppShell, type Tab } from './shell';
 
 /** Dev-only: ?preview=feedback opens the post-payout feedback sheet with mock data. */
 function devFeedbackPreview(): FeedbackPrompt | null {
@@ -148,44 +148,52 @@ export default function App() {
 
   return (
     <AppShell
-      showSplash={showSplash}
-      setShowSplash={setShowSplash}
-      showLogin={showLogin}
-      setShowLogin={setShowLogin}
-      userName={userName}
-      setUserNameState={setUserNameState}
-      tab={tab}
-      setTab={setTab}
-      userAvatar={userAvatar}
-      handleAvatarChange={handleAvatarChange}
-      activityText={activityText}
-      setActivityText={setActivityText}
-      showForm={showForm}
-      setShowForm={setShowForm}
-      showRefer={showRefer}
-      setShowRefer={setShowRefer}
-      showConnectSuccess={showConnectSuccess}
-      setShowConnectSuccess={setShowConnectSuccess}
-      showDisconnectConfirm={showDisconnectConfirm}
-      setShowDisconnectConfirm={setShowDisconnectConfirm}
-      showDisconnectSuccess={showDisconnectSuccess}
-      setShowDisconnectSuccess={setShowDisconnectSuccess}
-      showInfo={showInfo}
-      setShowInfo={setShowInfo}
-      showFeedback={showFeedback}
-      setShowFeedback={setShowFeedback}
-      scrollContainerRef={scrollContainerRef}
-      phoneFrameRef={phoneFrameRef}
-      wallet={wallet}
-      history={history}
-      progression={progression}
-      pipeline={pipeline}
-      onboarding={onboarding}
-      shellReady={shellReady}
-      contentFrameMotion={contentFrameMotion}
-      reduceMotion={reduceMotion}
-      statusBanner={statusBanner}
-      rewardsPaused={rewardsPaused}
+      navigation={{
+        tab,
+        setTab,
+        scrollContainerRef,
+        phoneFrameRef,
+        contentFrameMotion,
+        reduceMotion,
+        shellReady,
+        statusBanner,
+        rewardsPaused,
+      }}
+      session={{
+        showSplash,
+        setShowSplash,
+        showLogin,
+        setShowLogin,
+        userName,
+        setUserNameState,
+        userAvatar,
+        handleAvatarChange,
+        wallet,
+        history,
+        progression,
+        onboarding,
+      }}
+      earn={{
+        activityText,
+        setActivityText,
+        showForm,
+        setShowForm,
+        pipeline,
+      }}
+      overlays={{
+        showRefer,
+        setShowRefer,
+        showConnectSuccess,
+        setShowConnectSuccess,
+        showDisconnectConfirm,
+        setShowDisconnectConfirm,
+        showDisconnectSuccess,
+        setShowDisconnectSuccess,
+        showInfo,
+        setShowInfo,
+        showFeedback,
+        setShowFeedback,
+      }}
     />
   );
 }
