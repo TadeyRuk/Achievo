@@ -678,6 +678,8 @@ export default function App() {
                 progression={progression}
                 userAvatar={userAvatar}
                 onAvatarChange={handleAvatarChange}
+                userName={userName}
+                onShowInfoClick={() => setShowInfo(true)}
               />
             )}
           </AnimatePresence>

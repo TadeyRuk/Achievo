@@ -1,9 +1,8 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, MessageSquarePlus } from "lucide-react";
 import { useState } from "react";
-import { CustomCircleInformation } from "./customIcons";
 
 interface NavbarProps {
-  onInfoClick?: () => void;
+  onFeedbackClick?: () => void;
 }
 
 async function hardRefresh() {
@@ -17,7 +16,7 @@ async function hardRefresh() {
   window.location.reload();
 }
 
-export function Navbar({ onInfoClick }: NavbarProps) {
+export function Navbar({ onFeedbackClick }: NavbarProps) {
   const [spinning, setSpinning] = useState(false);
 
   const handleRefresh = async () => {
@@ -46,10 +45,11 @@ export function Navbar({ onInfoClick }: NavbarProps) {
         style={{ backgroundColor: "white", boxShadow: "0 4px 16px rgba(0,0,0,0.25)" }}
       >
         <button
-          onClick={onInfoClick}
+          onClick={onFeedbackClick}
+          aria-label="Send feedback"
           className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--dah-outline)] hover:text-[var(--dah-primary)] transition-all"
         >
-          <CustomCircleInformation className="w-5.5 h-5.5" />
+          <MessageSquarePlus className="w-5.5 h-5.5" />
         </button>
       </div>
 

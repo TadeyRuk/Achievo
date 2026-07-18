@@ -21,6 +21,8 @@ interface StudentProfileProps {
   progression?: StoredProgression;
   userAvatar: string;
   onAvatarChange: (avatar: string) => void;
+  userName: string;
+  onShowInfoClick: () => void;
 }
 
 const containerVariants = {
@@ -58,6 +60,8 @@ export function StudentProfile({
   progression,
   userAvatar,
   onAvatarChange,
+  userName,
+  onShowInfoClick,
 }: StudentProfileProps) {
   // Calculations
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
@@ -255,7 +259,7 @@ export function StudentProfile({
         </div>
         <div className="min-w-0 space-y-0.5">
           <h2 className="text-[20px] font-extrabold tracking-tight text-[var(--dah-primary)] font-display">
-            Xander Dacillo
+            {userName}
           </h2>
           <p className="text-[12px] text-[var(--dah-outline)] font-bold uppercase tracking-wider">
             Academic Explorer
@@ -272,6 +276,20 @@ export function StudentProfile({
           )}
         </div>
       </motion.div>
+
+      {/* How Achievo Works entry point */}
+      <motion.button
+        type="button"
+        variants={itemVariants}
+        onClick={onShowInfoClick}
+        className="w-full bg-white rounded-[20px] border border-[var(--dah-outline-variant)] px-5 py-4 shadow-sm flex items-center justify-between text-left"
+      >
+        <div>
+          <p className="text-[13px] font-extrabold text-[var(--dah-primary)] font-display">How Achievo Works</p>
+          <p className="text-[11px] text-[var(--dah-on-surface-variant)] font-semibold">5-agent pipeline & reward formula</p>
+        </div>
+        <ChevronLeft className="w-4 h-4 rotate-180 text-[var(--dah-outline)]" />
+      </motion.button>
 
       {/* Stats Dashboard */}
       <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2.5">
