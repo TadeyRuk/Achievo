@@ -9,6 +9,7 @@
   "scripts": {
     "build:packages": "npm run build -w @achievo/shared && npm run build -w @achievo/contracts && npm run build -w @achievo/stellar && npm run build -w @achievo/identity && npm run build -w @achievo/sdk",
     "vercel-build": "npm run build:packages && npm run build -w frontend",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
     "check-contract-integration": "node scripts/check-contract-integration.mjs && node scripts/check-cap-sync.mjs",
     "check-cap-sync": "node scripts/check-cap-sync.mjs",
     "generate:bindings": "node scripts/generate-bindings.mjs",

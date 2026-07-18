@@ -58,6 +58,9 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
+      - name: Enforce package and feature boundaries
+        run: npm run check:boundaries
+
       - name: Cross-check contract and package bindings
         run: npm run check-contract-integration
 

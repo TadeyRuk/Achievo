@@ -197,11 +197,14 @@ flowchart TB
 ### Responsibility boundaries
 
 - **Client pipeline hints** provide immediate progress feedback; they are not authoritative AI decisions.
+- **`@achievo/sdk`** is the only browser path to `/api/*`; feature UI never owns raw fetch/XDR transport.
 - **Groq on the server** classifies valid activities and scores submission effort.
 - **Wallet ownership proof** uses an HMAC-protected nonce challenge signed by the connected wallet.
 - **The server-side admin signer** authorizes treasury payouts; the admin key never enters browser code.
+- **API handlers** are thin Vercel adapters; use cases live under `api/_server/features` with ports wired in composition.
 - **The Soroban contract** enforces positive payouts, available treasury balance, and a 20 XLM per-transaction ceiling.
 - **The frontend** combines durable contract history with recent events and refreshes the payout feed every 15 seconds.
+- **CI** runs `npm run check:boundaries` so package, feature, and server ownership rules stay enforced.
 
 ## Core Capabilities
 
@@ -318,18 +321,19 @@ Current automated coverage:
 
 - **Frontend / API helpers:** Vitest suite (shared rewards, stellar decode/merge, API nonce/reward/feedback, component smoke), including fast-check property tests.
 - **Contract:** 18 Rust tests covering initialization, authorization, payout limits, storage, events, and failure states.
-- **CI:** build `@achievo/*` packages, contract/frontend binding check, frontend lint/test/build, contract test/release WASM.
+- **CI:** build `@achievo/*` packages, boundary check, contract/frontend binding check, frontend lint/test/build, contract test/release WASM.
 
 ## Technology
 
 | Layer | Implementation |
 |---|---|
 | Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, Motion 12 |
+| Client API | `@achievo/sdk` + `@achievo/contracts` |
 | Wallets | StellarWalletsKit, Horizon Testnet, Friendbot |
-| Backend | Vercel serverless TypeScript functions |
+| Backend | Thin Vercel adapters over `api/_server` feature cores |
 | AI | **Kouri Agent** on Groq `llama-3.1-8b-instant` |
 | Smart contract | Rust, Soroban SDK 26.1, XLM SAC |
-| Analytics | PostHog |
+| Analytics | PostHog via typed frontend analytics facade |
 | Testing | Vitest, Testing Library, fast-check, Soroban test utilities |
 | Deployment | Vercel and Stellar Testnet |
 

@@ -23,12 +23,12 @@ If `npm audit` reports a high finding that cannot be fixed immediately, document
 
 | Item | Reason | Expiry |
 |------|--------|--------|
-| Transitive `npm audit` high+ findings | Mostly Remotion/tooling and deep deps; CI audit step is `continue-on-error` until a dedicated dependency cleanup PR | Revisit each Dependabot cycle |
+| Transitive `npm audit` high+ findings | Deep dependency tree; CI audit step is `continue-on-error` until a dedicated dependency cleanup PR | Revisit each Dependabot cycle |
 
 Gitleaks remains a hard gate on PRs.
 
 ## Payout trust model
 
-- Admin signing key stays server-side only (`api/_lib/payout/submitReward.ts`).
+- Admin signing key stays server-side only (`api/_server/infrastructure/stellar.ts`).
 - Students sign ownership challenges, never treasury admin transactions.
 - Production Redis is fail-closed — missing store config returns 503, not in-memory payouts.
