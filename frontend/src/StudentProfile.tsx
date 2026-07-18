@@ -3,6 +3,7 @@ import { ShieldAlert, Lock, Check, Pencil, X, ChevronLeft, ChevronRight, Snowfla
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
 import { ProgressionAgent, type StoredProgression } from "./agents/progression";
+import { AVATAR_OPTIONS } from "./avatarOptions";
 import {
   CustomCompass,
   CustomStar,
@@ -21,23 +22,6 @@ interface StudentProfileProps {
   userAvatar: string;
   onAvatarChange: (avatar: string) => void;
 }
-
-const AVAILABLE_AVATARS = [
-  "1", "1-1", "1-2", "2", "2-1", "2-2", "3", "3-1", "3-2", "4", "4-1", "4-2", "5", "5-1", "5-2", 
-  "6", "6-1", "6-2", "7", "7-1", "7-2", "8", "8-1", "8-2", "9", "9-1", "9-2", "10", "10-1", "10-2", 
-  "11", "11-1", "12", "12-1", "12-2", "13", "13-1", "13-2", "14", "14-1", "14-2", "15", "15-1", "15-2", 
-  "16", "16-1", "17", "17-1", "18", "18-1", "19", "19-1", "20", "20-1", "21", "21-1", "22", "22-1", 
-  "23", "23-1", "24", "24-1", "25", "25-1", "26", "26-1", "27", "27-1", "28", "28-1", "29", "29-1", 
-  "30", "30-1", "31", "32", "33", "34", "35", "36", "37"
-];
-
-const AVATAR_OPTIONS = [
-  { path: "/xander_avatar.webp", label: "Default" },
-  ...AVAILABLE_AVATARS.map(name => ({
-    path: `/avatars/${name}.webp`,
-    label: `Avatar ${name}`
-  }))
-];
 
 const containerVariants = {
   hidden: {},
