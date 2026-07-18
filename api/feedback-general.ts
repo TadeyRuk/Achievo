@@ -1,4 +1,4 @@
-import { generalFeedbackRoute } from './_server/composition/routes';
+import { generalFeedbackRoute } from './_server/composition/feedback';
 import { adaptVercelRoute } from './_server/http';
 
 export default adaptVercelRoute(generalFeedbackRoute);
