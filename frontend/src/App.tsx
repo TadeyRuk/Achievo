@@ -1,6 +1,6 @@
 // This project is dedicated for Belle 🤍
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import posthog from 'posthog-js';
 import { Networks } from '@stellar/stellar-sdk';
 import { Analytics } from '@vercel/analytics/react';
@@ -32,6 +32,8 @@ import { ReferFriend } from './ReferFriend';
 import { SplashScreen } from './SplashScreen';
 import { Login } from './Login';
 import { GeneralFeedback } from './GeneralFeedback';
+import { InfoSheet } from './InfoSheet';
+import { iosContentScale, iosSpring, reducedMotionTransition } from './sheetMotion';
 import { getUserName, hasUserName } from './userIdentity';
 
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -515,6 +517,15 @@ export default function App() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  const sheetOpen = Boolean(showInfo || showFeedback || feedbackPrompt);
+  const reduceMotion = useReducedMotion();
+  const contentFrameMotion = reduceMotion
+    ? { scale: 1, borderRadius: 0 }
+    : {
+        scale: sheetOpen ? iosContentScale : 1,
+        borderRadius: sheetOpen ? 28 : 0,
+      };
+
   return (
     <div className="min-h-[100dvh] bg-[var(--dah-surface-highest)] flex items-center justify-center">
 
@@ -543,6 +554,12 @@ export default function App() {
           )}
         </AnimatePresence>
 
+        {/* App content — scales down behind iOS sheets */}
+        <motion.div
+          className="relative flex flex-col flex-1 min-h-0 overflow-hidden origin-center"
+          animate={contentFrameMotion}
+          transition={reduceMotion ? reducedMotionTransition : iosSpring}
+        >
         <AnimatePresence>
           {!showSplash && !showLogin && (
             <motion.div
@@ -686,17 +703,6 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-        {/* Refer Friend Overlay Page */}
-        <AnimatePresence>
-          {showRefer && (
-            <div className="absolute inset-0 z-50 overflow-y-auto">
-              <ReferFriend
-                userName={userName}
-              />
-            </div>
-          )}
-        </AnimatePresence>
-
         <AnimatePresence>
           {!showSplash && !showLogin && (
             <motion.div
@@ -707,6 +713,18 @@ export default function App() {
             >
               <BottomNav activeTab={tab} onTabChange={(t) => { setShowRefer(false); setTab(t); }} />
             </motion.div>
+          )}
+        </AnimatePresence>
+        </motion.div>
+
+        {/* Refer Friend Overlay Page */}
+        <AnimatePresence>
+          {showRefer && (
+            <div className="absolute inset-0 z-50 overflow-y-auto">
+              <ReferFriend
+                userName={userName}
+              />
+            </div>
           )}
         </AnimatePresence>
 
@@ -747,118 +765,7 @@ export default function App() {
         {/* Info Bottom Sheet */}
         <AnimatePresence>
           {showInfo && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#00162b]/40 backdrop-blur-sm z-50 flex items-end"
-              onClick={() => setShowInfo(false)}
-            >
-              <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 28, stiffness: 260 }}
-                className="w-full bg-white rounded-t-[28px] overflow-hidden max-h-[85%] flex flex-col"
-                onClick={e => e.stopPropagation()}
-              >
-                {/* Handle bar */}
-                <div className="flex justify-center pt-3 pb-1 shrink-0">
-                  <div className="w-10 h-1 rounded-full bg-[var(--dah-outline-variant)]" />
-                </div>
-
-                <div className="overflow-y-auto px-6 pb-8 pt-2 space-y-6">
-                  {/* Title */}
-                  <div>
-                    <h2 className="text-[22px] font-extrabold text-[var(--dah-primary)] tracking-tight font-display">How Achievo Works</h2>
-                    <p className="text-[13px] text-[var(--dah-on-surface-variant)] mt-1">AI pipeline + effort-based XLM rewards</p>
-                  </div>
-
-                  {/* Pipeline Steps */}
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--dah-outline)]">5-Agent Pipeline</p>
-                    {[
-                      { num: "1", name: "Activity Agent",     desc: "Keyword pre-scan of your submission for a fast category hint." },
-                      { num: "2", name: "Verification Agent", desc: "Confirms the activity is on the approved whitelist." },
-                      { num: "3", name: "Reward Agent",       desc: "Groq AI classifies the activity and scores your effort (0–1) to calculate final XLM." },
-                      { num: "4", name: "Kouri Agent",      desc: "Admin key signs and submits send_reward() to the Soroban treasury contract on-chain." },
-                      { num: "5", name: "Feedback Agent",     desc: "Returns your tx hash and reward amount for display." },
-                    ].map(s => (
-                      <div key={s.num} className="flex gap-3 items-start p-3 rounded-[16px] bg-[var(--dah-surface-low)]">
-                        <div className="w-7 h-7 rounded-full bg-[var(--dah-primary)] text-white text-[11px] font-extrabold flex items-center justify-center shrink-0 mt-0.5">{s.num}</div>
-                        <div>
-                          <p className="text-[13px] font-extrabold text-[var(--dah-on-surface)]">{s.name}</p>
-                          <p className="text-[12px] text-[var(--dah-on-surface-variant)] leading-snug">{s.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Effort Scoring */}
-                  <div className="space-y-3">
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-[var(--dah-outline)]">Effort-Based Scoring</p>
-
-                    {/* Formula card */}
-                    <div className="relative rounded-[20px] bg-[var(--dah-primary)] p-5 overflow-hidden">
-                      <div className="absolute -top-6 -right-6 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
-                      <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-white/50 mb-2">Formula</p>
-                      <p className="text-[15px] font-extrabold text-white font-display">
-                        reward = base + (effort × bonus)
-                      </p>
-                      <p className="text-[12px] text-white/65 mt-2 leading-relaxed">
-                        AI scores 0.0–1.0 on specificity, duration, scope, and impact. Vague = low. Detailed + context = high.
-                      </p>
-                    </div>
-
-                    {/* Activity table */}
-                    <div className="rounded-[20px] overflow-hidden border border-[var(--dah-outline-variant)]/30">
-                      {/* Header */}
-                      <div className="grid grid-cols-[1fr_auto_auto] bg-[var(--dah-primary)] px-4 py-2.5">
-                        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/50">Activity</span>
-                        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/50 w-16 text-center">Base</span>
-                        <span className="text-[10px] font-extrabold uppercase tracking-[0.1em] text-white/50 w-16 text-center">Max</span>
-                      </div>
-                      {[
-                        { a: "Volunteering",  emoji: "🤝", base: 10, max: 15 },
-                        { a: "Tutoring",      emoji: "📚", base: 5,  max: 10 },
-                        { a: "Workshop",      emoji: "🛠️", base: 2,  max: 5  },
-                        { a: "Event",         emoji: "🎖️", base: 3,  max: 5  },
-                        { a: "Participation", emoji: "⭐", base: 3,  max: 5  },
-                      ].map((r, i) => (
-                        <div
-                          key={r.a}
-                          className={`grid grid-cols-[1fr_auto_auto] items-center px-4 py-3 ${i % 2 === 0 ? "bg-white" : "bg-[var(--dah-surface-low)]"}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">{r.emoji}</span>
-                            <span className="text-[13px] font-bold text-[var(--dah-on-surface)]">{r.a}</span>
-                          </div>
-                          <span className="text-[12px] text-[var(--dah-outline)] w-16 text-center">{r.base} XLM</span>
-                          <div className="w-16 flex justify-center">
-                            <span className="text-[12px] font-extrabold text-[var(--dah-primary)] bg-[#fff3cc] px-2 py-0.5 rounded-full">
-                              {r.max} XLM
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Powered by Stellar */}
-                  <div className="flex items-center justify-center gap-1.5 py-1 text-[11px] font-bold text-slate-400 font-display">
-                    <span>Powered by</span>
-                    <span className="text-[var(--dah-primary)] font-black uppercase tracking-wider">Stellar</span>
-                  </div>
-
-                  <button
-                    onClick={() => setShowInfo(false)}
-                    className="w-full py-3.5 rounded-full bg-[var(--dah-primary)] text-white font-extrabold text-[14px] font-display"
-                  >
-                    Got it
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
+            <InfoSheet onDismiss={() => setShowInfo(false)} />
           )}
         </AnimatePresence>
 
