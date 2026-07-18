@@ -14,7 +14,7 @@ describe('submitGeneralFeedback', () => {
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ ok: true }),
-    });
+    } as unknown as Response);
 
     const result = await submitGeneralFeedback({ rating: 5, comment: 'Nice', name: 'Xander' });
 
@@ -31,7 +31,7 @@ describe('submitGeneralFeedback', () => {
       ok: false,
       status: 400,
       text: async () => JSON.stringify({ error: 'rating must be an integer from 1 to 5.' }),
-    });
+    } as unknown as Response);
 
     const result = await submitGeneralFeedback({ rating: 0 as unknown as number });
 
