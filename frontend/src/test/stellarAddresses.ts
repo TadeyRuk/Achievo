@@ -7,11 +7,11 @@ import { StrKey } from '@stellar/stellar-sdk'
  */
 export function publicKeyFromByte(fill: number): string {
   const bytes = new Uint8Array(32).fill(fill & 0xff)
-  return StrKey.encodeEd25519PublicKey(bytes)
+  return StrKey.encodeEd25519PublicKey(Buffer.from(bytes))
 }
 
 export function randomPublicKey(): string {
   const bytes = new Uint8Array(32)
   crypto.getRandomValues(bytes)
-  return StrKey.encodeEd25519PublicKey(bytes)
+  return StrKey.encodeEd25519PublicKey(Buffer.from(bytes))
 }
