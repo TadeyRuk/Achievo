@@ -23,7 +23,12 @@ export async function reserveBudget(
   capUnits: number,
   ttlSeconds: number,
 ): Promise<boolean> {
-  if (units <= 0) return true;
+  if (units === 0) return true;
+  if (units < 0) {
+    // A release/rollback: always applies, never subject to the cap check below.
+    await incrBy(key, units, ttlSeconds);
+    return true;
+  }
   const next = await incrBy(key, units, ttlSeconds);
   if (next > capUnits) {
     await incrBy(key, -units, ttlSeconds);

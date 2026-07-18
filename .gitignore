@@ -47,3 +47,15 @@ packages/*/dist/
 
 # Generated Stellar TS client (npm run generate:bindings)
 packages/stellar/src/generated/client/
+
+# Test coverage output (vitest --coverage)
+coverage/
+api/coverage/
+frontend/coverage/
+
+# Serena MCP project index (local tooling, not repo content)
+.serena/
+
+# Locally-generated docs (regenerate, don't commit)
+docs/generated/
+docs/superpowers/
