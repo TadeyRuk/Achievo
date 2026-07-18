@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
 import {
-  Keypair,
   nativeToScVal,
   scValToNative,
   xdr,
 } from '@stellar/stellar-sdk'
 import type { rpc } from '@stellar/stellar-sdk'
 import { decodeRewardEvent, stroopsToXlm } from '../contract'
+import { randomPublicKey } from '../test/stellarAddresses'
 
 // Build the reward-event `value` ScVal: a 2-tuple (recipient: Address, amount: i128)
 // matching the topics ("reward","sent") event the contract emits.
@@ -34,7 +34,7 @@ describe('decodeRewardEvent', () => {
   // Sanity: the constructed value round-trips through scValToNative into
   // [recipientAddressString, amountBigInt] as decodeRewardEvent expects.
   it('round-trips the constructed event value through scValToNative', () => {
-    const recipient = Keypair.random().publicKey()
+    const recipient = randomPublicKey()
     const amountStroops = 123_456_789n
     const decoded = scValToNative(buildEventValue(recipient, amountStroops)) as unknown[]
     expect(Array.isArray(decoded)).toBe(true)
@@ -43,7 +43,7 @@ describe('decodeRewardEvent', () => {
   })
 
   it('decodes recipient, amount, txHash and timestamp from an event', () => {
-    const recipient = Keypair.random().publicKey()
+    const recipient = randomPublicKey()
     const amountStroops = 50_000_000n // 5 XLM
     const ledgerClosedAt = '2024-01-01T00:00:00Z'
     const event = makeEvent(buildEventValue(recipient, amountStroops), 'abc123', ledgerClosedAt)
@@ -62,7 +62,7 @@ describe('decodeRewardEvent', () => {
     fc.assert(
       fc.property(
         // recipient: a valid Stellar public key (Address type)
-        fc.constant(null).map(() => Keypair.random().publicKey()),
+        fc.constant(null).map(() => randomPublicKey()),
         // amountStroops: non-negative i128-range bigint
         fc.bigInt({ min: 0n, max: 170_141_183_460_469_231_731_687_303_715_884_105_727n }),
         // an arbitrary tx hash and an ISO timestamp

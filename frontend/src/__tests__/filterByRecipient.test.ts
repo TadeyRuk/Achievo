@@ -1,20 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { Keypair } from '@stellar/stellar-sdk'
 import { filterByRecipient } from '../contract'
 import type { RewardEvent } from '../contract'
+import { publicKeyFromByte } from '../test/stellarAddresses'
 
 // A small pool of sample wallet addresses so that filtering is meaningfully
 // exercised: events draw recipients from this pool (some match, some don't).
 const ADDRESS_POOL = [
-  Keypair.random().publicKey(),
-  Keypair.random().publicKey(),
-  Keypair.random().publicKey(),
-  Keypair.random().publicKey(),
+  publicKeyFromByte(1),
+  publicKeyFromByte(2),
+  publicKeyFromByte(3),
+  publicKeyFromByte(4),
 ]
 
 // An address that is NOT in the pool, used to exercise the empty-result case.
-const OUTSIDE_ADDRESS = Keypair.random().publicKey()
+const OUTSIDE_ADDRESS = publicKeyFromByte(99)
 
 // Generator for a single RewardEvent with a recipient drawn from the pool.
 // txHashes are generated uniquely (see arrayWithUniqueTxHashes) so identity

@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { Keypair } from '@stellar/stellar-sdk'
 import { mergePayouts, DEFAULT_ACTIVITY_LABEL } from '../contract'
 import type { RewardEvent } from '../contract'
 import type { RewardHistoryItem } from '../RewardHistory'
+import { publicKeyFromByte } from '../test/stellarAddresses'
 
 // A small pool of sample wallet addresses so recipients are realistic and
 // occasionally collide, while still being valid Stellar public keys.
 const ADDRESS_POOL = [
-  Keypair.random().publicKey(),
-  Keypair.random().publicKey(),
-  Keypair.random().publicKey(),
-  Keypair.random().publicKey(),
+  publicKeyFromByte(1),
+  publicKeyFromByte(2),
+  publicKeyFromByte(3),
+  publicKeyFromByte(4),
 ]
 
 // A pool of human-readable activity labels for history entries. None of these
