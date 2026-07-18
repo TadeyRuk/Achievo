@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vercel/node": "^5.1.5",
+    "@vercel/node": "^5.8.26",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.3.0",
     "globals": "^17.6.0",
