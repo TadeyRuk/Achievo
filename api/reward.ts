@@ -1,110 +1,34 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import {
-  rpc,
-  Contract,
-  TransactionBuilder,
-  nativeToScVal,
-  Address,
-  Networks,
-  BASE_FEE,
-  Keypair,
-  Transaction,
-  StrKey,
-} from '@stellar/stellar-sdk';
-import { createHmac } from 'crypto';
+import { StrKey } from '@stellar/stellar-sdk';
 import {
   BASE_REWARD,
-  CONTRACT_ID,
-  DAILY_RECIPIENT_CAP_XLM,
-  DAILY_TREASURY_CAP_XLM,
   MAX_ACTIVITY_TEXT_LENGTH,
   MAX_BONUS,
   MAX_REWARD_PER_TX_XLM,
-  STROOP_FACTOR,
   isKnownActivity,
-  utcDayKey,
 } from '@achievo/shared';
 import {
   claimOnce,
-  releaseClaim,
   listRecent,
   addRecent,
   appendPayout,
-  reserveBudget,
   StoreUnavailableError,
 } from './_lib/store';
-import { challengeMacPayload, hashActivityIntent } from './_lib/intent';
-import { ScoringAgent, type Evaluation } from './_agents/scoring';
-import { HeuristicScoringAgent } from './_agents/heuristic';
+import { hashActivityIntent } from './_lib/payout/intent';
 import { IntegrityAgent } from './_agents/integrity';
-import { notifyPayoutTelegram } from './_lib/telegram';
-import { horizonServer, rpcServer } from './_lib/stellarServers';
+import { notifyPayoutTelegram } from './_lib/notify/telegram';
 import { bindIdentity, issueSessionToken } from './_lib/identity';
-
-const RATE_LIMIT_TTL_SECONDS = 24 * 60 * 60;
-
-function getClientIp(req: VercelRequest): string {
-  return (
-    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-    req.socket?.remoteAddress ??
-    'unknown'
-  );
-}
-
-function verifyChallenge(
-  nonceSecret: string,
-  wallet: string,
-  nonce: string,
-  expiry: number,
-  mac: string,
-  signedXdr: string,
-  intentHash: string,
-): { ok: boolean; error?: string } {
-  const expectedMac = createHmac('sha256', nonceSecret)
-    .update(challengeMacPayload(nonce, expiry, intentHash))
-    .digest('hex');
-  if (expectedMac !== mac) return { ok: false, error: 'Invalid challenge token.' };
-
-  if (Date.now() > expiry) return { ok: false, error: 'Challenge expired. Please try again.' };
-
-  let tx: Transaction;
-  try {
-    tx = TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET) as Transaction;
-  } catch {
-    return { ok: false, error: 'Invalid signed challenge XDR.' };
-  }
-
-  if (tx.source !== wallet) return { ok: false, error: 'Challenge was not built for this wallet.' };
-
-  const op = tx.operations[0] as { type: string; name?: string; value?: Buffer };
-  if (op?.type !== 'manageData' || op?.name !== 'achievo-challenge') {
-    return { ok: false, error: 'Challenge structure invalid.' };
-  }
-  if (!op.value || op.value.toString('hex') !== nonce) {
-    return { ok: false, error: 'Challenge nonce mismatch.' };
-  }
-
-  const keypair = Keypair.fromPublicKey(wallet);
-
-  const txHashTestnet = tx.hash();
-  let signed = tx.signatures.some((sig) => {
-    try { return keypair.verify(txHashTestnet, sig.signature()); } catch { return false; }
-  });
-
-  if (!signed) {
-    try {
-      const txPublic = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC) as Transaction;
-      const txHashPublic = txPublic.hash();
-      signed = txPublic.signatures.some((sig) => {
-        try { return keypair.verify(txHashPublic, sig.signature()); } catch { return false; }
-      });
-    } catch { /* ignore */ }
-  }
-
-  if (!signed) return { ok: false, error: 'Wallet ownership could not be verified.' };
-
-  return { ok: true };
-}
+import { verifyChallenge } from './_lib/payout/challenge';
+import { evaluateSubmission } from './_lib/payout/evaluateSubmission';
+import {
+  releaseDailyBudgets,
+  reserveDailyBudgets,
+  type BudgetReservation,
+} from './_lib/payout/dailyBudgets';
+import { claimRewardRates, releaseRateClaims, type RateClaimSet } from './_lib/payout/rateClaims';
+import { submitSendReward } from './_lib/payout/submitReward';
+import { markPendingReconcile } from './_lib/payout/pendingReconcile';
+import { notifyOpsAlert } from './_lib/notify/telegram';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -119,32 +43,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     intentHash?: string;
   };
 
-  let walletRateKey: string | null = null;
-  let ipRateKey: string | null = null;
-  let treasuryBudgetKey: string | null = null;
-  let recipientBudgetKey: string | null = null;
-  let budgetUnits = 0;
-
-  const releaseBudgets = async () => {
-    if (treasuryBudgetKey && budgetUnits) {
-      await reserveBudget(
-        treasuryBudgetKey,
-        -budgetUnits,
-        DAILY_TREASURY_CAP_XLM * 10,
-        48 * 60 * 60,
-      ).catch(() => undefined);
-      treasuryBudgetKey = null;
-    }
-    if (recipientBudgetKey && budgetUnits) {
-      await reserveBudget(
-        recipientBudgetKey,
-        -budgetUnits,
-        DAILY_RECIPIENT_CAP_XLM * 10,
-        48 * 60 * 60,
-      ).catch(() => undefined);
-      recipientBudgetKey = null;
-    }
-  };
+  let rateClaims: RateClaimSet | null = null;
+  let budgetReservation: BudgetReservation | null = null;
 
   try {
     if (!wallet || !StrKey.isValidEd25519PublicKey(wallet)) {
@@ -187,36 +87,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(401).json({ error: 'Challenge nonce has already been used.' });
     }
 
-    // Atomic rate-limit claims (release on failure so failed txs don't burn the day).
-    const ip = getClientIp(req);
-    walletRateKey = `rate:wallet:${wallet}`;
-    const walletClaimed = await claimOnce(walletRateKey, RATE_LIMIT_TTL_SECONDS);
-    if (!walletClaimed) {
-      return res.status(429).json({ error: 'Rate limit: 1 reward per day. Try again tomorrow.' });
+    const rates = await claimRewardRates(req, wallet);
+    if (!rates.ok) {
+      return res.status(rates.status).json({ error: rates.error });
     }
-    if (ip !== 'unknown') {
-      ipRateKey = `rate:ip:${ip}`;
-      const ipClaimed = await claimOnce(ipRateKey, RATE_LIMIT_TTL_SECONDS);
-      if (!ipClaimed) {
-        await releaseClaim(walletRateKey);
-        walletRateKey = null;
-        return res.status(429).json({ error: 'Rate limit reached for your IP. Try again tomorrow.' });
-      }
-    }
+    rateClaims = rates.claims;
 
-    let evaluation: Evaluation;
-    let scoringMode: 'groq' | 'heuristic' = 'groq';
-    try {
-      evaluation = await ScoringAgent.evaluate(trimmed);
-    } catch {
-      // Groq timeout / 5xx / parse — fall back to base-only heuristic (never skip integrity).
-      evaluation = HeuristicScoringAgent.evaluate(trimmed);
-      scoringMode = 'heuristic';
-    }
+    const { evaluation, scoringMode } = await evaluateSubmission(trimmed);
 
     if (!evaluation.valid || !isKnownActivity(evaluation.activity)) {
-      await releaseClaim(walletRateKey);
-      if (ipRateKey) await releaseClaim(ipRateKey);
+      await releaseRateClaims(rateClaims);
+      rateClaims = null;
       return res.status(422).json({
         error: `Activity not eligible for reward. ${evaluation.rationale}`,
         activity: evaluation.activity,
@@ -233,117 +114,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const integrity = IntegrityAgent.assess(trimmed, { recent });
 
-    // Heuristic path: base reward only (score forced to 0 by HeuristicScoringAgent).
     const effortScore = Math.round(evaluation.score * integrity.effortMultiplier * 1000) / 1000;
     const base = BASE_REWARD[evaluation.activity];
     const bonus = Math.round(effortScore * MAX_BONUS[evaluation.activity] * 10) / 10;
     const reward = Math.min(Math.round((base + bonus) * 10) / 10, MAX_REWARD_PER_TX_XLM);
 
-    // API-side daily budgets (0.1 XLM units) — fail closed before signing.
-    const day = utcDayKey();
-    budgetUnits = Math.round(reward * 10);
-    const budgetTtl = 48 * 60 * 60;
-    treasuryBudgetKey = `budget:treasury:day:${day}`;
-    const treasuryOk = await reserveBudget(
-      treasuryBudgetKey,
-      budgetUnits,
-      DAILY_TREASURY_CAP_XLM * 10,
-      budgetTtl,
-    );
-    if (!treasuryOk) {
-      treasuryBudgetKey = null;
-      await releaseClaim(walletRateKey);
-      if (ipRateKey) await releaseClaim(ipRateKey);
-      return res.status(429).json({
-        error: `Daily treasury budget (${DAILY_TREASURY_CAP_XLM} XLM) exceeded. Try again tomorrow.`,
+    const budgets = await reserveDailyBudgets(wallet, reward);
+    if (!budgets.ok) {
+      await releaseRateClaims(rateClaims);
+      rateClaims = null;
+      return res.status(429).json({ error: budgets.error });
+    }
+    budgetReservation = budgets.reservation;
+
+    const submitted = await submitSendReward({
+      adminSecret,
+      wallet,
+      rewardXlm: reward,
+      activity: evaluation.activity,
+    });
+
+    if (!submitted.ok && 'pending' in submitted && submitted.pending) {
+      // Keep budgets/rate claims reserved until reconcile confirms success or failure.
+      try {
+        await markPendingReconcile({
+          txHash: submitted.txHash,
+          wallet,
+          rewardXlm: reward,
+          activity: evaluation.activity,
+          createdAt: new Date().toISOString(),
+        });
+      } catch { /* ignore */ }
+      void notifyOpsAlert(
+        `⏳ Pending reconcile\nTx: <code>${submitted.txHash}</code>\nWallet: ${wallet}\nAmount: ${reward} XLM`,
+      );
+      rateClaims = null;
+      budgetReservation = null;
+      return res.status(202).json({
+        pending: true,
+        txHash: submitted.txHash,
+        reward,
+        activity: evaluation.activity,
+        error: submitted.error,
+        scoringMode,
       });
     }
-    recipientBudgetKey = `budget:recipient:day:${day}:${wallet}`;
-    const recipientOk = await reserveBudget(
-      recipientBudgetKey,
-      budgetUnits,
-      DAILY_RECIPIENT_CAP_XLM * 10,
-      budgetTtl,
-    );
-    if (!recipientOk) {
-      await releaseBudgets();
-      await releaseClaim(walletRateKey);
-      if (ipRateKey) await releaseClaim(ipRateKey);
-      return res.status(429).json({
-        error: `Daily recipient budget (${DAILY_RECIPIENT_CAP_XLM} XLM) exceeded. Try again tomorrow.`,
-      });
+
+    if (!submitted.ok) {
+      await releaseDailyBudgets(budgetReservation);
+      budgetReservation = null;
+      await releaseRateClaims(rateClaims);
+      rateClaims = null;
+      const status = 'status' in submitted ? submitted.status : 500;
+      return res.status(status).json({ error: submitted.error });
     }
 
-    const adminKeypair = Keypair.fromSecret(adminSecret);
-    const adminAddress = adminKeypair.publicKey();
-    const rewardStroops = BigInt(Math.round(reward * STROOP_FACTOR));
-
-    const sourceAccount = await horizonServer.loadAccount(adminAddress);
-    const contract = new Contract(CONTRACT_ID);
-
-    const tx = new TransactionBuilder(sourceAccount, {
-      fee: BASE_FEE,
-      networkPassphrase: Networks.TESTNET,
-    })
-      .addOperation(contract.call(
-        'send_reward',
-        new Address(wallet).toScVal(),
-        nativeToScVal(rewardStroops, { type: 'i128' }),
-        nativeToScVal(evaluation.activity, { type: 'symbol' }),
-      ))
-      .setTimeout(30)
-      .build();
-
-    const preparedTx = await rpcServer.prepareTransaction(tx);
-    (preparedTx as Transaction).sign(adminKeypair);
-
-    const sendResponse = await rpcServer.sendTransaction(preparedTx as Transaction);
-
-    if (sendResponse.status === 'ERROR') {
-      const errStr = JSON.stringify(sendResponse.errorResult);
-      await releaseBudgets();
-      await releaseClaim(walletRateKey);
-      if (ipRateKey) await releaseClaim(ipRateKey);
-      if (errStr.includes('Daily treasury cap') || errStr.includes('Daily recipient cap')) {
-        return res.status(429).json({ error: 'On-chain daily payout cap exceeded. Try again tomorrow.' });
-      }
-      if (errStr.includes('opNOACCOUNT') || errStr.includes('not found')) {
-        return res.status(404).json({ error: 'Contract or account not found on Stellar testnet.' });
-      }
-      throw new Error(`Transaction rejected: ${errStr}`);
-    }
-
-    const txHash = sendResponse.hash;
-
-    let attempts = 0;
-    let txResponse = null;
-    while (attempts < 10) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      txResponse = await rpcServer.getTransaction(txHash);
-
-      if (txResponse.status === rpc.Api.GetTransactionStatus.SUCCESS) {
-        break;
-      } else if (txResponse.status === rpc.Api.GetTransactionStatus.FAILED) {
-        await releaseBudgets();
-        await releaseClaim(walletRateKey);
-        if (ipRateKey) await releaseClaim(ipRateKey);
-        throw new Error(`Transaction execution failed on-chain: ${JSON.stringify(txResponse)}`);
-      }
-      attempts++;
-    }
-
-    if (!txResponse || txResponse.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
-      await releaseBudgets();
-      await releaseClaim(walletRateKey);
-      if (ipRateKey) await releaseClaim(ipRateKey);
-      throw new Error('Transaction polling timed out. The payout may still succeed later.');
-    }
-
-    // Rate slots + budgets already claimed — keep them on success.
-    walletRateKey = null;
-    ipRateKey = null;
-    treasuryBudgetKey = null;
-    recipientBudgetKey = null;
+    // Success — keep rate slots and budgets.
+    rateClaims = null;
+    budgetReservation = null;
 
     try {
       await addRecent(recentKey, IntegrityAgent.fingerprint(trimmed), 20, 30 * 24 * 60 * 60);
@@ -358,7 +186,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch { /* identity bind is best-effort after payout */ }
 
     const payoutRecord = {
-      txHash,
+      txHash: submitted.txHash,
       wallet,
       identityId,
       amount: reward,
@@ -371,7 +199,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await appendPayout(JSON.stringify(payoutRecord));
     } catch { /* ignore */ }
     void notifyPayoutTelegram({
-      txHash,
+      txHash: submitted.txHash,
       wallet,
       amount: reward,
       activity: evaluation.activity,
@@ -379,7 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     return res.status(200).json({
-      txHash,
+      txHash: submitted.txHash,
       reward,
       base,
       bonus,
@@ -398,9 +226,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (err instanceof StoreUnavailableError) {
       return res.status(503).json({ error: err.message });
     }
-    await releaseBudgets();
-    if (walletRateKey) await releaseClaim(walletRateKey).catch(() => undefined);
-    if (ipRateKey) await releaseClaim(ipRateKey).catch(() => undefined);
+    await releaseDailyBudgets(budgetReservation);
+    await releaseRateClaims(rateClaims);
 
     const msg = (err as Error).message ?? String(err);
     if (msg.includes('Daily treasury') || msg.includes('Daily recipient')) {

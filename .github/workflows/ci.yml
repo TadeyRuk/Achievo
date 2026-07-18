@@ -7,10 +7,40 @@ on:
   pull_request:
     branches: ["**"]
 
+env:
+  VERCEL_CLI_VERSION: "56.3.1"
+
 jobs:
+  security:
+    name: Security (audit · secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: npm audit (high+)
+        # Transitive highs tracked in docs/SECURITY.md — do not ignore new direct issues.
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   frontend:
     name: Frontend (lint · test · build)
     runs-on: ubuntu-latest
+
 
     steps:
       - uses: actions/checkout@v4
@@ -29,13 +59,18 @@ jobs:
       - name: Cross-check contract and package bindings
         run: npm run check-contract-integration
 
+      - name: Typecheck packages + API
+        run: npm run typecheck
+
       - name: Lint
-        working-directory: frontend
         run: npm run lint
 
-      - name: Test
+      - name: Test frontend with coverage
         working-directory: frontend
-        run: npm test
+        run: npx vitest --run --coverage
+
+      - name: Test API with coverage
+        run: npx vitest --run --coverage --config api/vitest.config.ts
 
       - name: Build
         working-directory: frontend
@@ -98,10 +133,58 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: gh release create "$GITHUB_REF_NAME" contract.wasm --generate-notes --title "$GITHUB_REF_NAME"
 
-  deploy-frontend:
-    name: Deploy frontend and API (Vercel production)
+  deploy-staging:
+    name: Deploy staging (Vercel)
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [frontend, contract]
+    runs-on: ubuntu-latest
+    environment: staging
+    outputs:
+      deployment_url: ${{ steps.deploy.outputs.url }}
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
+
+      - name: Pull preview environment
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build deployment artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to staging (non-prod)
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          vercel alias set "$URL" staging --token=${{ secrets.VERCEL_TOKEN }} || true
+
+  smoke-staging:
+    name: Smoke staging
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health check
+        run: |
+          URL="${{ needs.deploy-staging.outputs.deployment_url }}"
+          echo "Smoking $URL/api/health"
+          curl -fsS --retry 5 --retry-delay 3 "$URL/api/health" | tee /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+
+  deploy-production:
+    name: Promote to Vercel production
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [smoke-staging, publish-contract]
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -115,14 +198,14 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@${{ env.VERCEL_CLI_VERSION }}
 
       - name: Pull production environment
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Build deployment artifacts
+      - name: Build production artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-      - name: Deploy to Vercel production
+      - name: Deploy to production
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

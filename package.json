@@ -9,29 +9,43 @@
   "scripts": {
     "build:packages": "npm run build -w @achievo/shared && npm run build -w @achievo/stellar && npm run build -w @achievo/identity",
     "vercel-build": "npm run build:packages && npm run build -w frontend",
-    "check-contract-integration": "node scripts/check-contract-integration.mjs",
+    "check-contract-integration": "node scripts/check-contract-integration.mjs && node scripts/check-cap-sync.mjs",
+    "check-cap-sync": "node scripts/check-cap-sync.mjs",
+    "generate:bindings": "node scripts/generate-bindings.mjs",
     "export-payout-proof": "node scripts/export-payout-proof.mjs --write",
     "prepare": "husky",
-    "test": "npm run build:packages && npm test -w frontend",
-    "lint": "npm run lint -w frontend",
-    "typecheck": "npm run typecheck -w @achievo/shared && npm run typecheck -w @achievo/stellar && npm run typecheck -w @achievo/identity && npm run typecheck -w frontend"
+    "test": "npm run build:packages && npm test -w frontend && npm run test:api",
+    "test:api": "vitest --run --config api/vitest.config.ts",
+    "lint": "npm run lint -w frontend && npm run lint:api",
+    "lint:api": "eslint -c eslint.api.config.mjs api",
+    "typecheck": "npm run typecheck -w @achievo/shared && npm run typecheck -w @achievo/stellar && npm run typecheck -w @achievo/identity && npm run typecheck -w frontend && npm run typecheck:api",
+    "typecheck:api": "tsc -p api/tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@achievo/identity": "*",
     "@achievo/shared": "*",
     "@achievo/stellar": "*",
-    "@achievo/identity": "*",
     "@stellar/stellar-sdk": "^15.1.0",
     "@upstash/redis": "^1.38.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@vercel/node": "^5.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.3.0",
+    "globals": "^17.6.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vitest": "^4.1.9"
   },
   "lint-staged": {
     "frontend/src/**/*.{ts,tsx}": [
       "npx --prefix frontend eslint --fix"
+    ],
+    "api/**/*.{ts,tsx}": [
+      "eslint -c eslint.api.config.mjs --fix"
     ]
   },
   "engines": {

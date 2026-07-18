@@ -4,7 +4,7 @@ import {
   GoogleFormsConfigError,
   GoogleFormsSubmitError,
   submitFeedbackForm,
-} from './_lib/googleForms';
+} from './_lib/notify/googleForms';
 
 const TX_HASH_RE = /^[a-f0-9]{64}$/i;
 const MAX_COMMENT = 500;

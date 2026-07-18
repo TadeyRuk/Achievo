@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import posthog from 'posthog-js'
-import './index.css'
-import App from './App.tsx'
+import '../index.css'
+import App from './App'
 
 // Analytics — PostHog. Guarded on key presence so builds without a key
 // (local dev, CI) run fine with analytics simply disabled.

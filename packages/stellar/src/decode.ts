@@ -11,6 +11,8 @@ export interface RewardEvent {
   amount: number;
   timestamp: number;
   ledger?: number;
+  /** Present when contract emits activity in reward.sent (newer builds). */
+  activity?: string;
 }
 
 export interface RewardLedgerRecord {
@@ -40,6 +42,8 @@ export function decodeRewardEvent(event: rpc.Api.EventResponse): RewardEvent {
   const tuple = Array.isArray(decoded) ? decoded : [];
   const recipient = tuple.length > 0 ? String(tuple[0]) : "";
   const amountStroops = (tuple.length > 1 ? tuple[1] : 0) as number | bigint;
+  const activity =
+    tuple.length > 2 && tuple[2] != null ? String(tuple[2]) : undefined;
 
   return {
     txHash: event.txHash,
@@ -47,6 +51,7 @@ export function decodeRewardEvent(event: rpc.Api.EventResponse): RewardEvent {
     amount: stroopsToXlm(amountStroops),
     timestamp: new Date(event.ledgerClosedAt).getTime(),
     ledger: event.ledger,
+    activity,
   };
 }
 

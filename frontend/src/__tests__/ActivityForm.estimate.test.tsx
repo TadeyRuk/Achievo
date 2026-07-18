@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { estimateMaxReward } from '@achievo/shared'
-import { ActivityForm } from '../ActivityForm'
+import { ActivityForm } from '../features/earn/ActivityForm'
 
 describe('ActivityForm estimates', () => {
   it('labels workshop estimate as up to base+maxBonus', () => {

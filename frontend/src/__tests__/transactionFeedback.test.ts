@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isValidRating, feedbackStorageKey } from '../transactionFeedback';
+import { isValidRating, feedbackStorageKey } from '../features/feedback/transactionFeedback';
 
 describe('transactionFeedback', () => {
   it('validates star ratings 1–5', () => {

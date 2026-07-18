@@ -3,7 +3,7 @@ import {
   GoogleFormsConfigError,
   GoogleFormsSubmitError,
   submitFeedbackForm,
-} from './_lib/googleForms';
+} from './_lib/notify/googleForms';
 import { claimOnce, StoreUnavailableError } from './_lib/store';
 
 const MAX_COMMENT = 500;

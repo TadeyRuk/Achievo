@@ -18,7 +18,7 @@ function persistLocal(history: RewardHistoryItem[]) {
 }
 
 /** Merge on-chain ledger rows with local optimistic cache (chain wins on txHash). */
-function mergeChainIntoLocal(
+export function mergeChainIntoLocal(
   local: RewardHistoryItem[],
   chain: Awaited<ReturnType<typeof getWalletRewardHistory>>,
 ): RewardHistoryItem[] {

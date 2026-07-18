@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { redactWallet } from '@achievo/identity';
 import { listPayouts } from './_lib/store';
-import { stellarExpertTxUrl } from './_lib/telegram';
+import { stellarExpertTxUrl } from './_lib/notify/telegram';
 
 export type PayoutRecord = {
   txHash: string;

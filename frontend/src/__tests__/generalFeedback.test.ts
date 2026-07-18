@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { submitGeneralFeedback } from '../generalFeedback';
+import { submitGeneralFeedback } from '../features/feedback/generalFeedback';
 
 describe('submitGeneralFeedback', () => {
   beforeEach(() => {

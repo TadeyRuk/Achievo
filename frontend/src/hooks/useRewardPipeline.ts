@@ -1,12 +1,11 @@
 import { useCallback, useState } from 'react';
 import posthog from 'posthog-js';
-import { Networks } from '@stellar/stellar-sdk';
-import { activityAgent, feedbackAgent, rewardAgent } from '../agents';
-import { ensureWalletSession, StellarWalletsKit } from '../wallet';
-import type { PipelineStep } from '../PipelineVisualizer';
+import { activityAgent, feedbackAgent, rewardAgent } from '../features/earn/agents';
+import { signChallengeXdr } from '../features/wallet/wallet';
+import type { PipelineStep } from '../features/earn/PipelineVisualizer';
 import type { RewardHistoryItem } from '@achievo/shared';
-import { hasSubmittedFeedback, type FeedbackPrompt } from '../transactionFeedback';
-import { persistIdentitySession } from '../sessionIdentity';
+import { hasSubmittedFeedback, type FeedbackPrompt } from '../features/feedback/transactionFeedback';
+import { persistIdentitySession } from '../shared/lib/sessionIdentity';
 
 export function makePipeline(): PipelineStep[] {
   return [
@@ -170,11 +169,7 @@ export function useRewardPipeline({
         if (!walletId) {
           throw new Error('Connect Freighter on the Wallet tab before submitting.');
         }
-        const signingAddress = await ensureWalletSession(walletId);
-        const signResult = await StellarWalletsKit.signTransaction(nonceData.challengeXdr, {
-          networkPassphrase: Networks.TESTNET,
-          address: signingAddress,
-        });
+        const signedXdr = await signChallengeXdr(walletId, nonceData.challengeXdr);
 
         setStep(3, { detail: 'AI evaluating activity + submitting to Stellar…' });
         setLogs((p) => [
@@ -191,7 +186,7 @@ export function useRewardPipeline({
             nonce: nonceData.nonce,
             expiry: nonceData.expiry,
             mac: nonceData.mac,
-            signedXdr: signResult.signedTxXdr,
+            signedXdr: signedXdr,
             intentHash,
           }),
         });

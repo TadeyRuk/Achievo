@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ProgressionAgent, type StoredProgression } from '../agents/progression';
+import { ProgressionAgent, type StoredProgression } from '../features/earn/progression';
 import type { RewardHistoryItem } from '@achievo/shared';
-import { getIdentityId } from '../sessionIdentity';
+import { getIdentityId } from '../shared/lib/sessionIdentity';
 
 function progressionStorageKey(): string {
   const id = getIdentityId();

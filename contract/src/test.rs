@@ -67,7 +67,7 @@ fn initialize_sets_admin_and_zero_disbursed() {
 }
 
 #[test]
-#[should_panic(expected = "Contract already initialized")]
+#[should_panic(expected = "AlreadyInitialized")]
 fn double_initialize_panics() {
     let f = TestFixture::setup();
     f.initialize();
@@ -108,7 +108,7 @@ fn multiple_rewards_accumulate_disbursed() {
 }
 
 #[test]
-#[should_panic(expected = "Reward amount must be positive")]
+#[should_panic(expected = "NonPositiveAmount")]
 fn zero_reward_panics() {
     let f = TestFixture::setup();
     f.initialize();
@@ -118,7 +118,7 @@ fn zero_reward_panics() {
 }
 
 #[test]
-#[should_panic(expected = "Reward amount must be positive")]
+#[should_panic(expected = "NonPositiveAmount")]
 fn negative_reward_panics() {
     let f = TestFixture::setup();
     f.initialize();
@@ -128,7 +128,7 @@ fn negative_reward_panics() {
 }
 
 #[test]
-#[should_panic(expected = "Insufficient treasury balance")]
+#[should_panic(expected = "InsufficientBalance")]
 fn reward_exceeds_balance_panics() {
     let f = TestFixture::setup();
     f.initialize();
@@ -150,7 +150,7 @@ fn reward_at_cap_boundary_succeeds() {
 }
 
 #[test]
-#[should_panic(expected = "Reward exceeds per-tx cap")]
+#[should_panic(expected = "ExceedsPerTxCap")]
 fn reward_over_cap_panics() {
     let f = TestFixture::setup();
     f.initialize();
@@ -170,21 +170,21 @@ fn get_balance_reflects_funding() {
 }
 
 #[test]
-#[should_panic(expected = "Contract not initialized")]
+#[should_panic(expected = "NotInitialized")]
 fn get_admin_uninitialized_panics() {
     let f = TestFixture::setup();
     f.client().get_admin();
 }
 
 #[test]
-#[should_panic(expected = "Contract not initialized")]
+#[should_panic(expected = "NotInitialized")]
 fn get_disbursed_uninitialized_panics() {
     let f = TestFixture::setup();
     f.client().get_disbursed();
 }
 
 #[test]
-#[should_panic(expected = "Contract not initialized")]
+#[should_panic(expected = "NotInitialized")]
 fn get_balance_uninitialized_panics() {
     let f = TestFixture::setup();
     f.client().get_balance();
@@ -254,7 +254,7 @@ fn multiple_rewards_preserve_history_order() {
 }
 
 #[test]
-#[should_panic(expected = "Reward index out of range")]
+#[should_panic(expected = "RewardIndexOutOfRange")]
 fn get_reward_out_of_range_panics() {
     let f = TestFixture::setup();
     f.initialize();
@@ -305,7 +305,7 @@ fn daily_counters_reset_on_new_utc_day() {
 }
 
 #[test]
-#[should_panic(expected = "Daily recipient cap exceeded")]
+#[should_panic(expected = "DailyRecipientCap")]
 fn recipient_daily_cap_panics() {
     let f = TestFixture::setup();
     f.initialize();
@@ -318,7 +318,7 @@ fn recipient_daily_cap_panics() {
 }
 
 #[test]
-#[should_panic(expected = "Daily treasury cap exceeded")]
+#[should_panic(expected = "DailyTreasuryCap")]
 fn treasury_daily_cap_panics() {
     let f = TestFixture::setup();
     f.initialize();

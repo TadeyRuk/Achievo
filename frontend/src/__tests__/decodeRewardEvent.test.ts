@@ -6,7 +6,8 @@ import {
   xdr,
 } from '@stellar/stellar-sdk'
 import type { rpc } from '@stellar/stellar-sdk'
-import { decodeRewardEvent, stroopsToXlm } from '../contract'
+import { stroopsToXlm } from '@achievo/shared'
+import { decodeRewardEvent } from '@achievo/stellar'
 import { randomPublicKey } from '../test/stellarAddresses'
 
 // Build the reward-event `value` ScVal: a 2-tuple (recipient: Address, amount: i128)

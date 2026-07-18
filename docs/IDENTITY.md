@@ -35,9 +35,23 @@ Identity {
 - `GET /api/identity?wallet=` returns a redacted wallet + id metadata.
 - No school SSO / KYC in this phase; the abstraction is ready for later account recovery without baking PII into the ledger.
 
+## Hybrid identity rate claims (current)
+
+`/api/reward` uses **hybrid** daily rate keys (`api/_lib/payout/rateClaims.ts`):
+
+1. Always `rate:wallet:{G}` (+ `rate:ip:{ip}` when known).
+2. If `getIdentityByWallet(wallet)` already returns an identity, also
+   `claimOnce(rate:identity:{id})`.
+3. On failure, release identity claim with the same policy as wallet/IP.
+
+**Rebind is not supported in this pass.** Identity rate claims are additive for
+returning wallets only. A new wallet with no prior bind is unchanged (wallet/IP
+only until after the first successful payout). Recipient Redis budget remains
+wallet-keyed until a future rebind pass.
+
 ## Principles
 
 1. Minimal data — no unnecessary PII server-side.
-2. Identity ≠ wallet — wallets can be rebound later without losing the principal.
-3. Bind on challenge — first durable bind follows verified ownership.
+2. Identity ≠ wallet — rebind is planned later; today one wallet per identity.
+3. Bind on challenge — first durable bind follows verified ownership (after payout).
 4. Privacy by default for public APIs.

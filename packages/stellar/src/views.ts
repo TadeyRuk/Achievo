@@ -1,4 +1,5 @@
 import {
+  Address,
   Contract,
   TransactionBuilder,
   BASE_FEE,
@@ -119,15 +120,23 @@ export async function getRewardEvents(
   });
 
   const startLedger = computeStartLedger(latestLedger, REWARD_EVENT_LEDGER_WINDOW);
-  const response = await rpcServer.getEvents(buildRequest(startLedger));
-
   const decoded: RewardEvent[] = [];
-  for (const event of response.events) {
-    try {
-      decoded.push(decodeRewardEvent(event));
-    } catch {
-      // Skip malformed events.
+  // First page by startLedger; further pages by cursor (mutually exclusive in RPC API).
+  let response = await rpcServer.getEvents(buildRequest(startLedger));
+  for (let page = 0; page < 20; page++) {
+    for (const event of response.events) {
+      try {
+        decoded.push(decodeRewardEvent(event));
+      } catch {
+        // Skip malformed events.
+      }
     }
+    const next = (response as { cursor?: string }).cursor;
+    if (!next || response.events.length === 0) break;
+    response = await rpcServer.getEvents({
+      filters: buildRequest(startLedger).filters,
+      cursor: next,
+    } as rpc.Server.GetEventsRequest);
   }
 
   return filterByRecipient(decoded, walletAddress);
@@ -144,4 +153,29 @@ export async function getWalletRewardHistory(
   ]);
   const mine = ledger.filter((r) => r.recipient === walletAddress);
   return attachTxHashes(mine, events);
+}
+
+/** UTC day index used by on-chain daily caps. */
+export async function getDay(contractId: string = CONTRACT_ID): Promise<number> {
+  const raw = await simulateViewCall(contractId, "get_day");
+  return Number(raw);
+}
+
+/** Treasury disbursed today in XLM (after day-bucket reset). */
+export async function getDailyDisbursed(
+  contractId: string = CONTRACT_ID,
+): Promise<number> {
+  const raw = await simulateViewCall(contractId, "get_daily_disbursed");
+  return Number(raw) / STROOP_FACTOR;
+}
+
+/** Amount paid to a recipient today in XLM. */
+export async function getRecipientDaily(
+  walletAddress: string,
+  contractId: string = CONTRACT_ID,
+): Promise<number> {
+  const raw = await simulateViewCall(contractId, "get_recipient_daily", [
+    new Address(walletAddress).toScVal(),
+  ]);
+  return Number(raw) / STROOP_FACTOR;
 }

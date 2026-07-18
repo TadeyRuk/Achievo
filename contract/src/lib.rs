@@ -1,7 +1,22 @@
 #![no_std]
 use soroban_sdk::{
-    contract, contractimpl, contracttype, symbol_short, Address, Env, Symbol, Vec, token,
+    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, Symbol, Vec,
+    token,
 };
+
+#[contracterror]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum Error {
+    AlreadyInitialized = 1,
+    NotInitialized = 2,
+    NonPositiveAmount = 3,
+    ExceedsPerTxCap = 4,
+    DailyTreasuryCap = 5,
+    DailyRecipientCap = 6,
+    InsufficientBalance = 7,
+    RewardIndexOutOfRange = 8,
+}
 
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -50,7 +65,14 @@ const MAX_DAILY_TREASURY: i128 = 1_000_000_000;
 /// Max payout to one recipient per UTC day, in stroops (20 XLM).
 const MAX_DAILY_PER_RECIPIENT: i128 = 200_000_000;
 
+/// Bounded on-chain history ring (oldest dropped). Events remain the long-term log.
+const MAX_HISTORY_LEN: u32 = 500;
+
 const SECONDS_PER_DAY: u64 = 86_400;
+
+fn bump_instance(env: &Env) {
+    env.storage().instance().extend_ttl(100, 535_679);
+}
 
 fn current_day(env: &Env) -> u64 {
     env.ledger().timestamp() / SECONDS_PER_DAY
@@ -90,7 +112,7 @@ impl RewardTreasuryContract {
     /// One-time setup. Admin funds this contract address externally after calling initialize.
     pub fn initialize(env: Env, admin: Address, token: Address) {
         if env.storage().instance().has(&symbol_short!("state")) {
-            panic!("Contract already initialized");
+            panic!("{:?}", Error::AlreadyInitialized);
         }
         admin.require_auth();
 
@@ -100,6 +122,7 @@ impl RewardTreasuryContract {
             total_disbursed: 0,
         };
         env.storage().instance().set(&symbol_short!("state"), &state);
+        bump_instance(&env);
 
         env.events().publish(
             (symbol_short!("treasury"), symbol_short!("init")),
@@ -114,39 +137,40 @@ impl RewardTreasuryContract {
             .storage()
             .instance()
             .get(&symbol_short!("state"))
-            .expect("Contract not initialized");
+            .unwrap_or_else(|| panic!("{:?}", Error::NotInitialized));
 
         state.admin.require_auth();
 
         if amount <= 0 {
-            panic!("Reward amount must be positive");
+            panic!("{:?}", Error::NonPositiveAmount);
         }
         if amount > MAX_REWARD_PER_TX {
-            panic!("Reward exceeds per-tx cap");
+            panic!("{:?}", Error::ExceedsPerTxCap);
         }
 
         let treasury_key = CapKey::TreasuryDay;
         let mut treasury_day = load_bucket(&env, &treasury_key);
         if treasury_day.amount + amount > MAX_DAILY_TREASURY {
-            panic!("Daily treasury cap exceeded");
+            panic!("{:?}", Error::DailyTreasuryCap);
         }
 
         let recipient_key = CapKey::RecipientDay(recipient.clone());
         let mut recipient_day = load_bucket(&env, &recipient_key);
         if recipient_day.amount + amount > MAX_DAILY_PER_RECIPIENT {
-            panic!("Daily recipient cap exceeded");
+            panic!("{:?}", Error::DailyRecipientCap);
         }
 
         let token_client = token::Client::new(&env, &state.token);
         let balance = token_client.balance(&env.current_contract_address());
         if balance < amount {
-            panic!("Insufficient treasury balance");
+            panic!("{:?}", Error::InsufficientBalance);
         }
 
         token_client.transfer(&env.current_contract_address(), &recipient, &amount);
 
         state.total_disbursed += amount;
         env.storage().instance().set(&symbol_short!("state"), &state);
+        bump_instance(&env);
 
         treasury_day.amount += amount;
         store_bucket(&env, &treasury_key, &treasury_day);
@@ -157,7 +181,7 @@ impl RewardTreasuryContract {
         let record = RewardRecord {
             recipient: recipient.clone(),
             amount,
-            activity,
+            activity: activity.clone(),
             ledger: env.ledger().sequence(),
             timestamp: env.ledger().timestamp(),
         };
@@ -167,6 +191,9 @@ impl RewardTreasuryContract {
             .get(&symbol_short!("history"))
             .unwrap_or_else(|| Vec::new(&env));
         history.push_back(record);
+        while history.len() > MAX_HISTORY_LEN {
+            history.pop_front();
+        }
         env.storage()
             .persistent()
             .set(&symbol_short!("history"), &history);
@@ -176,7 +203,7 @@ impl RewardTreasuryContract {
 
         env.events().publish(
             (symbol_short!("reward"), symbol_short!("sent")),
-            (recipient, amount),
+            (recipient, amount, activity),
         );
     }
 
@@ -186,7 +213,7 @@ impl RewardTreasuryContract {
             .storage()
             .instance()
             .get(&symbol_short!("state"))
-            .expect("Contract not initialized");
+            .unwrap_or_else(|| panic!("{:?}", Error::NotInitialized));
         let token_client = token::Client::new(&env, &state.token);
         token_client.balance(&env.current_contract_address())
     }
@@ -197,7 +224,7 @@ impl RewardTreasuryContract {
             .storage()
             .instance()
             .get(&symbol_short!("state"))
-            .expect("Contract not initialized");
+            .unwrap_or_else(|| panic!("{:?}", Error::NotInitialized));
         state.total_disbursed
     }
 
@@ -207,7 +234,7 @@ impl RewardTreasuryContract {
             .storage()
             .instance()
             .get(&symbol_short!("state"))
-            .expect("Contract not initialized");
+            .unwrap_or_else(|| panic!("{:?}", Error::NotInitialized));
         state.admin
     }
 
@@ -252,7 +279,7 @@ impl RewardTreasuryContract {
             .get(&symbol_short!("history"))
             .unwrap_or_else(|| Vec::new(&env));
         if index >= history.len() {
-            panic!("Reward index out of range");
+            panic!("{:?}", Error::RewardIndexOutOfRange);
         }
         history.get(index).unwrap()
     }

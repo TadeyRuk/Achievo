@@ -3,7 +3,7 @@ import {
   classifyActivity,
   evaluateHeuristic,
   effortFeatures,
-} from '../../../api/_agents/heuristic'
+} from '../_agents/heuristic'
 
 describe('HeuristicScoringAgent', () => {
   it('classifies whitelist keywords', () => {

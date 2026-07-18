@@ -44,3 +44,10 @@ export function estimateBaseReward(activity: string): number {
 export function isKnownActivity(activity: string): activity is ActivityType {
   return activity in BASE_REWARD;
 }
+
+/** First whitelist keyword found in free-form text (client preview + heuristic). */
+export function classifyActivityKeyword(text: string): ActivityType | "unknown" {
+  const lower = text.toLowerCase();
+  const matched = ACTIVITY_WHITELIST.find((keyword) => lower.includes(keyword));
+  return matched ?? "unknown";
+}

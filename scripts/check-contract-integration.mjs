@@ -2,28 +2,32 @@ import { readFile } from 'node:fs/promises';
 
 const contractPath = 'contract/src/lib.rs';
 const stellarViewsPath = 'packages/stellar/src/views.ts';
-const walletPath = 'frontend/src/wallet.ts';
-const rewardApiPath = 'api/reward.ts';
+const walletPath = 'frontend/src/features/wallet/wallet.ts';
+const submitRewardPath = 'api/_lib/payout/submitReward.ts';
+const evaluatePath = 'api/_lib/payout/evaluateSubmission.ts';
+const budgetsPath = 'api/_lib/payout/dailyBudgets.ts';
 
-const [rust, stellarViews, wallet, rewardApi] = await Promise.all([
+const [rust, stellarViews, wallet, submitReward, evaluate, budgets] = await Promise.all([
   readFile(contractPath, 'utf8'),
   readFile(stellarViewsPath, 'utf8'),
   readFile(walletPath, 'utf8'),
-  readFile(rewardApiPath, 'utf8'),
+  readFile(submitRewardPath, 'utf8'),
+  readFile(evaluatePath, 'utf8'),
+  readFile(budgetsPath, 'utf8'),
 ]);
 
 const bindings = {
-  send_reward: ['api'],
+  send_reward: ['submit'],
   get_balance: ['stellar'],
   get_admin: ['stellar'],
   get_disbursed: ['stellar'],
   get_history: ['stellar'],
+  get_daily_disbursed: ['stellar'],
+  get_recipient_daily: ['stellar'],
+  get_day: ['stellar'],
 };
 
-// Daily-cap views are contract-authoritative; API enforces Redis budgets separately.
-const rustOnlyExports = ['get_daily_disbursed', 'get_recipient_daily', 'get_day'];
-
-const sources = { stellar: stellarViews, api: rewardApi };
+const sources = { stellar: stellarViews, submit: submitReward };
 const errors = [];
 
 for (const [functionName, consumers] of Object.entries(bindings)) {
@@ -31,7 +35,6 @@ for (const [functionName, consumers] of Object.entries(bindings)) {
   if (!rustExport.test(rust)) {
     errors.push(`${contractPath} does not export ${functionName}()`);
   }
-
   for (const consumer of consumers) {
     const quotedName = new RegExp(`["']${functionName}["']`);
     if (!quotedName.test(sources[consumer])) {
@@ -49,17 +52,14 @@ if (!wallet.includes('@creit.tech/stellar-wallets-kit')) {
 if (!wallet.includes('Networks.TESTNET')) {
   errors.push(`${walletPath} must explicitly select Stellar Testnet`);
 }
-if (!rewardApi.includes("'send_reward'") && !rewardApi.includes('"send_reward"')) {
-  errors.push(`${rewardApiPath} must call send_reward`);
+if (!wallet.includes('signChallengeXdr')) {
+  errors.push(`${walletPath} must export signChallengeXdr`);
 }
-if (!rewardApi.includes('HeuristicScoringAgent') || !rewardApi.includes('reserveBudget')) {
-  errors.push(`${rewardApiPath} must use heuristic fallback and daily budget reservation`);
+if (!evaluate.includes('HeuristicScoringAgent')) {
+  errors.push(`${evaluatePath} must use heuristic fallback`);
 }
-for (const fn of rustOnlyExports) {
-  const rustExport = new RegExp(`pub\\s+fn\\s+${fn}\\s*\\(`);
-  if (!rustExport.test(rust)) {
-    errors.push(`${contractPath} does not export ${fn}()`);
-  }
+if (!budgets.includes('reserveBudget')) {
+  errors.push(`${budgetsPath} must reserve daily budgets`);
 }
 
 if (errors.length > 0) {
@@ -68,6 +68,4 @@ if (errors.length > 0) {
   process.exit(1);
 }
 
-console.log(
-  `Contract integration verified: ${Object.keys(bindings).join(', ')}`,
-);
+console.log(`Contract integration verified: ${Object.keys(bindings).join(', ')}`);

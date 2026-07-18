@@ -8,9 +8,9 @@ import {
   BASE_FEE,
 } from '@stellar/stellar-sdk';
 import { createHmac, randomBytes } from 'crypto';
-import { challengeMacPayload } from './_lib/intent';
+import { challengeMacPayload } from './_lib/payout/intent';
 import { claimOnce, StoreUnavailableError } from './_lib/store';
-import { horizonServer } from './_lib/stellarServers';
+import { horizonServer } from './_lib/payout/stellarServers';
 
 const NONCE_IP_TTL = 60; // 1 challenge / IP / minute
 

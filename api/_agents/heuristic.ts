@@ -4,8 +4,7 @@
  */
 
 import {
-  ACTIVITY_WHITELIST,
-  type ActivityType,
+  classifyActivityKeyword,
   isKnownActivity,
 } from '@achievo/shared';
 import type { Evaluation } from './scoring';
@@ -14,17 +13,10 @@ const TIME_WORDS = /\b(\d+\s*(hours?|hrs?|minutes?|mins?|days?)|all\s*day|mornin
 const PEOPLE_WORDS = /\b(\d+\s*(students?|peers?|classmates?|people|kids?|learners?)|group|class|team)\b/i;
 const IMPACT_WORDS = /\b(helped|taught|mentored|organized|led|volunteered|facilitated|improved)\b/i;
 
-/** Pure classify — first whitelist keyword found in lowercased text. */
-export function classifyActivity(text: string): ActivityType | 'unknown' {
-  const lower = text.toLowerCase();
-  const matched = ACTIVITY_WHITELIST.find((keyword) => lower.includes(keyword));
-  return matched ?? 'unknown';
+export function classifyActivity(text: string) {
+  return classifyActivityKeyword(text);
 }
 
-/**
- * Cheap effort features for telemetry / future tuning.
- * Heuristic payout intentionally ignores these (base-only).
- */
 export function effortFeatures(text: string): {
   length: number;
   hasNumbers: boolean;
@@ -42,14 +34,14 @@ export function effortFeatures(text: string): {
 }
 
 export function evaluateHeuristic(activityText: string): Evaluation {
-  const activity = classifyActivity(activityText);
+  const activity = classifyActivityKeyword(activityText);
   const valid = isKnownActivity(activity);
   const features = effortFeatures(activityText);
 
   return {
     activity,
     valid,
-    score: 0, // base-only payout when wired through reward.ts
+    score: 0,
     criteria: [{ key: 'effort', label: 'Effort', score: 0, weight: 1 }],
     rationale: valid
       ? `heuristic_fallback: classified as ${activity} (len=${features.length}).`

@@ -25,7 +25,8 @@
   <img alt="Stellar Testnet" src="https://img.shields.io/badge/Stellar-Testnet-7C3AED?style=flat-square" />
   <img alt="Current challenge level" src="https://img.shields.io/badge/Current_Level-Level_5-16A34A?style=flat-square" />
   <img alt="Idea approved" src="https://img.shields.io/badge/Idea_Submission-Approved-16A34A?style=flat-square" />
-  <img alt="Frontend tests" src="https://img.shields.io/badge/Frontend_Tests-112_passing-2563EB?style=flat-square" />
+  <img alt="Frontend tests" src="https://img.shields.io/badge/Frontend_Tests-71_passing-2563EB?style=flat-square" />
+  <img alt="API tests" src="https://img.shields.io/badge/API_Tests-46_passing-2563EB?style=flat-square" />
   <img alt="Contract tests" src="https://img.shields.io/badge/Contract_Tests-23_passing-2563EB?style=flat-square" />
   <img alt="License" src="https://img.shields.io/badge/License-MIT-334155?style=flat-square" />
 </p>
@@ -253,16 +254,16 @@ function rename cannot be merged without updating its TypeScript consumers.
 
 | Contract function | Rust implementation | TypeScript consumer |
 |---|---|---|
-| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `frontend/src/contract.ts`, `api/reward.ts` |
-| `get_balance()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
-| `get_admin()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
-| `get_disbursed()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
-| `get_history()` | `contract/src/lib.rs` | `frontend/src/contract.ts` |
+| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `api/_lib/submitReward.ts` |
+| `get_balance()` | `contract/src/lib.rs` | `@achievo/stellar` |
+| `get_admin()` | `contract/src/lib.rs` | `@achievo/stellar` |
+| `get_disbursed()` | `contract/src/lib.rs` | `@achievo/stellar` |
+| `get_history()` | `contract/src/lib.rs` | `@achievo/stellar` |
+| `get_daily_disbursed` / `get_recipient_daily` / `get_day` | `contract/src/lib.rs` | `@achievo/stellar` |
 
-Wallet discovery, Testnet validation, and signing are implemented in
-`frontend/src/wallet.ts`. The full build → prepare → wallet-sign → submit →
-settlement-poll flow is implemented in `frontend/src/contract.ts`; production
-payouts use the matching server-side `send_reward` call in `api/reward.ts`.
+Wallet discovery, Testnet validation, and challenge signing are implemented in
+`frontend/src/wallet.ts`. Chain reads live in `@achievo/stellar`; production
+payouts use the server-side `send_reward` call in `api/_lib/submitReward.ts`.
 
 ### Documented testnet QA activity
 
@@ -335,7 +336,7 @@ Current automated coverage:
 
 ```text
 .
-├── api/                         Vercel handlers + _lib (server-only)
+├── api/                         Vercel handlers + _lib steps + __tests__
 ├── packages/
 │   ├── shared/                  @achievo/shared — rewards, caps, constants, types
 │   ├── stellar/                 @achievo/stellar — RPC/Horizon views + decode
@@ -343,7 +344,7 @@ Current automated coverage:
 ├── contract/                    Soroban treasury contract, tests, deploy script
 ├── frontend/                    React and Vite production PWA
 │   ├── public/                  PWA manifest, service worker, icons, avatars
-│   └── src/                     UI, hooks, wallet kit, tests
+│   └── src/                     AppShell, screens, hooks, wallet/, tests
 ├── docs/
 │   ├── ARCHITECTURE.md          Package graph + authority diagram
 │   ├── screenshots/             README and evaluation screenshots

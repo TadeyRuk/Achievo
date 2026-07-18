@@ -44,3 +44,6 @@ packages/*/dist/
 # Local tooling / IDE
 .kiro/
 .vscode/
+
+# Generated Stellar TS client (npm run generate:bindings)
+packages/stellar/src/generated/client/

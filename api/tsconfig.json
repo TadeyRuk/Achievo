@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noEmit": true,
+    "types": ["node"],
+    "paths": {
+      "@achievo/shared": ["../packages/shared/src/index.ts"],
+      "@achievo/stellar": ["../packages/stellar/src/index.ts"],
+      "@achievo/identity": ["../packages/identity/src/index.ts"]
+    },
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["./**/*.ts"],
+  "exclude": ["__tests__/**", "vitest.config.ts"]
+}

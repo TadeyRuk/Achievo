@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import posthog from 'posthog-js';
-import { CONTRACT_ID, getTreasuryInfo, type TreasuryInfo } from '../contract';
+import { CONTRACT_ID } from '@achievo/shared';
+import { getTreasuryInfo, type TreasuryInfo } from '@achievo/stellar';
 import {
   clearWalletSession,
   ensureWalletSession,
   fundWithFriendbot,
   getXlmBalance,
-} from '../wallet';
+} from '../features/wallet/wallet';
 
 export function useWalletSession() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);

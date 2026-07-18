@@ -9,8 +9,15 @@ const listRecent = vi.fn().mockResolvedValue([])
 const addRecent = vi.fn().mockResolvedValue(undefined)
 const appendPayout = vi.fn().mockResolvedValue(undefined)
 const reserveBudget = vi.fn().mockResolvedValue(true)
+const getIdentityByWallet = vi.fn().mockResolvedValue(null)
+const bindIdentity = vi.fn().mockResolvedValue({
+  id: 'id_test',
+  walletPublicKey: 'GTEST',
+  createdAt: '2026-01-01T00:00:00.000Z',
+})
+const issueSessionToken = vi.fn().mockReturnValue({ token: 'sess', expiresAt: Date.now() + 1000 })
 
-vi.mock('../../../api/_lib/store', () => ({
+vi.mock('../_lib/store', () => ({
   claimOnce: (...args: unknown[]) => claimOnce(...args),
   releaseClaim: (...args: unknown[]) => releaseClaim(...args),
   listRecent: (...args: unknown[]) => listRecent(...args),
@@ -25,16 +32,13 @@ vi.mock('../../../api/_lib/store', () => ({
   },
 }))
 
-vi.mock('../../../api/_lib/identity', () => ({
-  bindIdentity: vi.fn().mockResolvedValue({
-    id: 'id_test',
-    walletPublicKey: 'GTEST',
-    createdAt: '2026-01-01T00:00:00.000Z',
-  }),
-  issueSessionToken: vi.fn().mockReturnValue({ token: 'sess', expiresAt: Date.now() + 1000 }),
+vi.mock('../_lib/identity', () => ({
+  getIdentityByWallet: (...args: unknown[]) => getIdentityByWallet(...args),
+  bindIdentity: (...args: unknown[]) => bindIdentity(...args),
+  issueSessionToken: (...args: unknown[]) => issueSessionToken(...args),
 }))
 
-vi.mock('../../../api/_lib/stellarServers', () => ({
+vi.mock('../_lib/payout/stellarServers', () => ({
   horizonServer: {
     loadAccount: vi.fn().mockResolvedValue({
       accountId: 'GADMIN',
@@ -51,25 +55,25 @@ vi.mock('../../../api/_lib/stellarServers', () => ({
   },
 }))
 
-vi.mock('../../../api/_agents/scoring', () => ({
+vi.mock('../_agents/scoring', () => ({
   ScoringAgent: {
     evaluate: vi.fn(),
   },
 }))
 
-vi.mock('../../../api/_agents/integrity', () => ({
+vi.mock('../_agents/integrity', () => ({
   IntegrityAgent: {
     assess: vi.fn().mockReturnValue({ effortMultiplier: 1, flagged: false, reasons: [] }),
     fingerprint: vi.fn().mockReturnValue('fp'),
   },
 }))
 
-vi.mock('../../../api/_lib/telegram', () => ({
+vi.mock('../_lib/notify/telegram', () => ({
   notifyPayoutTelegram: vi.fn(),
 }))
 
-import handler from '../../../api/reward'
-import { ScoringAgent } from '../../../api/_agents/scoring'
+import handler from '../reward'
+import { ScoringAgent } from '../_agents/scoring'
 import {
   TransactionBuilder,
   Networks,
@@ -139,10 +143,35 @@ describe('/api/reward', () => {
     claimOnce.mockResolvedValue(true)
     releaseClaim.mockResolvedValue(undefined)
     reserveBudget.mockResolvedValue(true)
+    getIdentityByWallet.mockResolvedValue(null)
     process.env.ADMIN_SECRET = adminKp.secret()
     process.env.NONCE_HMAC_SECRET = 'reward-test-secret'
     delete process.env.VERCEL_ENV
   })
+
+  function challengeBody(overrides: Record<string, unknown> = {}) {
+    const nonce = (overrides.nonce as string) ?? 'ab'.repeat(16)
+    const expiry = (overrides.expiry as number) ?? Date.now() + 60_000
+    const text = (overrides.activityText as string) ?? activityText
+    const hashForText = intentHash(text)
+    const mac =
+      (overrides.mac as string) ??
+      createHmac('sha256', 'reward-test-secret')
+        .update(`${nonce}:${expiry}:${hashForText}`)
+        .digest('hex')
+    const signedXdr =
+      (overrides.signedXdr as string) ?? buildSignedChallenge(walletKp, nonce, expiry)
+    return {
+      activityText: text,
+      wallet: walletKp.publicKey(),
+      nonce,
+      expiry,
+      mac,
+      signedXdr,
+      intentHash: hashForText,
+      ...overrides,
+    }
+  }
 
   it('rejects short activity text', async () => {
     const res = makeRes()
@@ -354,5 +383,105 @@ describe('/api/reward', () => {
     )
     expect(res.statusCode).toBe(429)
     expect(releaseClaim).toHaveBeenCalled()
+  })
+
+  it('claims only wallet and IP when no identity is bound', async () => {
+    const nonce = '44'.repeat(16)
+    const expiry = Date.now() + 60_000
+    const body = challengeBody({ nonce, expiry })
+
+    vi.mocked(ScoringAgent.evaluate).mockResolvedValue({
+      activity: 'unknown',
+      valid: false,
+      score: 0,
+      criteria: [],
+      rationale: 'Not eligible',
+    })
+
+    const res = makeRes()
+    await handler(
+      {
+        method: 'POST',
+        body,
+        headers: { 'x-forwarded-for': '8.8.8.8' },
+        socket: {},
+      } as never,
+      res as never,
+    )
+
+    expect(res.statusCode).toBe(422)
+    const keys = claimOnce.mock.calls.map((c) => c[0] as string)
+    expect(keys).toContain(`nonce:${nonce}`)
+    expect(keys).toContain(`rate:wallet:${walletKp.publicKey()}`)
+    expect(keys).toContain('rate:ip:8.8.8.8')
+    expect(keys.some((k) => k.startsWith('rate:identity:'))).toBe(false)
+  })
+
+  it('claims identity rate when wallet already has an identity', async () => {
+    const nonce = '55'.repeat(16)
+    const expiry = Date.now() + 60_000
+    const body = challengeBody({ nonce, expiry })
+
+    getIdentityByWallet.mockResolvedValue({
+      id: 'id_existing',
+      walletPublicKey: walletKp.publicKey(),
+      createdAt: '2026-01-01T00:00:00.000Z',
+    })
+    vi.mocked(ScoringAgent.evaluate).mockResolvedValue({
+      activity: 'unknown',
+      valid: false,
+      score: 0,
+      criteria: [],
+      rationale: 'Not eligible',
+    })
+
+    const res = makeRes()
+    await handler(
+      {
+        method: 'POST',
+        body,
+        headers: { 'x-forwarded-for': '9.9.9.9' },
+        socket: {},
+      } as never,
+      res as never,
+    )
+
+    expect(res.statusCode).toBe(422)
+    const keys = claimOnce.mock.calls.map((c) => c[0] as string)
+    expect(keys).toContain('rate:identity:id_existing')
+    expect(releaseClaim).toHaveBeenCalledWith('rate:identity:id_existing')
+  })
+
+  it('returns 429 and releases wallet/IP when identity rate is already claimed', async () => {
+    const nonce = '66'.repeat(16)
+    const expiry = Date.now() + 60_000
+    const body = challengeBody({ nonce, expiry })
+
+    getIdentityByWallet.mockResolvedValue({
+      id: 'id_existing',
+      walletPublicKey: walletKp.publicKey(),
+      createdAt: '2026-01-01T00:00:00.000Z',
+    })
+    claimOnce
+      .mockResolvedValueOnce(true) // nonce
+      .mockResolvedValueOnce(true) // wallet
+      .mockResolvedValueOnce(true) // ip
+      .mockResolvedValueOnce(false) // identity
+
+    const res = makeRes()
+    await handler(
+      {
+        method: 'POST',
+        body,
+        headers: { 'x-forwarded-for': '10.10.10.10' },
+        socket: {},
+      } as never,
+      res as never,
+    )
+
+    expect(res.statusCode).toBe(429)
+    expect((res.body as { error: string }).error).toMatch(/identity/i)
+    expect(releaseClaim).toHaveBeenCalledWith(`rate:wallet:${walletKp.publicKey()}`)
+    expect(releaseClaim).toHaveBeenCalledWith('rate:ip:10.10.10.10')
   })
 })

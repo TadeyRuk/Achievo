@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { filterByRecipient } from '../contract'
-import type { RewardEvent } from '../contract'
+import { filterByRecipient, type RewardEvent } from '@achievo/stellar'
 import { publicKeyFromByte } from '../test/stellarAddresses'
 
 // A small pool of sample wallet addresses so that filtering is meaningfully

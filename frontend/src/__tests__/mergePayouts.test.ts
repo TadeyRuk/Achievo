@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { mergePayouts, DEFAULT_ACTIVITY_LABEL } from '../contract'
-import type { RewardEvent } from '../contract'
+import { DEFAULT_ACTIVITY_LABEL } from '@achievo/shared'
+import { mergePayouts, type RewardEvent } from '@achievo/stellar'
 import type { RewardHistoryItem } from '@achievo/shared'
 import { publicKeyFromByte } from '../test/stellarAddresses'
 

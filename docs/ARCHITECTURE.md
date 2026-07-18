@@ -12,9 +12,12 @@ enforces rate limits. The client proves wallet ownership and displays results.
        ↑
 @achievo/stellar    RPC/Horizon clients, decode, treasury + history views
        ↑
-frontend            Vite React UI (hooks + screens)
-api/                Vercel handlers + _lib server-only helpers
+frontend/src/app + features/* + hooks   Vite React UI
+api/*.ts                                Vercel handlers (root)
+api/_lib/{store,payout,identity,notify} server-only helpers
 ```
+
+Folder navigation: [`REPO_MAP.md`](REPO_MAP.md).
 
 Dependency rules:
 
@@ -66,6 +69,11 @@ server computes `base + effort × maxBonus` after Groq evaluation.
 `@achievo/stellar`) with a localStorage optimistic cache. Chain rows win on
 `txHash`. Sync runs on connect, after payout, on window focus, and every 15s.
 
+On-chain `history` is a **bounded ring** (max 500 records) with ~31-day TTL
+extension on write; instance storage TTL is bumped on `send_reward`. Long-term
+truth is the event log (paginated `getEvents`) plus the Redis payout ledger /
+reconcile job (`/api/reconcile`).
+
 ## Daily economics
 
 | Cap | On-chain | API (Redis) |
@@ -84,10 +92,63 @@ Constants live in `@achievo/shared` (`caps.ts`) and must stay aligned with
    (`scoringMode: "heuristic"`). Integrity, rate limits, intent binding, and
    daily caps still apply.
 
+## Reward handler steps
+
+`api/reward.ts` is thin orchestration. Steps live under `api/_lib/`:
+
+| Module | Role |
+|---|---|
+| `api/_lib/payout/challenge.ts` | Verify signed challenge + MAC |
+| `api/_lib/payout/rateClaims.ts` | Hybrid wallet / IP / identity rate claims |
+| `api/_lib/payout/evaluateSubmission.ts` | Groq → heuristic fallback |
+| `api/_lib/payout/dailyBudgets.ts` | Redis treasury + recipient budgets |
+| `api/_lib/payout/submitReward.ts` | Build / sign / send / poll `send_reward` |
+
+## Hybrid rate keys
+
+```mermaid
+flowchart LR
+  Wallet["rate:wallet:{G}"]
+  IP["rate:ip:{ip}"]
+  Identity["rate:identity:{id}"]
+  Claim[claimOnce SET NX]
+  Wallet --> Claim
+  IP --> Claim
+  Identity -.->|only if getIdentityByWallet already returns| Claim
+```
+
+- Always claim wallet (+ IP when known).
+- If Redis already has an identity for the wallet, also claim `rate:identity:{id}`.
+- First-time wallets: no identity yet → only wallet/IP (bind happens after successful payout).
+- On failure: release all claimed keys. Recipient Redis budget stays **wallet-keyed** (matches on-chain per-address cap); identity budget moves with rebind later.
+
+## Cap sync
+
+`scripts/check-cap-sync.mjs` compares stroop constants in `contract/src/lib.rs` with
+XLM caps in `@achievo/shared`. Wired into `npm run check-contract-integration`.
+
+## Tests
+
+| Suite | Location | Command |
+|---|---|---|
+| UI / shared / stellar decode | `frontend/src/__tests__` | `npm test -w frontend` |
+| API handlers + agents | `api/__tests__` | `npm run test:api` |
+| Contract | `contract/` | `cargo test` |
+
+Frontend must not import `api/**` (eslint). Prefer `@achievo/*` over deep package paths.
+`@stellar/stellar-sdk` in the UI is confined to `features/wallet/wallet.ts` (+ tests).
+
+## Manual regression smoke
+
+1. Connect wallet → fund if needed  
+2. Submit activity → sign challenge → payout succeeds  
+3. History refreshes; `sessionToken` / `identityId` persisted  
+4. Second submit same UTC day → 429 (wallet or identity rate)  
+
 ## Security highlights
 
 - Challenge MAC binds `nonce:expiry:intentHash` where `intentHash = sha256(activityText)`.
-- Wallet/IP rate limits use atomic `claimOnce` (SET NX); failed payouts release the slot.
+- Wallet / IP / (hybrid) identity rate limits use atomic `claimOnce` (SET NX); failed payouts release slots.
 - Production requires Upstash Redis (`VERCEL_ENV=production` fail-closed).
 - `ADMIN_SECRET` and `NONCE_HMAC_SECRET` never ship to the client.
 - Public payout/identity APIs redact full wallet addresses.
