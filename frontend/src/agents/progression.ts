@@ -307,6 +307,150 @@ export function progressPercent(xp: number, rank: RankInfo): number {
     : Math.min(100, Math.max(0, ((xp - rank.minXP) / (rank.maxXP - rank.minXP)) * 100));
 }
 
+// ─── Your Next Win (dashboard coach card) ────────────────────────────────────
+
+export type NextWinKind =
+  | "first_activity"
+  | "streak_at_risk"
+  | "rank_progress"
+  | "max_rank";
+
+export interface NextWin {
+  kind: NextWinKind;
+  title: string;
+  subtitle: string;
+  requirements: string[];
+  progressPercent: number | null;
+  ctaLabel: string;
+}
+
+/** Days until the next freeze-token milestone; null if not within 2 days. */
+function freezeBullet(streak: number): string | null {
+  if (streak <= 0) return null;
+  const nextMilestone = (Math.floor(streak / FREEZE_MILESTONE) + 1) * FREEZE_MILESTONE;
+  const daysUntil = nextMilestone - streak;
+  if (daysUntil <= 0 || daysUntil > 2) return null;
+  return daysUntil === 1
+    ? "1 more day until a streak freeze token"
+    : `${daysUntil} more days until a streak freeze token`;
+}
+
+/** Structured bullets for what's still needed to reach the next scholar rank. */
+function rankRequirementBullets(
+  xp: number,
+  streak: number,
+  counts: ActivityCounts,
+  rank: RankInfo,
+): string[] {
+  if (rank.nextName === "Max Rank") return [];
+  if (rank.reqMsg === "Ready to rank up!") return ["You're ready to rank up!"];
+
+  const bullets: string[] = [];
+  if (rank.name === "Bronze Scholar") {
+    if (xp < 1000) {
+      const diff = 1000 - xp;
+      bullets.push(`${diff.toLocaleString()} XP (~${diff / 100} XLM)`);
+    }
+    if (counts.volunteering < 1) bullets.push("1 volunteering activity");
+  } else if (rank.name === "Silver Scholar") {
+    if (xp < 2500) {
+      const diff = 2500 - xp;
+      bullets.push(`${diff.toLocaleString()} XP (~${diff / 100} XLM)`);
+    }
+    if (counts.tutoringOrMath < 1) bullets.push("1 tutoring or math activity");
+  } else if (rank.name === "Gold Scholar") {
+    if (xp < 5000) {
+      const diff = 5000 - xp;
+      bullets.push(`${diff.toLocaleString()} XP (~${diff / 100} XLM)`);
+    }
+    if (counts.workshop < 1) bullets.push("1 workshop activity");
+    if (streak < 3) bullets.push("3-day streak");
+  } else if (rank.name === "Platinum Scholar") {
+    if (xp < 10000) {
+      const diff = 10000 - xp;
+      bullets.push(`${diff.toLocaleString()} XP (~${diff / 100} XLM)`);
+    }
+    if (counts.science < 1) bullets.push("1 science activity");
+    if (streak < 5) bullets.push("5-day streak");
+  }
+  return bullets;
+}
+
+/**
+ * Pick the single most useful next action for the dashboard coach card.
+ * Priority: first activity → max rank → streak at risk → rank progress.
+ * Daily goal is intentionally left to the hero metrics, not this card.
+ */
+export function getNextWin(
+  history: ProgressionHistoryItem[],
+  stored: StoredProgression = {},
+  now: Date = new Date(),
+  todayCount: number = 0,
+): NextWin {
+  const CTA = "Submit Activity";
+
+  if (history.length === 0) {
+    return {
+      kind: "first_activity",
+      title: "Log your first activity",
+      subtitle: "Earn XP, start your streak, and unlock the First Win milestone.",
+      requirements: [],
+      progressPercent: null,
+      ctaLabel: CTA,
+    };
+  }
+
+  const rec = reconcileStreak(history, stored, now);
+  const streak = rec.streak;
+  const xp = computeXp(history);
+  const counts = activityCounts(history);
+  const rankInfo = getRankInfo(xp, streak, counts);
+  const pct = progressPercent(xp, rankInfo);
+  const freeze = freezeBullet(streak);
+
+  if (rankInfo.nextName === "Max Rank") {
+    const requirements = [
+      streak > 0
+        ? `Keep your ${streak}-day streak alive`
+        : "Start a new streak to keep momentum",
+    ];
+    if (freeze) requirements.push(freeze);
+    return {
+      kind: "max_rank",
+      title: "You're a Diamond Scholar",
+      subtitle: "Highest rank unlocked — keep showing up.",
+      requirements,
+      progressPercent: 100,
+      ctaLabel: CTA,
+    };
+  }
+
+  if (streak > 0 && todayCount === 0) {
+    const requirements = [`Keep your ${streak}-day streak — submit before midnight`];
+    if (freeze) requirements.push(freeze);
+    return {
+      kind: "streak_at_risk",
+      title: "Protect your streak",
+      subtitle: "You haven't logged an activity today yet.",
+      requirements,
+      progressPercent: null,
+      ctaLabel: CTA,
+    };
+  }
+
+  const requirements = rankRequirementBullets(xp, streak, counts, rankInfo);
+  if (freeze) requirements.push(freeze);
+
+  return {
+    kind: "rank_progress",
+    title: `Reach ${rankInfo.nextName}`,
+    subtitle: `Currently ${rankInfo.name} · ${xp.toLocaleString()} XP`,
+    requirements,
+    progressPercent: pct,
+    ctaLabel: CTA,
+  };
+}
+
 // ─── Public agent surface ──────────────────────────────────────────────────
 
 export const ProgressionAgent = {
@@ -317,6 +461,7 @@ export const ProgressionAgent = {
   getRankInfo,
   progressPercent,
   reconcileStreak,
+  getNextWin,
 
   /**
    * Reconcile persisted freeze state against history + current time. Returns

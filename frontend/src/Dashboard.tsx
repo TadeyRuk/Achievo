@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, UserPlus, ChevronRight, MessageSquare, Flag, Check, Wallet, Snowflake } from "lucide-react";
+import { Flame, UserPlus, ChevronRight, Check, Wallet, Snowflake, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
 import { ProgressionAgent, type StoredProgression } from "./agents/progression";
@@ -12,17 +12,6 @@ interface DashboardProps {
   onSubmitActivityClick: () => void;
   onConnectWalletClick: () => void;
   onInviteClick?: () => void;
-  userAvatar: string;
-}
-
-interface FeedItem {
-  id: string;
-  type: string;
-  name: string;
-  avatar?: string;
-  content: React.ReactNode;
-  timestamp: number;
-  timeStr: string;
 }
 
 // Custom SVG Checkmark + Plus Icon to match the design perfectly
@@ -47,17 +36,6 @@ const SubmitIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <path d="M19.5 14.5v5" />
   </svg>
 );
-
-// Helper for formatting time ago
-const formatTimeAgo = (timestamp: number) => {
-  const diffMs = Date.now() - timestamp;
-  const mins = Math.max(1, Math.floor(diffMs / 60000));
-  if (mins < 60) return `${mins} min${mins > 1 ? "s" : ""} ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs} hr${hrs > 1 ? "s" : ""} ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days} day${days > 1 ? "s" : ""} ago`;
-};
 
 // SVG Circular Progress Ring
 const ProgressCircle = ({ value, max }: { value: number; max: number }) => {
@@ -135,7 +113,6 @@ export function Dashboard({
   onSubmitActivityClick,
   onConnectWalletClick,
   onInviteClick,
-  userAvatar,
 }: DashboardProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -150,80 +127,14 @@ export function Dashboard({
     item => new Date(item.timestamp).toLocaleDateString("en-CA") === todayStr
   ).length;
 
+  // eslint-disable-next-line react-hooks/purity -- coach card uses wall-clock "now"
+  const nextWin = ProgressionAgent.getNextWin(history, progression ?? {}, new Date(), todayCount);
+
   const handleInviteClick = () => {
     navigator.clipboard.writeText(`https://achievo.app/invite/${userName.toLowerCase()}`);
     setToastMessage("Invite link copied to clipboard!");
     setTimeout(() => setToastMessage(null), 3000);
   };
-
-  // Setup Community Pulse feed items
-  const mockSarah = {
-    id: "mock-sarah",
-    type: "peer",
-    name: "Sarah",
-    avatar: "/sarah_avatar.webp",
-    content: (
-      <span>
-        <strong className="text-[13px] font-bold text-[#00162b]">Sarah</strong>
-        <span className="text-[13px] text-gray-500"> just earned </span>
-        <strong className="text-[13px] font-extrabold text-[#0a235c]">5 XLM</strong>
-        <span className="text-[13px] text-gray-500"> for </span>
-        <strong className="text-[13px] font-bold text-[#00162b]">Tutoring</strong>
-      </span>
-    ),
-    // eslint-disable-next-line react-hooks/purity
-    timestamp: Date.now() - 2 * 60 * 1000, // 2 mins ago
-    timeStr: "2 mins ago",
-  };
-
-  const mockGoal = {
-    id: "mock-goal",
-    type: "goal",
-    name: "Campus Goal",
-    content: (
-      <div className="space-y-0.5">
-        <div className="text-[13px] text-[#00162b] font-bold">
-          Campus Goal: <span className="text-emerald-600 font-extrabold">85% reached!</span>
-        </div>
-        <div className="text-[12px] text-gray-500 font-semibold leading-normal">
-          Let's keep it up!
-        </div>
-      </div>
-    ),
-    // eslint-disable-next-line react-hooks/purity
-    timestamp: Date.now() - 60 * 60 * 1000, // 1 hr ago
-    timeStr: "1 hr ago",
-  };
-
-  // Convert real user history items to feed items
-  const userFeedItems = history.slice(0, 2).map(item => {
-    // Simplify long text to keep the clean list look
-    const activityText = item.activity.replace(/^I\s+(volunteered\s+at\s+the\s+|tutored\s+a\s+classmate\s+in\s+|attended\s+a\s+workshop\s+on\s+|participated\s+in\s+)/i, "").trim();
-    const cleanActivity = activityText.charAt(0).toUpperCase() + activityText.slice(1);
-    
-    return {
-      id: item.id,
-      type: "user",
-      name: "You",
-      avatar: userAvatar,
-      content: (
-        <span>
-          <strong className="text-[13px] font-bold text-[#00162b]">You</strong>
-          <span className="text-[13px] text-gray-500"> just earned </span>
-          <strong className="text-[13px] font-extrabold text-[#0a235c]">{item.reward} XLM</strong>
-          <span className="text-[13px] text-gray-500"> for </span>
-          <strong className="text-[13px] font-bold text-[#00162b]">{(cleanActivity.length > 25 ? cleanActivity.slice(0, 25) + "..." : cleanActivity)}</strong>
-        </span>
-      ),
-      timestamp: item.timestamp,
-      timeStr: formatTimeAgo(item.timestamp),
-    };
-  });
-
-  // Combine and sort by timestamp
-  const feedItems: FeedItem[] = [mockSarah, ...userFeedItems, mockGoal].sort(
-    (a, b) => b.timestamp - a.timestamp
-  );
 
   return (
     <motion.div
@@ -369,66 +280,69 @@ export function Dashboard({
         <ChevronRight className="w-4 h-4 text-[#8a91a0]" strokeWidth={2.5} />
       </motion.button>
 
-      {/* Community Pulse Section */}
+      {/* Your Next Win Section */}
       <motion.div
         variants={itemVariants}
         className="bg-[#f5f6fa] rounded-[32px] p-5 space-y-4 shadow-sm border border-[#eef1f6]"
       >
-        {/* Section Header */}
         <div className="flex items-center gap-2.5 px-1">
-          <MessageSquare className="w-5 h-5 text-[#0f3b8c]" strokeWidth={2.2} />
+          <Trophy className="w-5 h-5 text-[#0f3b8c]" strokeWidth={2.2} />
           <h3 className="text-[17px] font-extrabold text-[#00162b] font-display">
-            Community Pulse
+            Your Next Win
           </h3>
         </div>
 
-        {/* Feed List */}
-        <div className="space-y-3">
-          {feedItems.map(item => {
-            if (item.type === "goal") {
-              return (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-[24px] p-4 flex items-start gap-3.5 shadow-sm border border-white/5 hover:translate-y-[-1px] transition-transform duration-200"
-                >
-                  <div className="w-11 h-11 rounded-full bg-[#0f3b8c] flex items-center justify-center text-white shrink-0 shadow-inner">
-                    <Flag className="w-5 h-5" strokeWidth={2.2} />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    {item.content}
-                    <div className="text-[10px] text-gray-400 font-bold tracking-wide mt-1">
-                      {item.timeStr}
-                    </div>
-                  </div>
-                </div>
-              );
-            }
+        <div className="bg-white rounded-[24px] p-4 space-y-3 shadow-sm border border-white/5">
+          <div className="space-y-1">
+            <div className="text-[15px] font-extrabold text-[#00162b] font-display leading-snug">
+              {nextWin.title}
+            </div>
+            <p className="text-[12px] text-gray-500 font-semibold leading-normal">
+              {nextWin.subtitle}
+            </p>
+          </div>
 
-            return (
-              <div
-                key={item.id}
-                className="bg-white rounded-[24px] p-4 flex items-center gap-3.5 shadow-sm border border-white/5 hover:translate-y-[-1px] transition-transform duration-200"
-              >
-                <div className="w-11 h-11 rounded-full overflow-hidden shrink-0 border border-gray-100 shadow-sm">
-                  <img
-                    src={item.avatar || ""}
-                    className="w-full h-full object-cover"
-                    alt={item.name}
-                    onError={e => {
-                      // Fallback if image fails
-                      (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${item.name}`;
-                    }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="leading-snug">{item.content}</div>
-                  <div className="text-[10px] text-gray-400 font-bold tracking-wide mt-1">
-                    {item.timeStr}
-                  </div>
-                </div>
+          {nextWin.progressPercent !== null && (
+            <div className="space-y-1.5">
+              <div className="h-2.5 w-full rounded-full bg-[#eef1f6] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#ffbe42] transition-all duration-700 ease-out"
+                  style={{ width: `${Math.min(100, Math.max(0, nextWin.progressPercent))}%` }}
+                />
               </div>
-            );
-          })}
+              <div className="text-[10px] font-bold text-gray-400 tracking-wide">
+                {Math.round(nextWin.progressPercent)}% to next rank
+              </div>
+            </div>
+          )}
+
+          {nextWin.requirements.length > 0 && (
+            <ul className="space-y-1.5 pt-0.5">
+              {nextWin.requirements.map((req) => (
+                <li
+                  key={req}
+                  className="flex items-start gap-2 text-[12px] font-semibold text-[#00162b]"
+                >
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#0f3b8c] shrink-0" />
+                  <span className="leading-snug">{req}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <button
+            type="button"
+            onClick={onSubmitActivityClick}
+            disabled={!walletAddress}
+            className={`w-full mt-1 py-3 rounded-[18px] flex items-center justify-center gap-2 text-[13px] font-extrabold font-display transition-colors duration-200 ${
+              !walletAddress
+                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                : "bg-[#0f3b8c] text-white hover:bg-[#0c3175] cursor-pointer"
+            }`}
+          >
+            <span>{nextWin.ctaLabel}</span>
+            <ChevronRight className="w-4 h-4" strokeWidth={2.5} />
+          </button>
         </div>
       </motion.div>
     </motion.div>

@@ -6,6 +6,7 @@ import {
   computeXp,
   activityCounts,
   getRankInfo,
+  getNextWin,
   reconcileStreak,
   FREEZE_MILESTONE,
   type ProgressionHistoryItem,
@@ -195,5 +196,82 @@ describe("ProgressionAgent — streak freeze", () => {
     ];
     const rec = reconcileStreak(history, { freezes: 0 }, NOW);
     expect(rec.streak).toBe(1);
+  });
+});
+
+describe("ProgressionAgent — getNextWin", () => {
+  const consecutive = (days: number, endOffset = 0): ProgressionHistoryItem[] =>
+    Array.from({ length: days }, (_, k) => ({
+      activity: "tutoring",
+      reward: 5,
+      timestamp: NOW.getTime() - (endOffset + k) * DAY,
+    }));
+
+  it("empty history → first_activity", () => {
+    const win = getNextWin([], {}, NOW, 0);
+    expect(win.kind).toBe("first_activity");
+    expect(win.title).toMatch(/first activity/i);
+    expect(win.progressPercent).toBeNull();
+    expect(win.ctaLabel).toBe("Submit Activity");
+  });
+
+  it("Diamond-qualified history → max_rank", () => {
+    // 100 XLM = 10_000 XP; science + 5-day streak for Diamond
+    const history: ProgressionHistoryItem[] = Array.from({ length: 5 }, (_, k) => ({
+      activity: k === 0 ? "science workshop" : "tutoring",
+      reward: 20,
+      timestamp: NOW.getTime() - k * DAY,
+    }));
+    const win = getNextWin(history, {}, NOW, 1);
+    expect(win.kind).toBe("max_rank");
+    expect(win.title).toMatch(/Diamond/i);
+    expect(win.progressPercent).toBe(100);
+  });
+
+  it("active streak with todayCount === 0 → streak_at_risk", () => {
+    // Yesterday-only entry: streak grace keeps streak alive, but no activity today
+    const history = [
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() - DAY },
+    ];
+    const win = getNextWin(history, {}, NOW, 0);
+    expect(win.kind).toBe("streak_at_risk");
+    expect(win.title).toMatch(/streak/i);
+    expect(win.requirements.some((r) => /midnight|streak/i.test(r))).toBe(true);
+  });
+
+  it("Bronze with XP but no volunteering → rank_progress mentioning volunteering", () => {
+    // 15 XLM = 1500 XP (past Silver XP gate) but no volunteering → still Bronze
+    const history = [
+      { activity: "tutoring", reward: 15, timestamp: NOW.getTime() },
+    ];
+    const win = getNextWin(history, {}, NOW, 1);
+    expect(win.kind).toBe("rank_progress");
+    expect(win.title).toMatch(/Silver Scholar/);
+    expect(win.requirements.some((r) => /volunteer/i.test(r))).toBe(true);
+  });
+
+  it("Silver with tutoring, XP below gold → rank_progress with XP requirement", () => {
+    // Volunteering + 10 XLM = Silver; tutoring present; need more XP for Gold (2500)
+    const history: ProgressionHistoryItem[] = [
+      { activity: "volunteering", reward: 10, timestamp: NOW.getTime() },
+      { activity: "tutoring", reward: 5, timestamp: NOW.getTime() - 60_000 },
+    ];
+    // 15 XLM = 1500 XP → Silver, needs 1000 more XP for Gold
+    const win = getNextWin(history, {}, NOW, 2);
+    expect(win.kind).toBe("rank_progress");
+    expect(win.title).toMatch(/Gold Scholar/);
+    expect(win.requirements.some((r) => /XP/i.test(r))).toBe(true);
+    expect(win.progressPercent).not.toBeNull();
+  });
+
+  it("exposes getNextWin on ProgressionAgent", () => {
+    expect(ProgressionAgent.getNextWin([], {}, NOW, 0).kind).toBe("first_activity");
+  });
+
+  it("appends freeze bullet when within 2 days of milestone", () => {
+    // 5 consecutive days including today → 2 days until freeze at 7
+    const win = getNextWin(consecutive(5), {}, NOW, 1);
+    expect(win.kind).toBe("rank_progress");
+    expect(win.requirements.some((r) => /freeze/i.test(r))).toBe(true);
   });
 });

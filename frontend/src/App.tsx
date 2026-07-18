@@ -633,7 +633,6 @@ export default function App() {
                   history={history}
                   progression={progression}
                   walletAddress={walletAddress}
-                  userAvatar={userAvatar}
                   onSubmitActivityClick={() => {
                     if (!walletAddress) {
                       setTab('wallet');
