@@ -90,7 +90,8 @@ flowchart LR
     Treasury --> A5 --> Student
 ```
 
-Client agents live in `frontend/src/agents.ts`. Kouri Agent evaluation runs in `api/reward.ts`.
+Client agents live in the earn feature. Kouri Agent evaluation runs in the
+server rewards feature behind the thin `api/reward.ts` Vercel adapter.
 
 ## Builder Progression
 
@@ -254,16 +255,16 @@ function rename cannot be merged without updating its TypeScript consumers.
 
 | Contract function | Rust implementation | TypeScript consumer |
 |---|---|---|
-| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `api/_lib/submitReward.ts` |
+| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `api/_server/infrastructure/stellar.ts` |
 | `get_balance()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_admin()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_disbursed()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_history()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_daily_disbursed` / `get_recipient_daily` / `get_day` | `contract/src/lib.rs` | `@achievo/stellar` |
 
-Wallet discovery, Testnet validation, and challenge signing are implemented in
-`frontend/src/wallet.ts`. Chain reads live in `@achievo/stellar`; production
-payouts use the server-side `send_reward` call in `api/_lib/submitReward.ts`.
+Wallet discovery, Testnet validation, and challenge signing live in the wallet
+feature. Chain reads use `@achievo/stellar`; production payouts use the
+server-side `send_reward` adapter in `api/_server/infrastructure/stellar.ts`.
 
 ### Documented testnet QA activity
 
@@ -336,27 +337,28 @@ Current automated coverage:
 
 ```text
 .
-├── api/                         Vercel handlers + _lib steps + __tests__
+├── api/                         Thin Vercel handlers + _server/{http,features,infrastructure,composition}
 ├── packages/
-│   ├── shared/                  @achievo/shared — rewards, caps, constants, types
+│   ├── shared/                  @achievo/shared — rewards, caps, constants, domain types
+│   ├── contracts/               @achievo/contracts — HTTP request/response DTOs
 │   ├── stellar/                 @achievo/stellar — RPC/Horizon views + decode
-│   └── identity/                @achievo/identity — identity types + redact helpers
+│   ├── identity/                @achievo/identity — identity types + redact helpers
+│   └── sdk/                     @achievo/sdk — typed browser/server HTTP client
 ├── contract/                    Soroban treasury contract, tests, deploy script
 ├── frontend/                    React and Vite production PWA
 │   ├── public/                  PWA manifest, service worker, icons, avatars
-│   └── src/                     AppShell, screens, hooks, wallet/, tests
+│   └── src/                     app composition, feature public APIs, shared adapters
 ├── docs/
 │   ├── ARCHITECTURE.md          Package graph + authority diagram
 │   ├── screenshots/             README and evaluation screenshots
 │   └── media/                   Demo source media and legacy presentation assets
-├── scripts/                     Integration checks and utilities
-├── tools/remotion-demo-video/   Isolated Remotion demo generator (not a workspace)
+├── scripts/                     Integration, boundary, and utility checks
 ├── vercel.json                  Production build and API routing
 ├── .env.example                 Server + VITE_* variable template
 └── README.md                    Product, evidence, architecture, and setup
 ```
 
-Production runtime is limited to `frontend/`, `api/`, `packages/`, the deployed contract, and external services. Remotion under `tools/` is demo tooling only — see [`tools/remotion-demo-video/README.md`](tools/remotion-demo-video/README.md).
+Production runtime is limited to `frontend/`, `api/`, `packages/`, the deployed contract, and external services. The product demo video is hosted on Google Drive (see the Watch Product Demo link above), not generated inside this repository.
 
 ## Run Locally
 
@@ -557,15 +559,10 @@ cargo build --release --target wasm32v1-none
 
 The contract requires the `wasm32v1-none` target with Soroban SDK 26+.
 
-## Demo Tooling
+## Product Demo
 
-The product walkthrough is generated from the isolated Remotion project in [`tools/remotion-demo-video`](tools/remotion-demo-video/). It is **tooling only** (not an npm workspace member, not in CI product jobs). See [`tools/remotion-demo-video/README.md`](tools/remotion-demo-video/README.md).
-
-```bash
-cd tools/remotion-demo-video
-npm ci
-npm run render:demo
-```
+Watch the hosted walkthrough:
+[Achievo product demo (Google Drive)](https://drive.google.com/file/d/1zDNqKgDn3rzbQ-2GhFv26RG4xjkEjxNd/view?usp=sharing).
 
 ## License
 
