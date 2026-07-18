@@ -5,7 +5,8 @@
   "scripts": {
     "vercel-build": "cd frontend && npm install && npm run build",
     "check-contract-integration": "node scripts/check-contract-integration.mjs",
-    "export-payout-proof": "node scripts/export-payout-proof.mjs --write"
+    "export-payout-proof": "node scripts/export-payout-proof.mjs --write",
+    "prepare": "husky"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^15.1.0",
@@ -13,6 +14,13 @@
   },
   "devDependencies": {
     "@vercel/node": "^5.1.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
     "typescript": "~6.0.2"
+  },
+  "lint-staged": {
+    "frontend/src/**/*.{ts,tsx}": [
+      "npx --prefix frontend eslint --fix"
+    ]
   }
 }
