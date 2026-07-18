@@ -282,7 +282,11 @@ export function WalletProfile({
         /* ── CONNECTED DASHBOARD STATE ── */
         <>
           {/* Header with Title and Refresh Button */}
-          <motion.div variants={itemVariants} className="flex items-center justify-between px-1">
+          <motion.div
+            data-tour="wallet-connect"
+            variants={itemVariants}
+            className="flex items-center justify-between px-1"
+          >
             <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-[var(--dah-primary)] font-display">
               My Wallet
             </h2>
@@ -462,7 +466,11 @@ export function WalletProfile({
           </motion.div>
 
           {/* Headline and description */}
-          <motion.div variants={itemVariants} className="text-center space-y-1.5 px-2">
+          <motion.div
+            data-tour="wallet-connect"
+            variants={itemVariants}
+            className="text-center space-y-1.5 px-2"
+          >
             <h2 className="text-[24px] font-extrabold tracking-tight text-[#00162b] font-display">
               Connect Your Wallet
             </h2>

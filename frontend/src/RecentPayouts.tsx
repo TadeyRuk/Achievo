@@ -127,6 +127,7 @@ export function RecentPayouts({ payouts, loading, error, walletConnected }: Rece
 
   return (
     <motion.div
+      data-tour="rewards-history"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: "easeOut" }}

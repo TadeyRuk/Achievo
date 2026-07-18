@@ -16,6 +16,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
 
   return (
     <div
+      data-tour="bottom-nav"
       className="absolute bottom-6 left-4 right-4 bg-[var(--dah-primary-container)] border border-white/10 rounded-[28px] z-50 shadow-xl shadow-black/20"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >

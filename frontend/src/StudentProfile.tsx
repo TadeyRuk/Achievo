@@ -23,6 +23,7 @@ interface StudentProfileProps {
   onAvatarChange: (avatar: string) => void;
   userName: string;
   onShowInfoClick: () => void;
+  onShowTourClick?: () => void;
 }
 
 const containerVariants = {
@@ -62,6 +63,7 @@ export function StudentProfile({
   onAvatarChange,
   userName,
   onShowInfoClick,
+  onShowTourClick,
 }: StudentProfileProps) {
   // Calculations
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
@@ -280,6 +282,7 @@ export function StudentProfile({
       {/* How Achievo Works entry point */}
       <motion.button
         type="button"
+        data-tour="profile-info"
         variants={itemVariants}
         onClick={onShowInfoClick}
         className="w-full bg-white rounded-[20px] border border-[var(--dah-outline-variant)] px-5 py-4 shadow-sm flex items-center justify-between text-left"
@@ -290,6 +293,21 @@ export function StudentProfile({
         </div>
         <ChevronLeft className="w-4 h-4 rotate-180 text-[var(--dah-outline)]" />
       </motion.button>
+
+      {onShowTourClick && (
+        <motion.button
+          type="button"
+          variants={itemVariants}
+          onClick={onShowTourClick}
+          className="w-full bg-[var(--dah-surface-low)] rounded-[20px] border border-[var(--dah-outline-variant)]/60 px-5 py-3.5 shadow-sm flex items-center justify-between text-left cursor-pointer"
+        >
+          <div>
+            <p className="text-[13px] font-extrabold text-[var(--dah-primary)] font-display">Show tour</p>
+            <p className="text-[11px] text-[var(--dah-on-surface-variant)] font-semibold">Replay the quick walkthrough</p>
+          </div>
+          <ChevronLeft className="w-4 h-4 rotate-180 text-[var(--dah-outline)]" />
+        </motion.button>
+      )}
 
       {/* Stats Dashboard */}
       <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2.5">

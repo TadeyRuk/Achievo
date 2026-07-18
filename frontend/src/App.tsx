@@ -35,6 +35,9 @@ import { GeneralFeedback } from './GeneralFeedback';
 import { InfoSheet } from './InfoSheet';
 import { iosContentScale, iosSpring, reducedMotionTransition } from './sheetMotion';
 import { getUserName, hasUserName } from './userIdentity';
+import { useOnboarding } from './onboarding/useOnboarding';
+import { OnboardingWelcome } from './onboarding/OnboardingWelcome';
+import { OnboardingTour } from './onboarding/OnboardingTour';
 
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
@@ -162,6 +165,17 @@ export default function App() {
 
   // Scroll reference for auto-scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const phoneFrameRef = useRef<HTMLDivElement>(null);
+
+  const shellReady = !showSplash && !showLogin;
+  const onboarding = useOnboarding({
+    ready: shellReady,
+    setTab: (t) => {
+      setShowRefer(false);
+      setShowForm(false);
+      setTab(t);
+    },
+  });
   // Auto-scroll to bottom only when the pipeline is actively running
   useEffect(() => {
     if (isRunning && scrollContainerRef.current) {
@@ -530,7 +544,11 @@ export default function App() {
     <div className="min-h-[100dvh] bg-[var(--dah-surface-highest)] flex items-center justify-center">
 
       {/* Phone frame — navy bezel on desktop, full-bleed on mobile */}
-      <div className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[4px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#000666]/35">
+      <div
+        ref={phoneFrameRef}
+        data-phone-frame
+        className="relative w-full max-w-[420px] bg-[var(--dah-bg)] sm:rounded-[3rem] sm:border-[4px] sm:border-[var(--dah-primary-container)] sm:h-[880px] h-[100dvh] flex flex-col overflow-hidden sm:shadow-2xl sm:shadow-[#000666]/35"
+      >
 
         {/* Startup splash screen — lives inside the phone frame */}
         <AnimatePresence>
@@ -698,6 +716,7 @@ export default function App() {
                 onAvatarChange={handleAvatarChange}
                 userName={userName}
                 onShowInfoClick={() => setShowInfo(true)}
+                onShowTourClick={onboarding.replay}
               />
             )}
           </AnimatePresence>
@@ -716,6 +735,29 @@ export default function App() {
           )}
         </AnimatePresence>
         </motion.div>
+
+        {/* First-run onboarding — single presence so welcome exits before tour enters */}
+        <AnimatePresence mode="wait">
+          {shellReady && onboarding.phase === "welcome" && (
+            <OnboardingWelcome
+              key="onboarding-welcome"
+              onStart={onboarding.startTour}
+              onSkip={onboarding.skip}
+            />
+          )}
+          {shellReady && onboarding.phase === "tour" && onboarding.currentStep && (
+            <OnboardingTour
+              key="onboarding-tour"
+              containerRef={phoneFrameRef}
+              step={onboarding.currentStep}
+              stepIndex={onboarding.stepIndex}
+              totalSteps={onboarding.totalSteps}
+              isLastStep={onboarding.isLastStep}
+              onNext={onboarding.next}
+              onSkip={onboarding.skip}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Refer Friend Overlay Page */}
         <AnimatePresence>

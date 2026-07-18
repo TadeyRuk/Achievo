@@ -250,6 +250,7 @@ export function Dashboard({
 
       {/* Submit Activity Button (Golden/Yellow) */}
       <motion.button
+        data-tour="submit-activity"
         variants={itemVariants}
         whileHover={!walletAddress ? {} : { scale: 1.01 }}
         whileTap={!walletAddress ? {} : { scale: 0.98 }}
