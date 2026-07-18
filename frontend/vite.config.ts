@@ -55,9 +55,17 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'json-summary', 'json'],
-      // Floors set just under current coverage (statements 69%, branches 65%,
-      // functions 63%, lines 71%) so this is a ratchet against regression,
-      // not an unmet aspiration — raise these as coverage grows.
+      // Unit tests ratchet domain logic only. Feature UI shells, app composition,
+      // and public barrels are out of scope here (E2E covers those paths).
+      include: [
+        'src/shared/lib/**/*.ts',
+        'src/features/feedback/**/*.ts',
+        'src/features/history/model/**/*.ts',
+        'src/features/profile/userIdentity.ts',
+      ],
+      exclude: ['src/**/index.ts', 'src/**/*.tsx', 'src/test/**'],
+      // Floors sit just under the measured logic-module coverage so this stays a
+      // regression ratchet, not an unmet aspiration — raise as coverage grows.
       thresholds: {
         statements: 65,
         branches: 60,
