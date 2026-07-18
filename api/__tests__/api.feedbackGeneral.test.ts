@@ -12,8 +12,8 @@ vi.mock('../_server/infrastructure/store', async (importOriginal) => ({
   },
 }));
 
-vi.mock('../_server/infrastructure/notifications', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../_server/infrastructure/notifications')>()),
+vi.mock('../_server/infrastructure/googleForms', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/googleForms')>()),
   GoogleFormsConfigError: class GoogleFormsConfigError extends Error {
     constructor(message: string) {
       super(message);
@@ -34,7 +34,7 @@ import { claimOnce } from '../_server/infrastructure/store';
 import {
   GoogleFormsConfigError,
   submitFeedbackForm,
-} from '../_server/infrastructure/notifications';
+} from '../_server/infrastructure/googleForms';
 
 interface MockRequest {
   method?: string;

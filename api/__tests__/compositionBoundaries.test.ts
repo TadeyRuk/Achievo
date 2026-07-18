@@ -44,7 +44,14 @@ describe('composition import boundaries', () => {
 
   it('keeps feedback composition limited to forms and store infrastructure', () => {
     expect(infrastructureReached('_server/composition/feedback.ts')).toEqual([
-      '_server/infrastructure/notifications.ts',
+      '_server/infrastructure/googleForms.ts',
+      '_server/infrastructure/store/index.ts',
+    ]);
+  });
+
+  it('keeps payouts composition free of reward execution infrastructure', () => {
+    expect(infrastructureReached('_server/composition/payouts.ts')).toEqual([
+      '_server/infrastructure/stellarExpert.ts',
       '_server/infrastructure/store/index.ts',
     ]);
   });
@@ -58,6 +65,21 @@ describe('composition import boundaries', () => {
     );
     expect(readFileSync(path.join(apiRoot, 'feedback-general.ts'), 'utf8')).toContain(
       "'./_server/composition/feedback'",
+    );
+    expect(readFileSync(path.join(apiRoot, 'identity.ts'), 'utf8')).toContain(
+      "'./_server/composition/identity'",
+    );
+    expect(readFileSync(path.join(apiRoot, 'nonce.ts'), 'utf8')).toContain(
+      "'./_server/composition/nonce'",
+    );
+    expect(readFileSync(path.join(apiRoot, 'reward.ts'), 'utf8')).toContain(
+      "'./_server/composition/reward'",
+    );
+    expect(readFileSync(path.join(apiRoot, 'payouts.ts'), 'utf8')).toContain(
+      "'./_server/composition/payouts'",
+    );
+    expect(readFileSync(path.join(apiRoot, 'reconcile.ts'), 'utf8')).toContain(
+      "'./_server/composition/reconcile'",
     );
   });
 });

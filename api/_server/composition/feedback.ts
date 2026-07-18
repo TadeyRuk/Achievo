@@ -7,7 +7,7 @@ import {
   GoogleFormsConfigError,
   GoogleFormsSubmitError,
   submitFeedbackForm,
-} from '../infrastructure/notifications';
+} from '../infrastructure/googleForms';
 import {
   claimOnce,
   releaseClaim,

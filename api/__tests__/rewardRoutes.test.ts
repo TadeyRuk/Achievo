@@ -4,7 +4,12 @@ import {
   createReconcileRoute,
   createRewardRoute,
 } from '../_server/features/rewards/routes';
-import type { RewardPorts } from '../_server/features/rewards/ports';
+import type {
+  NoncePorts,
+  PayoutsPorts,
+  ReconcilePorts,
+  RewardPorts,
+} from '../_server/features/rewards/ports';
 
 function request(body: unknown): HttpRequest {
   return {
@@ -16,7 +21,7 @@ function request(body: unknown): HttpRequest {
   };
 }
 
-function createPorts(): RewardPorts {
+function createPorts(): RewardPorts & NoncePorts & PayoutsPorts & ReconcilePorts {
   return {
     adminSecret: 'SADMIN',
     nonceSecret: 'nonce-secret',

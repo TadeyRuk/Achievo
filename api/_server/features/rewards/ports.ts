@@ -50,10 +50,23 @@ export interface RewardIdentity {
   displayNameHash?: string;
 }
 
-export interface RewardPorts {
+interface StoreErrorPort {
+  isStoreUnavailable(error: unknown): boolean;
+}
+
+export interface NoncePorts extends StoreErrorPort {
+  nonceSecret?: string;
+  isValidWallet(wallet: string): boolean;
+  claimOnce(key: string, ttlSeconds: number): Promise<boolean>;
+  issueChallenge(
+    wallet: string,
+    intentHash: string,
+  ): Promise<{ nonce: string; expiry: number; mac: string; intentHash: string; challengeXdr: string }>;
+}
+
+export interface RewardPorts extends StoreErrorPort {
   adminSecret?: string;
   nonceSecret?: string;
-  cronSecret?: string;
   isValidWallet(wallet: string): boolean;
   hashIntent(activityText: string): string;
   verifyChallenge(input: {
@@ -64,10 +77,6 @@ export interface RewardPorts {
     signedXdr: string;
     intentHash: string;
   }): { ok: boolean; error?: string };
-  issueChallenge(
-    wallet: string,
-    intentHash: string,
-  ): Promise<{ nonce: string; expiry: number; mac: string; intentHash: string; challengeXdr: string }>;
   claimOnce(key: string, ttlSeconds: number): Promise<boolean>;
   claimRates(
     clientIp: string,
@@ -107,9 +116,6 @@ export interface RewardPorts {
   bindIdentity(wallet: string): Promise<RewardIdentity>;
   issueSession(identity: RewardIdentity): { token: string };
   appendPayout(value: string): Promise<void>;
-  listPayouts(limit: number): Promise<string[]>;
-  redactWallet(wallet: string): string;
-  transactionUrl(txHash: string): string;
   notifyPayout(input: {
     txHash: string;
     wallet: string;
@@ -118,11 +124,24 @@ export interface RewardPorts {
     effortScore: number;
   }): Promise<void>;
   notifyOps(message: string): Promise<void>;
+  now(): Date;
+}
+
+export interface PayoutsPorts {
+  listPayouts(limit: number): Promise<string[]>;
+  redactWallet(wallet: string): string;
+  transactionUrl(txHash: string): string;
+}
+
+export interface ReconcilePorts {
+  cronSecret?: string;
   listPending(): Promise<PendingPayout[]>;
   removePending(txHash: string): Promise<void>;
   transactionStatus(txHash: string): Promise<'success' | 'failed' | 'pending'>;
+  appendPayout(value: string): Promise<void>;
+  listPayouts(limit: number): Promise<string[]>;
+  notifyOps(message: string): Promise<void>;
   getDailyDisbursed(): Promise<number>;
   treasuryDailyCap: number;
   now(): Date;
-  isStoreUnavailable(error: unknown): boolean;
 }

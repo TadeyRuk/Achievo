@@ -1,24 +1,13 @@
-import { rpc } from '@stellar/stellar-sdk';
-import { redactWallet } from '@achievo/identity';
-import { getDailyDisbursed } from '@achievo/stellar';
-import { DAILY_TREASURY_CAP_XLM } from '@achievo/shared';
-import {
-  createNonceRoute,
-  createPayoutsRoute,
-  createReconcileRoute,
-  createRewardRoute,
-} from '../features/rewards/routes';
+import { createRewardRoute } from '../features/rewards/routes';
 import type { RewardPorts } from '../features/rewards/ports';
 import {
   notifyOpsAlert,
   notifyPayoutTelegram,
-  stellarExpertTxUrl,
-} from '../infrastructure/notifications';
+} from '../infrastructure/telegram';
 import {
   addRecent,
   appendPayout,
   claimOnce,
-  listPayouts,
   listRecent,
   StoreUnavailableError,
 } from '../infrastructure/store';
@@ -28,17 +17,13 @@ import {
 } from '../infrastructure/identity';
 import {
   claimRewardRates,
-  listPendingReconcile,
   markPendingReconcile,
   releaseDailyBudgets,
   releaseRateClaims,
-  removePendingReconcile,
   reserveDailyBudgets,
 } from '../infrastructure/rewards';
 import {
   hashActivityIntent,
-  issueChallenge,
-  rpcServer,
   StrKey,
   submitSendReward,
   verifyChallenge,
@@ -56,9 +41,6 @@ const rewardPorts: RewardPorts = {
   get nonceSecret() {
     return process.env.NONCE_HMAC_SECRET;
   },
-  get cronSecret() {
-    return process.env.CRON_SECRET;
-  },
   isValidWallet: StrKey.isValidEd25519PublicKey,
   hashIntent: hashActivityIntent,
   verifyChallenge(input) {
@@ -72,10 +54,6 @@ const rewardPorts: RewardPorts = {
       input.signedXdr,
       input.intentHash,
     );
-  },
-  issueChallenge(wallet, intentHash) {
-    if (!process.env.NONCE_HMAC_SECRET) throw new Error('Server configuration error.');
-    return issueChallenge(wallet, intentHash, process.env.NONCE_HMAC_SECRET);
   },
   claimOnce,
   claimRates: claimRewardRates,
@@ -100,21 +78,8 @@ const rewardPorts: RewardPorts = {
   bindIdentity,
   issueSession: issueSessionToken,
   appendPayout,
-  listPayouts,
-  redactWallet,
-  transactionUrl: stellarExpertTxUrl,
   notifyPayout: notifyPayoutTelegram,
   notifyOps: notifyOpsAlert,
-  listPending: listPendingReconcile,
-  removePending: removePendingReconcile,
-  async transactionStatus(txHash) {
-    const transaction = await rpcServer.getTransaction(txHash);
-    if (transaction.status === rpc.Api.GetTransactionStatus.SUCCESS) return 'success';
-    if (transaction.status === rpc.Api.GetTransactionStatus.FAILED) return 'failed';
-    return 'pending';
-  },
-  getDailyDisbursed,
-  treasuryDailyCap: DAILY_TREASURY_CAP_XLM,
   now() {
     return new Date();
   },
@@ -123,7 +88,4 @@ const rewardPorts: RewardPorts = {
   },
 };
 
-export const nonceRoute = createNonceRoute(rewardPorts);
 export const rewardRoute = createRewardRoute(rewardPorts);
-export const payoutsRoute = createPayoutsRoute(rewardPorts);
-export const reconcileRoute = createReconcileRoute(rewardPorts);

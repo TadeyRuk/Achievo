@@ -73,8 +73,8 @@ vi.mock('../_server/infrastructure/integrity', async (importOriginal) => ({
   },
 }))
 
-vi.mock('../_server/infrastructure/notifications', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../_server/infrastructure/notifications')>()),
+vi.mock('../_server/infrastructure/telegram', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/telegram')>()),
   notifyPayoutTelegram: vi.fn(),
   notifyOpsAlert: vi.fn(),
 }))

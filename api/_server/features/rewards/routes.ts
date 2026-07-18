@@ -19,12 +19,15 @@ import {
 import { error, json, methodNotAllowed, type HttpRoute } from '../../http';
 import type {
   BudgetReservation,
+  NoncePorts,
   PayoutRecord,
+  PayoutsPorts,
   RateClaims,
+  ReconcilePorts,
   RewardPorts,
 } from './ports';
 
-export function createNonceRoute(ports: RewardPorts): HttpRoute {
+export function createNonceRoute(ports: NoncePorts): HttpRoute {
   return async (request) => {
     if (request.method !== 'GET') return methodNotAllowed();
     try {
@@ -278,7 +281,7 @@ function parsePayouts(raw: string[]): PayoutRecord[] {
   return entries;
 }
 
-export function createPayoutsRoute(ports: RewardPorts): HttpRoute {
+export function createPayoutsRoute(ports: PayoutsPorts): HttpRoute {
   return async (request) => {
     if (request.method !== 'GET') return methodNotAllowed();
     const entries = parsePayouts(await ports.listPayouts(200));
@@ -315,7 +318,7 @@ export function createPayoutsRoute(ports: RewardPorts): HttpRoute {
   };
 }
 
-export function createReconcileRoute(ports: RewardPorts): HttpRoute {
+export function createReconcileRoute(ports: ReconcilePorts): HttpRoute {
   return async (request) => {
     if (request.method !== 'POST' && request.method !== 'GET') return methodNotAllowed();
     if (
