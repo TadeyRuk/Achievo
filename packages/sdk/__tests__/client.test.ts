@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { ApiError, createAchievoClient } from '../src/index.js';
+import type {
+  AchievoApiErrorBody,
+  HealthApiError,
+  PublicPayoutEntry,
+} from '../src/index.js';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -99,6 +104,46 @@ describe('createAchievoClient', () => {
       body,
       message: body.error,
     }));
+  });
+
+  it('preserves the full degraded health payload in a typed ApiError', async () => {
+    const body: HealthApiError = {
+      ok: false,
+      rewardsPaused: true,
+      checks: {
+        contractId: 'ok',
+        redis: 'down',
+        rpc: 'ok',
+      },
+      network: 'testnet',
+    };
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(jsonResponse(body, 503));
+    const client = createAchievoClient({ fetch });
+
+    const caught = await client.getHealth().catch((error: unknown) => error);
+
+    expect(caught).toBeInstanceOf(ApiError);
+    const error = caught as ApiError;
+    expectTypeOf(error.body).toEqualTypeOf<AchievoApiErrorBody | undefined>();
+    expect(error).toEqual(expect.objectContaining({
+      status: 503,
+      body,
+      message: 'Health API error 503',
+    }));
+  });
+
+  it('allows payout entries from reconcile to omit effortScore', () => {
+    const reconciledPayout: PublicPayoutEntry = {
+      txHash: 'tx-reconciled',
+      wallet: 'G-WA…LLET',
+      identityId: null,
+      amount: 5,
+      activity: 'tutoring',
+      scoringMode: null,
+      createdAt: '2026-07-18T00:00:00.000Z',
+    };
+
+    expect(reconciledPayout.effortScore).toBeUndefined();
   });
 
   it('returns a 202 pending reward as a typed result instead of throwing', async () => {

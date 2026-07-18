@@ -1,6 +1,8 @@
 import type {
+  ApiErrorResponse,
   FeedbackApiSuccess,
   GeneralFeedbackApiRequest,
+  HealthApiError,
   HealthApiSuccess,
   IdentityApiGetRequest,
   IdentityApiPublicSuccess,
@@ -43,7 +45,9 @@ export interface AchievoClient {
   submitGeneralFeedback(request: GeneralFeedbackApiRequest): Promise<FeedbackApiSuccess>;
 }
 
-export class ApiError<TBody = unknown> extends Error {
+export type AchievoApiErrorBody = ApiErrorResponse | HealthApiError;
+
+export class ApiError<TBody = AchievoApiErrorBody> extends Error {
   readonly status: number;
   readonly body: TBody | undefined;
 
@@ -86,11 +90,11 @@ export function createAchievoClient(options: CreateAchievoClientOptions = {}): A
   const baseUrl = normalizeBaseUrl(options.baseUrl);
   const url = (path: string) => `${baseUrl}${path}`;
 
-  async function request<T>(
+  async function request<TSuccess, TError = ApiErrorResponse>(
     path: string,
     label: string,
     init: RequestInit,
-  ): Promise<T> {
+  ): Promise<TSuccess> {
     const response = await fetchImpl(url(path), init);
     const raw = await response.text();
     let body: unknown;
@@ -102,14 +106,14 @@ export function createAchievoClient(options: CreateAchievoClientOptions = {}): A
     }
 
     if (!response.ok) {
-      throw new ApiError<unknown>(
+      throw new ApiError<TError>(
         errorMessage(body, `${label} API error ${response.status}`),
         response.status,
-        body,
+        body as TError,
       );
     }
 
-    return body as T;
+    return body as TSuccess;
   }
 
   const getNonce = (nonceRequest: NonceApiRequest) => {
@@ -128,7 +132,8 @@ export function createAchievoClient(options: CreateAchievoClientOptions = {}): A
     });
 
   return {
-    getHealth: () => request<HealthApiSuccess>('/api/health', 'Health', { method: 'GET' }),
+    getHealth: () =>
+      request<HealthApiSuccess, HealthApiError>('/api/health', 'Health', { method: 'GET' }),
     getNonce,
     submitReward,
     async submitActivity({ wallet, activityText, signChallenge }) {
@@ -183,6 +188,7 @@ export type {
   ApiErrorResponse,
   FeedbackApiSuccess,
   GeneralFeedbackApiRequest,
+  HealthApiError,
   HealthApiSuccess,
   IdentityApiGetRequest,
   IdentityApiPublicSuccess,
@@ -191,6 +197,7 @@ export type {
   NonceApiRequest,
   NonceApiSuccess,
   PayoutsApiSuccess,
+  PublicPayoutEntry,
   RewardApiRequest,
   RewardApiResponse,
   TransactionFeedbackApiInfoSuccess,

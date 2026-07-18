@@ -89,7 +89,7 @@ export interface HealthApiSuccess {
   network: 'testnet';
 }
 
-export type HealthApiError = ApiErrorResponse;
+export type HealthApiError = HealthApiSuccess;
 
 export interface IdentityApiGetRequest {
   wallet: string;
@@ -124,7 +124,7 @@ export interface PublicPayoutEntry {
   identityId: string | null;
   amount: number;
   activity: string;
-  effortScore: number | null;
+  effortScore?: number | null;
   scoringMode: string | null;
   createdAt: string;
 }
