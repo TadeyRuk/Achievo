@@ -31,6 +31,7 @@ import { Dashboard } from './Dashboard';
 import { ReferFriend } from './ReferFriend';
 import { SplashScreen } from './SplashScreen';
 import { Login } from './Login';
+import { GeneralFeedback } from './GeneralFeedback';
 import { getUserName, hasUserName } from './userIdentity';
 
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -155,6 +156,7 @@ export default function App() {
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState<boolean>(false);
   const [showDisconnectSuccess, setShowDisconnectSuccess] = useState<boolean>(false);
   const [showInfo, setShowInfo] = useState<boolean>(false);
+  const [showFeedback, setShowFeedback] = useState<boolean>(false);
 
   // Scroll reference for auto-scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -858,6 +860,16 @@ export default function App() {
                 </div>
               </motion.div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* General Feedback Sheet */}
+        <AnimatePresence>
+          {showFeedback && (
+            <GeneralFeedback
+              userName={userName}
+              onClose={() => setShowFeedback(false)}
+            />
           )}
         </AnimatePresence>
 
