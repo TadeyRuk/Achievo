@@ -89,7 +89,7 @@ export interface HealthApiSuccess {
   network: 'testnet';
 }
 
-export type HealthApiError = HealthApiSuccess;
+export type HealthApiError = HealthApiSuccess | ApiErrorResponse;
 
 export interface IdentityApiGetRequest {
   wallet: string;

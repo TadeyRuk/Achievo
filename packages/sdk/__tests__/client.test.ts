@@ -132,6 +132,23 @@ describe('createAchievoClient', () => {
     }));
   });
 
+  it('preserves the health endpoint 405 error payload in the same wire type', async () => {
+    const body: HealthApiError = { error: 'Method not allowed' };
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(jsonResponse(body, 405));
+    const client = createAchievoClient({ fetch });
+
+    const caught = await client.getHealth().catch((error: unknown) => error);
+
+    expect(caught).toBeInstanceOf(ApiError);
+    const error = caught as ApiError<HealthApiError>;
+    expectTypeOf(error.body).toEqualTypeOf<HealthApiError | undefined>();
+    expect(error).toEqual(expect.objectContaining({
+      status: 405,
+      body,
+      message: 'Method not allowed',
+    }));
+  });
+
   it('allows payout entries from reconcile to omit effortScore', () => {
     const reconciledPayout: PublicPayoutEntry = {
       txHash: 'tx-reconciled',
