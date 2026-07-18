@@ -23,7 +23,7 @@ import { iosSpring, reducedMotionTransition } from '../shared/lib/sheetMotion';
 import { OnboardingWelcome } from '../features/onboarding/OnboardingWelcome';
 import { OnboardingTour } from '../features/onboarding/OnboardingTour';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
-import type { StoredProgression } from '../features/earn/progression';
+import type { StoredProgression } from '../shared/lib/progression';
 import type { useRewardPipeline } from '../hooks/useRewardPipeline';
 import type { useWalletSession } from '../hooks/useWalletSession';
 import type { useOnboarding } from '../features/onboarding/useOnboarding';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatRewardBreakdown } from '../features/earn/rewardBreakdown';
+import { formatRewardBreakdown } from '../shared/lib/rewardBreakdown';
 
 describe("formatRewardBreakdown", () => {
   it("produces a full breakdown when base + bonus present", () => {

@@ -10,8 +10,8 @@ import {
   CustomTrophy,
   CustomMedal,
 } from "../../shared/ui/customIcons";
-import type { StoredProgression } from "../earn/progression";
-import { ProgressionAgent } from "../earn/progression";
+import type { StoredProgression } from "../../shared/lib/progression";
+import { ProgressionAgent } from "../../shared/lib/progression";
 import type { RewardHistoryItem } from "@achievo/shared";
 
 type BadgeCollectionProps = {

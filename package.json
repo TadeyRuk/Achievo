@@ -16,8 +16,9 @@
     "prepare": "husky",
     "test": "npm run build:packages && npm test -w frontend && npm run test:api",
     "test:api": "vitest --run --config api/vitest.config.ts",
-    "lint": "npm run lint -w frontend && npm run lint:api",
+    "lint": "npm run lint -w frontend && npm run lint:api && npm run lint:packages",
     "lint:api": "eslint -c eslint.api.config.mjs api",
+    "lint:packages": "eslint -c eslint.packages.config.mjs packages",
     "typecheck": "npm run typecheck -w @achievo/shared && npm run typecheck -w @achievo/stellar && npm run typecheck -w @achievo/identity && npm run typecheck -w frontend && npm run typecheck:api",
     "typecheck:api": "tsc -p api/tsconfig.json --noEmit"
   },
@@ -46,6 +47,9 @@
     ],
     "api/**/*.{ts,tsx}": [
       "eslint -c eslint.api.config.mjs --fix"
+    ],
+    "packages/*/src/**/*.ts": [
+      "eslint -c eslint.packages.config.mjs --fix"
     ]
   },
   "engines": {

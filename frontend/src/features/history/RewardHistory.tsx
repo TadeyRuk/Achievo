@@ -14,7 +14,7 @@ import {
 import { motion } from "motion/react";
 import { CustomTrophy, CustomUserHeart, CustomBookUser, CustomBookOpen, CustomMedal } from '../../shared/ui/customIcons';
 import type { RewardHistoryItem } from "@achievo/shared";
-import { ProgressionAgent, type StoredProgression } from '../earn/progression';
+import { ProgressionAgent, type StoredProgression } from '../../shared/lib/progression';
 
 export type { RewardHistoryItem };
 

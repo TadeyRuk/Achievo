@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ShieldAlert, Pencil, Snowflake, ChevronLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { type RewardHistoryItem } from "@achievo/shared";
-import { ProgressionAgent, type StoredProgression } from '../earn/progression';
+import { ProgressionAgent, type StoredProgression } from '../../shared/lib/progression';
 import { AvatarPickerModal } from './AvatarPickerModal';
 import { BadgeCollection } from './BadgeCollection';
 import {

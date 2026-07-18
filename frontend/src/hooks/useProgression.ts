@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ProgressionAgent, type StoredProgression } from '../features/earn/progression';
+import { ProgressionAgent, type StoredProgression } from '../shared/lib/progression';
 import type { RewardHistoryItem } from '@achievo/shared';
 import { getIdentityId } from '../shared/lib/sessionIdentity';
 

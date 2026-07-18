@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Flame, UserPlus, ChevronRight, Check, Wallet, Snowflake, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "@achievo/shared";
-import { ProgressionAgent, type StoredProgression } from '../earn/progression';
+import { ProgressionAgent, type StoredProgression } from '../../shared/lib/progression';
 
 interface DashboardProps {
   userName: string;

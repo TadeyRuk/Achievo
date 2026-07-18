@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { motion } from "motion/react";
-import { formatRewardBreakdown, type RewardBreakdownInput } from '../earn/rewardBreakdown';
+import { formatRewardBreakdown, type RewardBreakdownInput } from '../../shared/lib/rewardBreakdown';
 
 interface RewardCardProps {
   reward: number;

@@ -10,7 +10,7 @@ import {
   reconcileStreak,
   FREEZE_MILESTONE,
   type ProgressionHistoryItem,
-} from '../features/earn/progression';
+} from '../shared/lib/progression';
 
 // ── Reference implementations (verbatim copies of the pre-refactor inline
 //    logic) so the property tests prove the agent preserves behaviour. ───────
