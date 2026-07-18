@@ -18,7 +18,7 @@ Identity {
 | Concern | Where it lives |
 |---|---|
 | Display name / avatar | Client `localStorage` only |
-| Identity record + wallet index | Redis via `api/_lib/identity.ts` |
+| Identity record + wallet index | Redis via `api/_server/infrastructure/identity.ts` |
 | Session token | HMAC (`identityId:wallet:expiry:nonce:mac`), issued after first successful `/api/reward` |
 | Package types / redact helpers | `@achievo/identity` |
 
@@ -37,7 +37,7 @@ Identity {
 
 ## Hybrid identity rate claims (current)
 
-`/api/reward` uses **hybrid** daily rate keys (`api/_lib/payout/rateClaims.ts`):
+`/api/reward` uses **hybrid** daily rate keys (`api/_server/infrastructure/rewards.ts`):
 
 1. Always `rate:wallet:{G}` (+ `rate:ip:{ip}` when known).
 2. If `getIdentityByWallet(wallet)` already returns an identity, also

@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Flame, UserPlus, ChevronRight, Check, Wallet, Snowflake, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "@achievo/shared";
-import { ProgressionAgent, type StoredProgression } from '../../shared/lib/progression';
+import type { ProgressionViewModel } from '../../shared/lib';
 
 interface DashboardProps {
   userName: string;
   history: RewardHistoryItem[];
-  progression?: StoredProgression;
+  progression: ProgressionViewModel;
   walletAddress: string | null;
   onSubmitActivityClick: () => void;
   onConnectWalletClick: () => void;
@@ -116,10 +116,9 @@ export function Dashboard({
 }: DashboardProps) {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Progression — freeze-aware streak + available freeze tokens (single source of truth)
-  const progressionState = ProgressionAgent.state(history, progression ?? {});
-  const streak = progressionState.streak;
-  const freezes = progressionState.freezes;
+  // Progression — freeze-aware streak + available freeze tokens (app view-model)
+  const streak = progression.state.streak;
+  const freezes = progression.state.freezes;
 
   // Today's completed activity count
   const todayStr = new Date().toLocaleDateString("en-CA");
@@ -128,7 +127,7 @@ export function Dashboard({
   ).length;
 
   // Coach card uses wall-clock "now"
-  const nextWin = ProgressionAgent.getNextWin(history, progression ?? {}, new Date(), todayCount);
+  const nextWin = progression.getNextWin(todayCount);
 
   const handleInviteClick = () => {
     navigator.clipboard.writeText(`https://achievo.app/invite/${userName.toLowerCase()}`);

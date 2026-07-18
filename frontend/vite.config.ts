@@ -28,6 +28,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss(), swCacheHashPlugin()],
   resolve: {
     alias: {
+      '@achievo/contracts': path.resolve(__dirname, '../packages/contracts/src/index.ts'),
+      '@achievo/sdk': path.resolve(__dirname, '../packages/sdk/src/index.ts'),
       '@achievo/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
       '@achievo/stellar': path.resolve(__dirname, '../packages/stellar/src/index.ts'),
       '@achievo/identity': path.resolve(__dirname, '../packages/identity/src/index.ts'),
@@ -42,6 +44,8 @@ export default defineConfig({
         inline: [
           '@creit.tech/stellar-wallets-kit',
           '@stellar/freighter-api',
+          '@achievo/contracts',
+          '@achievo/sdk',
           '@achievo/shared',
           '@achievo/stellar',
           '@achievo/identity',
@@ -51,9 +55,17 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'json-summary', 'json'],
-      // Floors set just under current coverage (statements 69%, branches 65%,
-      // functions 63%, lines 71%) so this is a ratchet against regression,
-      // not an unmet aspiration — raise these as coverage grows.
+      // Unit tests ratchet domain logic only. Feature UI shells, app composition,
+      // and public barrels are out of scope here (E2E covers those paths).
+      include: [
+        'src/shared/lib/**/*.ts',
+        'src/features/feedback/**/*.ts',
+        'src/features/history/model/**/*.ts',
+        'src/features/profile/userIdentity.ts',
+      ],
+      exclude: ['src/**/index.ts', 'src/**/*.tsx', 'src/test/**'],
+      // Floors sit just under the measured logic-module coverage so this stays a
+      // regression ratchet, not an unmet aspiration — raise as coverage grows.
       thresholds: {
         statements: 65,
         branches: 60,

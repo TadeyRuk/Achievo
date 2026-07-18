@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Check } from "lucide-react";
-import { AVATAR_OPTIONS } from '../features/profile/avatarOptions';
-import { setUserName } from '../features/profile/userIdentity';
+import { AVATAR_OPTIONS, setUserName } from '../features/profile';
 
 interface LoginProps {
   onComplete: (name: string, avatar: string) => void;

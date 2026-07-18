@@ -90,7 +90,8 @@ flowchart LR
     Treasury --> A5 --> Student
 ```
 
-Client agents live in `frontend/src/agents.ts`. Kouri Agent evaluation runs in `api/reward.ts`.
+Client agents live in the earn feature. Kouri Agent evaluation runs in the
+server rewards feature behind the thin `api/reward.ts` Vercel adapter.
 
 ## Builder Progression
 
@@ -196,11 +197,14 @@ flowchart TB
 ### Responsibility boundaries
 
 - **Client pipeline hints** provide immediate progress feedback; they are not authoritative AI decisions.
+- **`@achievo/sdk`** is the only browser path to `/api/*`; feature UI never owns raw fetch/XDR transport.
 - **Groq on the server** classifies valid activities and scores submission effort.
 - **Wallet ownership proof** uses an HMAC-protected nonce challenge signed by the connected wallet.
 - **The server-side admin signer** authorizes treasury payouts; the admin key never enters browser code.
+- **API handlers** are thin Vercel adapters; use cases live under `api/_server/features` with ports wired in composition.
 - **The Soroban contract** enforces positive payouts, available treasury balance, and a 20 XLM per-transaction ceiling.
 - **The frontend** combines durable contract history with recent events and refreshes the payout feed every 15 seconds.
+- **CI** runs `npm run check:boundaries` so package, feature, and server ownership rules stay enforced.
 
 ## Core Capabilities
 
@@ -254,16 +258,16 @@ function rename cannot be merged without updating its TypeScript consumers.
 
 | Contract function | Rust implementation | TypeScript consumer |
 |---|---|---|
-| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `api/_lib/submitReward.ts` |
+| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `api/_server/infrastructure/stellar.ts` |
 | `get_balance()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_admin()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_disbursed()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_history()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_daily_disbursed` / `get_recipient_daily` / `get_day` | `contract/src/lib.rs` | `@achievo/stellar` |
 
-Wallet discovery, Testnet validation, and challenge signing are implemented in
-`frontend/src/wallet.ts`. Chain reads live in `@achievo/stellar`; production
-payouts use the server-side `send_reward` call in `api/_lib/submitReward.ts`.
+Wallet discovery, Testnet validation, and challenge signing live in the wallet
+feature. Chain reads use `@achievo/stellar`; production payouts use the
+server-side `send_reward` adapter in `api/_server/infrastructure/stellar.ts`.
 
 ### Documented testnet QA activity
 
@@ -317,18 +321,19 @@ Current automated coverage:
 
 - **Frontend / API helpers:** Vitest suite (shared rewards, stellar decode/merge, API nonce/reward/feedback, component smoke), including fast-check property tests.
 - **Contract:** 18 Rust tests covering initialization, authorization, payout limits, storage, events, and failure states.
-- **CI:** build `@achievo/*` packages, contract/frontend binding check, frontend lint/test/build, contract test/release WASM.
+- **CI:** build `@achievo/*` packages, boundary check, contract/frontend binding check, frontend lint/test/build, contract test/release WASM.
 
 ## Technology
 
 | Layer | Implementation |
 |---|---|
 | Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, Motion 12 |
+| Client API | `@achievo/sdk` + `@achievo/contracts` |
 | Wallets | StellarWalletsKit, Horizon Testnet, Friendbot |
-| Backend | Vercel serverless TypeScript functions |
+| Backend | Thin Vercel adapters over `api/_server` feature cores |
 | AI | **Kouri Agent** on Groq `llama-3.1-8b-instant` |
 | Smart contract | Rust, Soroban SDK 26.1, XLM SAC |
-| Analytics | PostHog |
+| Analytics | PostHog via typed frontend analytics facade |
 | Testing | Vitest, Testing Library, fast-check, Soroban test utilities |
 | Deployment | Vercel and Stellar Testnet |
 
@@ -336,27 +341,28 @@ Current automated coverage:
 
 ```text
 .
-├── api/                         Vercel handlers + _lib steps + __tests__
+├── api/                         Thin Vercel handlers + _server/{http,features,infrastructure,composition}
 ├── packages/
-│   ├── shared/                  @achievo/shared — rewards, caps, constants, types
+│   ├── shared/                  @achievo/shared — rewards, caps, constants, domain types
+│   ├── contracts/               @achievo/contracts — HTTP request/response DTOs
 │   ├── stellar/                 @achievo/stellar — RPC/Horizon views + decode
-│   └── identity/                @achievo/identity — identity types + redact helpers
+│   ├── identity/                @achievo/identity — identity types + redact helpers
+│   └── sdk/                     @achievo/sdk — typed browser/server HTTP client
 ├── contract/                    Soroban treasury contract, tests, deploy script
 ├── frontend/                    React and Vite production PWA
 │   ├── public/                  PWA manifest, service worker, icons, avatars
-│   └── src/                     AppShell, screens, hooks, wallet/, tests
+│   └── src/                     app composition, feature public APIs, shared adapters
 ├── docs/
 │   ├── ARCHITECTURE.md          Package graph + authority diagram
 │   ├── screenshots/             README and evaluation screenshots
 │   └── media/                   Demo source media and legacy presentation assets
-├── scripts/                     Integration checks and utilities
-├── tools/remotion-demo-video/   Isolated Remotion demo generator (not a workspace)
+├── scripts/                     Integration, boundary, and utility checks
 ├── vercel.json                  Production build and API routing
 ├── .env.example                 Server + VITE_* variable template
 └── README.md                    Product, evidence, architecture, and setup
 ```
 
-Production runtime is limited to `frontend/`, `api/`, `packages/`, the deployed contract, and external services. Remotion under `tools/` is demo tooling only — see [`tools/remotion-demo-video/README.md`](tools/remotion-demo-video/README.md).
+Production runtime is limited to `frontend/`, `api/`, `packages/`, the deployed contract, and external services. The product demo video is hosted on Google Drive (see the Watch Product Demo link above), not generated inside this repository.
 
 ## Run Locally
 
@@ -557,15 +563,10 @@ cargo build --release --target wasm32v1-none
 
 The contract requires the `wasm32v1-none` target with Soroban SDK 26+.
 
-## Demo Tooling
+## Product Demo
 
-The product walkthrough is generated from the isolated Remotion project in [`tools/remotion-demo-video`](tools/remotion-demo-video/). It is **tooling only** (not an npm workspace member, not in CI product jobs). See [`tools/remotion-demo-video/README.md`](tools/remotion-demo-video/README.md).
-
-```bash
-cd tools/remotion-demo-video
-npm ci
-npm run render:demo
-```
+Watch the hosted walkthrough:
+[Achievo product demo (Google Drive)](https://drive.google.com/file/d/1zDNqKgDn3rzbQ-2GhFv26RG4xjkEjxNd/view?usp=sharing).
 
 ## License
 

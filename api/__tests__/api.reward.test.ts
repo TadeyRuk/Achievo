@@ -17,7 +17,8 @@ const bindIdentity = vi.fn().mockResolvedValue({
 })
 const issueSessionToken = vi.fn().mockReturnValue({ token: 'sess', expiresAt: Date.now() + 1000 })
 
-vi.mock('../_lib/store', () => ({
+vi.mock('../_server/infrastructure/store', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/store')>()),
   claimOnce: (...args: unknown[]) => claimOnce(...args),
   releaseClaim: (...args: unknown[]) => releaseClaim(...args),
   listRecent: (...args: unknown[]) => listRecent(...args),
@@ -32,13 +33,15 @@ vi.mock('../_lib/store', () => ({
   },
 }))
 
-vi.mock('../_lib/identity', () => ({
+vi.mock('../_server/infrastructure/identity', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/identity')>()),
   getIdentityByWallet: (...args: unknown[]) => getIdentityByWallet(...args),
   bindIdentity: (...args: unknown[]) => bindIdentity(...args),
   issueSessionToken: (...args: unknown[]) => issueSessionToken(...args),
 }))
 
-vi.mock('../_lib/payout/stellarServers', () => ({
+vi.mock('../_server/infrastructure/stellar', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/stellar')>()),
   horizonServer: {
     loadAccount: vi.fn().mockResolvedValue({
       accountId: 'GADMIN',
@@ -55,25 +58,29 @@ vi.mock('../_lib/payout/stellarServers', () => ({
   },
 }))
 
-vi.mock('../_agents/scoring', () => ({
+vi.mock('../_server/infrastructure/evaluator', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/evaluator')>()),
   ScoringAgent: {
     evaluate: vi.fn(),
   },
 }))
 
-vi.mock('../_agents/integrity', () => ({
+vi.mock('../_server/infrastructure/integrity', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/integrity')>()),
   IntegrityAgent: {
     assess: vi.fn().mockReturnValue({ effortMultiplier: 1, flagged: false, reasons: [] }),
     fingerprint: vi.fn().mockReturnValue('fp'),
   },
 }))
 
-vi.mock('../_lib/notify/telegram', () => ({
+vi.mock('../_server/infrastructure/telegram', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/telegram')>()),
   notifyPayoutTelegram: vi.fn(),
+  notifyOpsAlert: vi.fn(),
 }))
 
 import handler from '../reward'
-import { ScoringAgent } from '../_agents/scoring'
+import { ScoringAgent } from '../_server/infrastructure/evaluator'
 import {
   TransactionBuilder,
   Networks,

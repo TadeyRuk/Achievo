@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { VercelRequest } from '@vercel/node';
-import { getClientIp } from '../_lib/http/getClientIp';
+import { getClientIp } from '../_server/http';
 
 function req(headers: Record<string, string>, remoteAddress?: string): VercelRequest {
   return {

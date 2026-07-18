@@ -1,14 +1,8 @@
 import { Bot, ShieldCheck, Coins, Link as LinkIcon, MessageSquare, CheckCircle2, XCircle } from "lucide-react";
 import { motion } from "motion/react";
+import type { PipelineStep } from './model/pipelineTypes';
 
-export type StepStatus = 'idle' | 'running' | 'done' | 'error';
-
-export interface PipelineStep {
-  name: string;
-  desc: string;
-  status: StepStatus;
-  detail?: string;
-}
+export type { PipelineStep, StepStatus } from './model/pipelineTypes';
 
 interface PipelineVisualizerProps {
   steps: PipelineStep[];

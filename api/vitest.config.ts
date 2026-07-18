@@ -10,7 +10,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'json-summary', 'json'],
-      include: ['_lib/**/*.ts', '_agents/**/*.ts', '*.ts'],
+      include: ['_server/**/*.ts', '*.ts'],
       exclude: ['__tests__/**', 'vitest.config.ts'],
       // Raised from the original 50/50/40 floor now that Phase 0's store/http/
       // health/payout tests pushed real coverage to ~63%/61%/53% — set just
@@ -27,6 +27,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@achievo/shared': path.resolve(__dirname, '../packages/shared/src/index.ts'),
+      '@achievo/contracts': path.resolve(__dirname, '../packages/contracts/src/index.ts'),
       '@achievo/stellar': path.resolve(__dirname, '../packages/stellar/src/index.ts'),
       '@achievo/identity': path.resolve(__dirname, '../packages/identity/src/index.ts'),
     },

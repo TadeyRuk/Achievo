@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Keypair } from '@stellar/stellar-sdk'
 import { createHash } from 'node:crypto'
 
-vi.mock('../_lib/store', () => ({
+vi.mock('../_server/infrastructure/store', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/store')>()),
   claimOnce: vi.fn().mockResolvedValue(true),
   StoreUnavailableError: class StoreUnavailableError extends Error {
     constructor(message: string) {
@@ -13,15 +14,23 @@ vi.mock('../_lib/store', () => ({
   },
 }))
 
-vi.mock('../_lib/payout/stellarServers', () => ({
+vi.mock('../_server/infrastructure/stellar', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/stellar')>()),
   horizonServer: {
     loadAccount: vi.fn().mockRejectedValue(new Error('not funded')),
   },
   rpcServer: {},
+  issueChallenge: vi.fn(async (_wallet: string, hash: string) => ({
+    nonce: 'ab'.repeat(16),
+    expiry: Date.now() + 60_000,
+    mac: 'cd'.repeat(32),
+    intentHash: hash.toLowerCase(),
+    challengeXdr: 'AAAA',
+  })),
 }))
 
 import handler from '../nonce'
-import { claimOnce } from '../_lib/store'
+import { claimOnce } from '../_server/infrastructure/store'
 
 interface MockResponse {
   statusCode: number

@@ -1,0 +1,28 @@
+name: Reconcile
+
+on:
+  schedule:
+    # Hobby Vercel cannot host sub-daily crons; Actions triggers /api/reconcile instead.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    name: Settle pending payouts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/reconcile
+        env:
+          ACHIEVO_BASE_URL: ${{ secrets.ACHIEVO_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ACHIEVO_BASE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "Missing repo secrets ACHIEVO_BASE_URL and/or CRON_SECRET."
+            exit 1
+          fi
+          base="${ACHIEVO_BASE_URL%/}"
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Accept: application/json" \
+            "${base}/api/reconcile"

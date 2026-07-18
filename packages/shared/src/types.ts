@@ -6,20 +6,3 @@ export interface RewardHistoryItem {
   txHash: string;
   timestamp: number;
 }
-
-/** Successful `/api/reward` response body. */
-export interface RewardApiSuccess {
-  txHash: string;
-  reward: number;
-  base: number;
-  bonus: number;
-  effortScore: number;
-  activity: string;
-  reason?: string;
-  flagged?: boolean;
-  flagReason?: string;
-}
-
-export interface RewardApiError {
-  error: string;
-}

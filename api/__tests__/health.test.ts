@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const getRedis = vi.fn()
 
-vi.mock('../_lib/store', () => ({
+vi.mock('../_server/infrastructure/store', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/store')>()),
   getRedis: (...args: unknown[]) => getRedis(...args),
   StoreUnavailableError: class StoreUnavailableError extends Error {
     constructor(message: string) {
@@ -13,7 +14,8 @@ vi.mock('../_lib/store', () => ({
   },
 }))
 
-vi.mock('@achievo/shared', () => ({
+vi.mock('@achievo/shared', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@achievo/shared')>()),
   CONTRACT_ID: 'CTESTCONTRACT',
   SOROBAN_RPC_URL: 'https://rpc.example.test',
 }))

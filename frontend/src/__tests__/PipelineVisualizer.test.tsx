@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { PipelineVisualizer, type PipelineStep } from '../features/earn/PipelineVisualizer'
+import { PipelineVisualizer, type PipelineStep } from '../features/earn'
 
 const steps: PipelineStep[] = [
   { name: 'Activity Agent', desc: 'Parsing…', status: 'done', detail: 'tutoring' },

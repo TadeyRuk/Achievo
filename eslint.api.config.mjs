@@ -28,4 +28,70 @@ export default defineConfig([
       ],
     },
   },
+  {
+    files: ['api/_server/features/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@vercel/node',
+              message: 'Feature cores must stay framework-neutral — use HttpRequest/HttpResult.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['**/frontend/**', '../frontend/**', '../../frontend/**'],
+              message: 'api must not import from frontend/',
+            },
+            {
+              group: [
+                '**/infrastructure/**',
+                '../../infrastructure/**',
+                '../../../infrastructure/**',
+                '../../../../infrastructure/**',
+              ],
+              message: 'Feature cores must depend on ports, not concrete infrastructure.',
+            },
+            {
+              group: [
+                '**/composition/**',
+                '../../composition/**',
+                '../../../composition/**',
+              ],
+              message: 'Feature cores must not import composition wiring.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['api/_server/infrastructure/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/frontend/**', '../frontend/**', '../../frontend/**'],
+              message: 'api must not import from frontend/',
+            },
+            {
+              group: [
+                '**/features/**',
+                '../../features/**',
+                '../../../features/**',
+                '**/composition/**',
+                '../../composition/**',
+                '../../../composition/**',
+              ],
+              message: 'Infrastructure must not import features or composition.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])

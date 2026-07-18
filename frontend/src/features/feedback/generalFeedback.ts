@@ -1,4 +1,6 @@
 /** Client helper for the always-available general feedback channel. */
+import { ApiError } from '@achievo/sdk';
+import { achievoClient } from '../../shared/api';
 
 export type GeneralFeedbackPayload = {
   rating: number;
@@ -9,23 +11,14 @@ export type GeneralFeedbackPayload = {
 export async function submitGeneralFeedback(
   payload: GeneralFeedbackPayload,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const res = await fetch('/api/feedback-general', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-
-  const raw = await res.text();
-  let data: { error?: string };
   try {
-    data = JSON.parse(raw) as { error?: string };
-  } catch {
-    return { ok: false, error: `Feedback API error ${res.status}` };
+    await achievoClient.submitGeneralFeedback(payload);
+    return { ok: true };
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+    return {
+      ok: false,
+      error: error.body === undefined ? `Feedback API error ${error.status}` : error.message,
+    };
   }
-
-  if (!res.ok) {
-    return { ok: false, error: data.error ?? `Feedback API error ${res.status}` };
-  }
-
-  return { ok: true };
 }

@@ -6,7 +6,7 @@ import {
   jaccardSimilarity,
   shingles,
   DUPLICATE_EFFORT_MULTIPLIER,
-} from "../_agents/integrity";
+} from "../_server/infrastructure/integrity";
 
 describe("IntegrityAgent — text helpers", () => {
   it("normalizes case, punctuation, and whitespace", () => {

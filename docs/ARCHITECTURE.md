@@ -7,14 +7,17 @@ enforces rate limits. The client proves wallet ownership and displays results.
 ## Package graph
 
 ```text
-@achievo/shared     constants, reward table, daily caps, types, stroops
-@achievo/identity   Identity types, redact helpers (no Node crypto)
+@achievo/shared       constants, reward table, daily caps, domain types, stroops
+@achievo/identity     Identity types, redact helpers (no Node crypto)
        ↑
-@achievo/stellar    RPC/Horizon clients, decode, treasury + history views
+@achievo/contracts    Public HTTP request/response DTOs
+@achievo/stellar      RPC/Horizon clients, decode, treasury + history views
        ↑
-frontend/src/app + features/* + hooks   Vite React UI
-api/*.ts                                Vercel handlers (root)
-api/_lib/{store,payout,identity,notify} server-only helpers
+@achievo/sdk          Typed fetch client + submitActivity reward flow
+       ↑
+frontend/src/app + features/* + shared   Vite React UI
+api/*.ts                                 Thin Vercel adapters
+api/_server/{http,features,infrastructure,composition}
 ```
 
 Folder navigation: [`REPO_MAP.md`](REPO_MAP.md).
@@ -25,21 +28,27 @@ Dependency rules:
 |---|---|
 | `@achievo/shared` | nothing app-specific |
 | `@achievo/identity` | nothing app-specific |
+| `@achievo/contracts` | `@achievo/shared` (types only as needed) |
 | `@achievo/stellar` | `@achievo/shared`, `@stellar/stellar-sdk` |
-| `frontend` | `@achievo/shared`, `@achievo/stellar`, `@achievo/identity` |
-| `api/` | `@achievo/shared`, `@achievo/stellar`, `@achievo/identity`, `api/_lib/*` |
-| `api/_lib/*` | never `frontend` |
+| `@achievo/sdk` | `@achievo/contracts`, `@achievo/shared` |
+| `frontend` | `@achievo/shared`, `@achievo/stellar`, `@achievo/identity`, `@achievo/sdk`, `@achievo/contracts` |
+| `api/_server/features/*` | contracts/domain packages + ports; never `@vercel/node` or infrastructure |
+| `api/_server/infrastructure/*` | packages + Node/SDK libs; never feature routes/composition |
+| `api/_server/composition/*` | features + infrastructure (route-specific wiring only) |
+| `api/*.ts` | composition route + HTTP adapter only |
+| packages / api | never `frontend` |
 
 See also [`docs/IDENTITY.md`](IDENTITY.md).
 
-`tools/remotion-demo-video/` is **not** a workspace member — demo tooling only.
+The product demo video is hosted externally on Google Drive — not generated from
+this repository.
 
 ## Authority diagram
 
 ```mermaid
 flowchart TB
   Student[Student wallet]
-  UI[frontend hooks]
+  UI[frontend + SDK]
   Nonce["/api/nonce"]
   Reward["/api/reward"]
   Groq[Kouri / Groq ScoringAgent]
@@ -92,17 +101,23 @@ Constants live in `@achievo/shared` (`caps.ts`) and must stay aligned with
    (`scoringMode: "heuristic"`). Integrity, rate limits, intent binding, and
    daily caps still apply.
 
-## Reward handler steps
+## Server layout
 
-`api/reward.ts` is thin orchestration. Steps live under `api/_lib/`:
+Root handlers under `api/*.ts` are thin Vercel adapters. Behavior lives in
+`api/_server/`:
 
-| Module | Role |
+| Layer | Role |
 |---|---|
-| `api/_lib/payout/challenge.ts` | Verify signed challenge + MAC |
-| `api/_lib/payout/rateClaims.ts` | Hybrid wallet / IP / identity rate claims |
-| `api/_lib/payout/evaluateSubmission.ts` | Groq → heuristic fallback |
-| `api/_lib/payout/dailyBudgets.ts` | Redis treasury + recipient budgets |
-| `api/_lib/payout/submitReward.ts` | Build / sign / send / poll `send_reward` |
+| `http/` | Framework-neutral `HttpRequest`/`HttpResult` + Vercel adapter + trusted client IP |
+| `features/rewards` | Nonce, reward, payouts, reconcile use cases and narrow ports |
+| `features/feedback` | Transaction + general feedback use cases |
+| `features/identity` | Identity bind/session routes |
+| `features/health` | Health probe route |
+| `infrastructure/` | Redis store, Stellar challenge/submit, evaluator, integrity, Forms, Telegram |
+| `composition/` | Route-specific port wiring (one module per endpoint family) |
+
+Reward-family composition is split so `/api/payouts` does not import evaluator,
+Stellar submit, integrity, or Telegram modules.
 
 ## Hybrid rate keys
 
@@ -132,11 +147,13 @@ XLM caps in `@achievo/shared`. Wired into `npm run check-contract-integration`.
 | Suite | Location | Command |
 |---|---|---|
 | UI / shared / stellar decode | `frontend/src/__tests__` | `npm test -w frontend` |
-| API handlers + agents | `api/__tests__` | `npm run test:api` |
+| SDK | `packages/sdk/__tests__` | `npm test -w @achievo/sdk` |
+| API handlers + features | `api/__tests__` | `npm run test:api` |
 | Contract | `contract/` | `cargo test` |
 
 Frontend must not import `api/**` (eslint). Prefer `@achievo/*` over deep package paths.
-`@stellar/stellar-sdk` in the UI is confined to `features/wallet/wallet.ts` (+ tests).
+Browser `/api` traffic goes through `@achievo/sdk` via `frontend/src/shared/api/achievoClient.ts`.
+`@stellar/stellar-sdk` in the UI is confined to the wallet feature SDK adapter (+ tests).
 
 ## Manual regression smoke
 

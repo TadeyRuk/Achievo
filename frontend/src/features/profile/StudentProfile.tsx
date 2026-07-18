@@ -2,19 +2,19 @@ import { useState } from "react";
 import { ShieldAlert, Pencil, Snowflake, ChevronLeft } from "lucide-react";
 import { motion } from "motion/react";
 import { type RewardHistoryItem } from "@achievo/shared";
-import { ProgressionAgent, type StoredProgression } from '../../shared/lib/progression';
+import type { ProgressionViewModel } from '../../shared/lib';
 import { AvatarPickerModal } from './AvatarPickerModal';
 import { BadgeCollection } from './BadgeCollection';
 import {
   CustomStar,
   CustomTrophy,
   CustomClipboardList,
-} from '../../shared/ui/customIcons';
+} from '../../shared/ui';
 
 interface StudentProfileProps {
   walletAddress: string | null;
   history: RewardHistoryItem[];
-  progression?: StoredProgression;
+  progression: ProgressionViewModel;
   userAvatar: string;
   onAvatarChange: (avatar: string) => void;
   userName: string;
@@ -65,10 +65,9 @@ export function StudentProfile({
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
   const totalSubmissions = history.length;
 
-  // Progression — single source of truth via ProgressionAgent (freeze-aware)
-  const prog = ProgressionAgent.state(history, progression ?? {});
-  const streak = prog.streak;
-  const freezes = prog.freezes;
+  // Progression — single source of truth via app view-model (freeze-aware)
+  const streak = progression.state.streak;
+  const freezes = progression.state.freezes;
 
   const [showAvatarModal, setShowAvatarModal] = useState<boolean>(false);
 

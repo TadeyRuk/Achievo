@@ -11,7 +11,12 @@
 - Settles `pending_reconcile` rows (poll timeout after `sendTransaction`).
 - Alerts via Telegram when pending &gt; 15 minutes, on-chain failure, or treasury daily ≥ 80% of cap.
 
-Schedule via Vercel Cron or GitHub `schedule` (every 5–15 minutes).
+Scheduled by GitHub Actions (`.github/workflows/reconcile.yml`, every 10 minutes + manual `workflow_dispatch`), not Vercel Cron — Hobby plans reject sub-daily Vercel crons and would fail deploy.
+
+Repo secrets required for the workflow:
+
+- `ACHIEVO_BASE_URL` — production (or staging) origin, e.g. `https://achievo.example.com`
+- `CRON_SECRET` — same value as the app’s `CRON_SECRET` env on Vercel
 
 ## Ambiguous submits
 

@@ -9,14 +9,13 @@
 | Profile / badges / name | [`frontend/src/features/profile/`](../frontend/src/features/profile/) |
 | Feedback sheets | [`frontend/src/features/feedback/`](../frontend/src/features/feedback/) |
 | Onboarding tour | [`frontend/src/features/onboarding/`](../frontend/src/features/onboarding/) |
-| Shared UI (nav, sheets, glass) | [`frontend/src/shared/ui/`](../frontend/src/shared/ui/) |
-| Client hooks | [`frontend/src/hooks/`](../frontend/src/hooks/) |
-| HTTP API routes (Vercel) | [`api/*.ts`](../api/) |
-| Redis / store | [`api/_lib/store/`](../api/_lib/store/) |
-| Payout / challenge / submit | [`api/_lib/payout/`](../api/_lib/payout/) |
-| Identity helpers (server) | [`api/_lib/identity/`](../api/_lib/identity/) |
-| Telegram / Google Forms | [`api/_lib/notify/`](../api/_lib/notify/) |
-| Groq / heuristic agents | [`api/_agents/`](../api/_agents/) |
+| Shared UI / analytics / SDK client | [`frontend/src/shared/`](../frontend/src/shared/) |
+| HTTP API route adapters (Vercel) | [`api/*.ts`](../api/) |
+| Server HTTP boundary | [`api/_server/http/`](../api/_server/http/) |
+| Feature use cases / ports | [`api/_server/features/`](../api/_server/features/) |
+| Redis / Stellar / Forms / Telegram | [`api/_server/infrastructure/`](../api/_server/infrastructure/) |
+| Route composition wiring | [`api/_server/composition/`](../api/_server/composition/) |
 | API tests | [`api/__tests__/`](../api/__tests__/) |
-| Shared domain + Stellar SDK | [`packages/`](../packages/) |
+| Shared domain + contracts + SDK | [`packages/`](../packages/) |
 | Soroban contract | [`contract/`](../contract/) |
+| Product demo video | [Google Drive walkthrough](https://drive.google.com/file/d/1zDNqKgDn3rzbQ-2GhFv26RG4xjkEjxNd/view?usp=sharing) |

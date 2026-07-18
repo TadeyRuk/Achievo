@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mergeChainIntoLocal } from '../hooks/useRewardHistory'
+import { mergeChainIntoLocal } from '../features/history'
 import type { RewardHistoryItem } from '@achievo/shared'
 
 describe('mergeChainIntoLocal', () => {

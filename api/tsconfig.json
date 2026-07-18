@@ -10,6 +10,7 @@
     "types": ["node"],
     "paths": {
       "@achievo/shared": ["../packages/shared/src/index.ts"],
+      "@achievo/contracts": ["../packages/contracts/src/index.ts"],
       "@achievo/stellar": ["../packages/stellar/src/index.ts"],
       "@achievo/identity": ["../packages/identity/src/index.ts"]
     },

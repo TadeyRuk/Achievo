@@ -4,7 +4,7 @@ import {
   listPendingReconcile,
   removePendingReconcile,
   type PendingPayout,
-} from "../_lib/payout/pendingReconcile";
+} from "../_server/infrastructure/rewards";
 
 // Exercises the real getJson/setJson in-memory fallback — the pending-reconcile
 // ledger is a single shared key, so each test uses a unique txHash to stay
