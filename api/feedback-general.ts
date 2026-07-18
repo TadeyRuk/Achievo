@@ -1,5 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { notifyGeneralFeedbackTelegram } from './_lib/telegram';
+import {
+  GoogleFormsConfigError,
+  GoogleFormsSubmitError,
+  submitFeedbackForm,
+} from './_lib/googleForms';
 
 const MAX_COMMENT = 500;
 const MAX_NAME = 40;
@@ -58,8 +62,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await notifyGeneralFeedbackTelegram(parsed);
-  } catch { /* best-effort; never fail the HTTP response */ }
+    await submitFeedbackForm({ type: 'general', ...parsed });
+  } catch (err) {
+    if (err instanceof GoogleFormsConfigError) {
+      return res.status(503).json({ error: err.message });
+    }
+    if (err instanceof GoogleFormsSubmitError) {
+      return res.status(502).json({ error: err.message });
+    }
+    return res.status(502).json({
+      error: `Failed to submit feedback: ${(err as Error).message ?? String(err)}`,
+    });
+  }
 
   return res.status(201).json({ ok: true });
 }

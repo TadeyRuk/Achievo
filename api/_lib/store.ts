@@ -126,35 +126,6 @@ export async function listRecent(key: string): Promise<string[]> {
   return (await redis.lrange<string>(key, 0, -1)) ?? [];
 }
 
-// ── Feedback entries (per-transaction user ratings) ─────────────────────────
-
-const FEEDBACK_KEY = 'feedback:entries';
-const FEEDBACK_MAX = 500;
-const FEEDBACK_TTL_SECONDS = 365 * 24 * 60 * 60;
-
-const memFeedback: string[] = [];
-
-/** Append a JSON feedback record (newest-first, bounded). */
-export async function appendFeedback(json: string): Promise<void> {
-  const redis = getRedis();
-  if (!redis) {
-    memFeedback.unshift(json);
-    memFeedback.splice(FEEDBACK_MAX);
-    return;
-  }
-  await redis.lpush(FEEDBACK_KEY, json);
-  await redis.ltrim(FEEDBACK_KEY, 0, FEEDBACK_MAX - 1);
-  await redis.expire(FEEDBACK_KEY, FEEDBACK_TTL_SECONDS);
-}
-
-/** Return stored feedback entries, newest-first (capped). */
-export async function listFeedback(limit = 100): Promise<string[]> {
-  const cap = Math.max(1, Math.min(FEEDBACK_MAX, Math.floor(limit)));
-  const redis = getRedis();
-  if (!redis) return memFeedback.slice(0, cap);
-  return (await redis.lrange<string>(FEEDBACK_KEY, 0, cap - 1)) ?? [];
-}
-
 // ── Global payout ledger (server-side tx log for stats / proof) ───────────────
 
 const PAYOUTS_KEY = 'payouts:ledger';

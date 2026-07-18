@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('../../../api/_lib/store', () => ({
+  claimOnce: vi.fn().mockResolvedValue(true),
+}));
+
 vi.mock('../../../api/_lib/googleForms', () => ({
   GoogleFormsConfigError: class GoogleFormsConfigError extends Error {
     constructor(message: string) {
@@ -16,11 +20,14 @@ vi.mock('../../../api/_lib/googleForms', () => ({
   submitFeedbackForm: vi.fn().mockResolvedValue(undefined),
 }));
 
-import handler from '../../../api/feedback-general';
+import handler from '../../../api/feedback';
+import { claimOnce } from '../../../api/_lib/store';
 import {
   GoogleFormsConfigError,
   submitFeedbackForm,
 } from '../../../api/_lib/googleForms';
+
+const TX = 'a'.repeat(64);
 
 interface MockRequest {
   method?: string;
@@ -34,7 +41,7 @@ interface MockResponse {
   json(payload: unknown): MockResponse;
 }
 
-function makeReqRes(method: string, body: unknown) {
+function makeReqRes(method: string, body?: unknown) {
   const req: MockRequest = { method, body };
   const res: MockResponse = {
     statusCode: 0,
@@ -51,32 +58,25 @@ function makeReqRes(method: string, body: unknown) {
   return { req, res };
 }
 
-describe('POST /api/feedback-general', () => {
+describe('/api/feedback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(claimOnce).mockResolvedValue(true);
     vi.mocked(submitFeedbackForm).mockResolvedValue(undefined);
   });
 
-  it('rejects non-POST methods', async () => {
-    const { req, res } = makeReqRes('GET', {});
+  it('GET points operators at Google Forms', async () => {
+    const { req, res } = makeReqRes('GET');
     await handler(
       req as unknown as Parameters<typeof handler>[0],
       res as unknown as Parameters<typeof handler>[1],
     );
-    expect(res.statusCode).toBe(405);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toMatchObject({ source: 'google_forms' });
   });
 
-  it('rejects a missing rating', async () => {
-    const { req, res } = makeReqRes('POST', { comment: 'hi' });
-    await handler(
-      req as unknown as Parameters<typeof handler>[0],
-      res as unknown as Parameters<typeof handler>[1],
-    );
-    expect(res.statusCode).toBe(400);
-  });
-
-  it('rejects an out-of-range rating', async () => {
-    const { req, res } = makeReqRes('POST', { rating: 6 });
+  it('rejects invalid txHash', async () => {
+    const { req, res } = makeReqRes('POST', { txHash: 'nope', rating: 5 });
     await handler(
       req as unknown as Parameters<typeof handler>[0],
       res as unknown as Parameters<typeof handler>[1],
@@ -84,17 +84,26 @@ describe('POST /api/feedback-general', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('rejects a comment over 500 chars', async () => {
-    const { req, res } = makeReqRes('POST', { rating: 3, comment: 'x'.repeat(501) });
+  it('rejects duplicate submissions with 409', async () => {
+    vi.mocked(claimOnce).mockResolvedValueOnce(false);
+    const { req, res } = makeReqRes('POST', { txHash: TX, rating: 5 });
     await handler(
       req as unknown as Parameters<typeof handler>[0],
       res as unknown as Parameters<typeof handler>[1],
     );
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(409);
+    expect(submitFeedbackForm).not.toHaveBeenCalled();
   });
 
-  it('accepts a valid rating-only submission and posts to Google Forms', async () => {
-    const { req, res } = makeReqRes('POST', { rating: 4 });
+  it('posts a valid payload to Google Forms', async () => {
+    const { req, res } = makeReqRes('POST', {
+      txHash: TX,
+      rating: 4,
+      comment: 'Solid',
+      wallet: 'GABC',
+      reward: 5,
+      activity: 'Tutoring',
+    });
     await handler(
       req as unknown as Parameters<typeof handler>[0],
       res as unknown as Parameters<typeof handler>[1],
@@ -102,33 +111,21 @@ describe('POST /api/feedback-general', () => {
     expect(res.statusCode).toBe(201);
     expect(res.body).toEqual({ ok: true });
     expect(submitFeedbackForm).toHaveBeenCalledWith({
-      type: 'general',
+      type: 'transaction',
+      txHash: TX,
       rating: 4,
-      comment: null,
-      name: null,
-    });
-  });
-
-  it('accepts rating + comment + name', async () => {
-    const { req, res } = makeReqRes('POST', { rating: 5, comment: 'Great app!', name: 'Xander' });
-    await handler(
-      req as unknown as Parameters<typeof handler>[0],
-      res as unknown as Parameters<typeof handler>[1],
-    );
-    expect(res.statusCode).toBe(201);
-    expect(submitFeedbackForm).toHaveBeenCalledWith({
-      type: 'general',
-      rating: 5,
-      comment: 'Great app!',
-      name: 'Xander',
+      comment: 'Solid',
+      wallet: 'GABC',
+      reward: 5,
+      activity: 'Tutoring',
     });
   });
 
   it('returns 503 when Google Forms is not configured', async () => {
     vi.mocked(submitFeedbackForm).mockRejectedValueOnce(
-      new GoogleFormsConfigError('Google Forms is not configured (missing GOOGLE_FORM_ID).'),
+      new GoogleFormsConfigError('missing GOOGLE_FORM_ID'),
     );
-    const { req, res } = makeReqRes('POST', { rating: 4 });
+    const { req, res } = makeReqRes('POST', { txHash: TX, rating: 3 });
     await handler(
       req as unknown as Parameters<typeof handler>[0],
       res as unknown as Parameters<typeof handler>[1],

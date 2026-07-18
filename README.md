@@ -375,7 +375,7 @@ cd contract && cargo test
 **Frontend tests (Vitest + fast-check):**
 ```bash
 cd frontend && npm test
-# 13 test files, 68 tests: contract helpers, RecentPayouts UI, feedback summary,
+# Vitest frontend suite: contract helpers, RecentPayouts UI, feedback APIs,
 # property-based tests (fast-check), agent utilities
 ```
 
@@ -427,22 +427,26 @@ test, or develop the app. See [Environment Variables](#environment-variables) fo
 
 ## User Feedback
 
-After every successful on-chain payout, students see a **Quick feedback** sheet (1–5 stars + optional comment). Responses are stored server-side via `POST /api/feedback`, keyed by transaction hash (one submission per payout).
+Achievo keeps Apple-style in-app sheets (stars + optional comment). Submissions are forwarded **server-side into one Google Form** (system of record), with a **Type** column (`general` vs `transaction`):
 
-**Live summary (for README / Level 4):** `GET /api/feedback` returns aggregate stats plus a ready-to-paste `summaryMarkdown` field:
+| Sheet | API | Type value |
+|---|---|---|
+| Post-payout quick feedback | `POST /api/feedback` | `transaction` (one submit per tx hash) |
+| General feedback (navbar) | `POST /api/feedback-general` | `general` |
+
+**Live form:** [Achievo Feedback](https://forms.gle/4Br3gSXfxV79bvYG7)  
+Users never fill the Form UI — the app posts into it. Autofilled columns include Type, Name (general), and Wallet / Reward / Activity / Tx hash (transaction). Operators review responses in the linked Google Sheet.
+
+Form field mapping and env setup: [`docs/GOOGLE_FORMS_SETUP.md`](docs/GOOGLE_FORMS_SETUP.md).  
+`GOOGLE_FORM_ID` and `GOOGLE_FORM_ENTRY_*` are configured on Vercel (Production / Preview / Development). Redeploy after changing them.
+
+`GET /api/feedback` reports that responses live in Google Forms / Sheets (it no longer aggregates Redis):
 
 ```bash
-curl -s https://achievo-rust.vercel.app/api/feedback | jq '{count, averageRating, summaryMarkdown, highlights}'
+curl -s https://achievo-rust.vercel.app/api/feedback | jq .
 ```
 
-| Field | Purpose |
-|---|---|
-| `distribution` | Count per star rating (1–5) |
-| `highlights` | Bullet points for submission write-ups |
-| `summaryMarkdown` | Paste into README after testing |
-| `recentComments` | Latest written feedback (anonymized in UI) |
-
-PostHog also tracks `transaction_feedback_submitted` and `transaction_feedback_skipped` events.
+PostHog still tracks sheet interactions:
 
 | Event | When |
 |---|---|
@@ -476,7 +480,7 @@ PostHog also tracks `transaction_feedback_submitted` and `transaction_feedback_s
 
 ## Telegram Activity Feed (optional)
 
-When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set on Vercel, every successful payout and every feedback submission posts to your Telegram channel or group — a live, visual ledger for demos and Level 4 proof.
+When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set on Vercel, every successful payout posts to your Telegram channel or group — a live ledger for demos. Feedback goes to Google Forms, not Telegram.
 
 **Setup:**
 
@@ -521,10 +525,12 @@ The local Vercel development server serves the frontend and `/api/*` functions t
 | `ADMIN_SECRET` | Yes | Server-only Stellar secret for the treasury administrator |
 | `GROQ_API_KEY` | Yes | Server-side activity evaluation |
 | `NONCE_HMAC_SECRET` | Yes | Signs and validates wallet ownership challenges |
-| `UPSTASH_REDIS_REST_URL` | Yes in production | Durable rate limits, feedback, and payout ledger storage |
+| `UPSTASH_REDIS_REST_URL` | Yes in production | Durable rate limits, payout ledger, and one-submit-per-tx claims |
 | `UPSTASH_REDIS_REST_TOKEN` | Yes in production | Authenticates the Upstash Redis connection |
-| `TELEGRAM_BOT_TOKEN` | No | Optional payout and feedback notifications |
-| `TELEGRAM_CHAT_ID` | No | Destination for optional Telegram notifications |
+| `TELEGRAM_BOT_TOKEN` | No | Optional payout notifications |
+| `TELEGRAM_CHAT_ID` | No | Destination for optional Telegram payout notifications |
+| `GOOGLE_FORM_ID` | Yes for feedback | Form id for [Achievo Feedback](https://forms.gle/4Br3gSXfxV79bvYG7) (set on Vercel) |
+| `GOOGLE_FORM_ENTRY_*` | Yes for feedback | `TYPE`, `RATING`, `COMMENT`, `NAME`, `WALLET`, `REWARD`, `ACTIVITY`, `TXHASH` (set on Vercel) |
 | `VITE_POSTHOG_KEY` | No | Public PostHog project key; analytics stays disabled when omitted |
 | `VITE_POSTHOG_HOST` | No | PostHog ingestion host; defaults to `https://us.i.posthog.com` |
 

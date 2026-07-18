@@ -1,12 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { appendFeedback, claimOnce, listFeedback } from './_lib/store';
-import { buildFeedbackSummary, type FeedbackEntry } from './_lib/feedbackSummary';
-import { notifyFeedbackTelegram } from './_lib/telegram';
+import { claimOnce } from './_lib/store';
+import {
+  GoogleFormsConfigError,
+  GoogleFormsSubmitError,
+  submitFeedbackForm,
+} from './_lib/googleForms';
 
 const TX_HASH_RE = /^[a-f0-9]{64}$/i;
 const MAX_COMMENT = 500;
 
-export type FeedbackRecord = FeedbackEntry;
+type FeedbackRecord = {
+  txHash: string;
+  rating: number;
+  comment: string | null;
+  wallet: string | null;
+  reward: number | null;
+  activity: string | null;
+};
 
 function parseRating(raw: unknown): number | null {
   const n = typeof raw === 'number' ? raw : Number(raw);
@@ -58,25 +68,16 @@ function parseBody(req: VercelRequest): FeedbackRecord | { error: string } {
     wallet,
     reward,
     activity,
-    createdAt: new Date().toISOString(),
   };
-}
-
-function parseEntries(raw: string[]): FeedbackRecord[] {
-  const entries: FeedbackRecord[] = [];
-  for (const line of raw) {
-    try {
-      entries.push(JSON.parse(line) as FeedbackRecord);
-    } catch { /* skip corrupt rows */ }
-  }
-  return entries;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    const entries = parseEntries(await listFeedback(200));
-    const summary = buildFeedbackSummary(entries);
-    return res.status(200).json({ ...summary, entries });
+    return res.status(200).json({
+      source: 'google_forms',
+      message:
+        'Transaction feedback is collected via Google Forms. See the linked response Sheet and docs/GOOGLE_FORMS_SETUP.md.',
+    });
   }
 
   if (req.method !== 'POST') {
@@ -94,26 +95,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    await appendFeedback(JSON.stringify(parsed));
+    await submitFeedbackForm({ type: 'transaction', ...parsed });
   } catch (err) {
-    return res.status(500).json({
-      error: `Failed to store feedback: ${(err as Error).message ?? String(err)}`,
+    if (err instanceof GoogleFormsConfigError) {
+      return res.status(503).json({ error: err.message });
+    }
+    if (err instanceof GoogleFormsSubmitError) {
+      return res.status(502).json({ error: err.message });
+    }
+    return res.status(502).json({
+      error: `Failed to submit feedback: ${(err as Error).message ?? String(err)}`,
     });
   }
-
-  // Telegram + rolling summary (best-effort; never fail the HTTP response).
-  try {
-    const all = parseEntries(await listFeedback(200));
-    const summary = buildFeedbackSummary(all);
-    void notifyFeedbackTelegram({
-      rating: parsed.rating,
-      comment: parsed.comment,
-      activity: parsed.activity,
-      reward: parsed.reward,
-      txHash: parsed.txHash,
-      summaryLine: summary.summaryLine,
-    });
-  } catch { /* ignore */ }
 
   return res.status(201).json({ ok: true });
 }

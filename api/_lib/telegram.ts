@@ -1,4 +1,4 @@
-/** Best-effort Telegram Bot API notifications (payouts + feedback). */
+/** Best-effort Telegram Bot API notifications (payouts). */
 
 function escapeHtml(text: string): string {
   return text
@@ -67,50 +67,5 @@ export async function notifyPayoutTelegram(payload: PayoutTelegramPayload): Prom
       `Activity: ${escapeHtml(activity)}${effort}\n` +
       `Wallet: <a href="${acctUrl}">${truncateWallet(wallet)}</a>\n` +
       `<a href="${txUrl}">View on StellarExpert</a>`,
-  );
-}
-
-export type FeedbackTelegramPayload = {
-  rating: number;
-  comment: string | null;
-  activity: string | null;
-  reward: number | null;
-  txHash: string;
-  summaryLine: string;
-};
-
-export async function notifyFeedbackTelegram(payload: FeedbackTelegramPayload): Promise<void> {
-  const stars = '★'.repeat(payload.rating) + '☆'.repeat(5 - payload.rating);
-  const commentBlock = payload.comment
-    ? `\n💬 “${escapeHtml(payload.comment.slice(0, 280))}”`
-    : '';
-  const activity = payload.activity ? escapeHtml(payload.activity) : 'activity';
-  const reward =
-    payload.reward !== null ? ` · ${payload.reward} XLM` : '';
-  const txUrl = stellarExpertTxUrl(payload.txHash);
-
-  await sendTelegramMessage(
-    `⭐ <b>User feedback</b> ${stars}\n` +
-      `${activity}${reward}${commentBlock}\n` +
-      `<i>${escapeHtml(payload.summaryLine)}</i>\n` +
-      `<a href="${txUrl}">Tx</a>`,
-  );
-}
-
-export type GeneralFeedbackTelegramPayload = {
-  rating: number;
-  comment: string | null;
-  name: string | null;
-};
-
-export async function notifyGeneralFeedbackTelegram(payload: GeneralFeedbackTelegramPayload): Promise<void> {
-  const stars = '★'.repeat(payload.rating) + '☆'.repeat(5 - payload.rating);
-  const commentBlock = payload.comment
-    ? `\n💬 “${escapeHtml(payload.comment.slice(0, 280))}”`
-    : '';
-  const from = payload.name ? ` from ${escapeHtml(payload.name)}` : '';
-
-  await sendTelegramMessage(
-    `📣 <b>General feedback</b>${from} ${stars}${commentBlock}`,
   );
 }
