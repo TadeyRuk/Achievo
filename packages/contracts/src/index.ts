@@ -179,3 +179,14 @@ export interface GeneralFeedbackApiRequest {
 
 export type GeneralFeedbackApiSuccess = FeedbackApiSuccess;
 export type GeneralFeedbackApiError = ApiErrorResponse;
+
+export interface ReconcileApiSuccess {
+  ok: true;
+  pending: number;
+  settled: number;
+  failed: number;
+  ledgerSample: number;
+  capAlert: string | null;
+}
+
+export type ReconcileApiError = ApiErrorResponse;

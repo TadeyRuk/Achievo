@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { identityIdFromWallet, redactWallet } from '@achievo/identity'
 
-vi.mock('../_lib/store', () => {
+vi.mock('../_server/infrastructure/store', () => {
   const mem = new Map<string, unknown>()
   return {
     getJson: vi.fn(async (key: string) => mem.get(key) ?? null),
@@ -23,7 +23,7 @@ import {
   issueSessionToken,
   verifySessionToken,
   getIdentityByWallet,
-} from '../_lib/identity'
+} from '../_server/infrastructure/identity'
 
 describe('@achievo/identity helpers', () => {
   it('redacts wallets and builds stable ids', () => {

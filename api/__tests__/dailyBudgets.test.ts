@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { reserveDailyBudgets, releaseDailyBudgets } from "../_lib/payout/dailyBudgets";
+import { reserveDailyBudgets, releaseDailyBudgets } from "../_server/infrastructure/rewards";
 
 // Uses the real store module's in-memory fallback (no Upstash env vars set),
 // exercised end-to-end through the recipient-cap (20 XLM) and treasury-cap

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../_lib/store', () => ({
+vi.mock('../_server/infrastructure/store', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/store')>()),
   claimOnce: vi.fn().mockResolvedValue(true),
+  releaseClaim: vi.fn().mockResolvedValue(undefined),
   StoreUnavailableError: class StoreUnavailableError extends Error {
     constructor(message: string) {
       super(message);
@@ -10,7 +12,8 @@ vi.mock('../_lib/store', () => ({
   },
 }));
 
-vi.mock('../_lib/notify/googleForms', () => ({
+vi.mock('../_server/infrastructure/notifications', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../_server/infrastructure/notifications')>()),
   GoogleFormsConfigError: class GoogleFormsConfigError extends Error {
     constructor(message: string) {
       super(message);
@@ -27,11 +30,11 @@ vi.mock('../_lib/notify/googleForms', () => ({
 }));
 
 import handler from '../feedback-general';
-import { claimOnce } from '../_lib/store';
+import { claimOnce } from '../_server/infrastructure/store';
 import {
   GoogleFormsConfigError,
   submitFeedbackForm,
-} from '../_lib/notify/googleForms';
+} from '../_server/infrastructure/notifications';
 
 interface MockRequest {
   method?: string;

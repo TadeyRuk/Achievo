@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { clampScore, normalizeEvaluation } from '../_agents/scoring'
+import { clampScore, normalizeEvaluation } from '../_server/infrastructure/evaluator'
 
 describe('ScoringAgent helpers', () => {
   it('clampScore bounds NaN and out-of-range values', () => {

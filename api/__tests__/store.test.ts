@@ -16,7 +16,7 @@ import {
   getRedis,
   requireStore,
   StoreUnavailableError,
-} from "../_lib/store";
+} from "../_server/infrastructure/store";
 
 // No UPSTASH_REDIS_REST_URL/TOKEN are set in this test env, so every store
 // module below exercises its in-memory fallback path — the same code path

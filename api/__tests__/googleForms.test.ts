@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeEntryId } from '../_lib/notify/googleForms';
+import { normalizeEntryId } from '../_server/infrastructure/notifications';
 
 describe('normalizeEntryId', () => {
   it('prefixes bare numeric ids with entry.', () => {
