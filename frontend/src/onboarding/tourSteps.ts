@@ -57,7 +57,7 @@ export const TOUR_STEPS: TourStep[] = [
     tab: "history",
     target: "rewards-history",
     title: "Track your rewards",
-    body: "See recent payouts and your personal reward history here.",
+    body: "See your personal reward history, rank, and milestones here.",
     placement: "auto",
   },
   {

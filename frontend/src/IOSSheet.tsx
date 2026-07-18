@@ -6,6 +6,7 @@ import {
   type PanInfo,
 } from "motion/react";
 import { iosEase, iosSpring, reducedMotionTransition } from "./sheetMotion";
+import { liquidGlassSurface } from "./liquidGlass";
 
 const DISMISS_OFFSET_Y = 120;
 const DISMISS_VELOCITY_Y = 800;
@@ -16,6 +17,8 @@ interface IOSSheetProps {
   /** Accessible name for the dialog surface. */
   "aria-label"?: string;
   className?: string;
+  /** `glass` frosts the dimmed app behind the sheet (liquid glass). Default solid white. */
+  variant?: "solid" | "glass";
 }
 
 export function IOSSheet({
@@ -23,6 +26,7 @@ export function IOSSheet({
   children,
   "aria-label": ariaLabel,
   className = "",
+  variant = "solid",
 }: IOSSheetProps) {
   const reduceMotion = useReducedMotion();
   const dragControls = useDragControls();
@@ -66,7 +70,10 @@ export function IOSSheet({
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0.05, bottom: 0.45 }}
         onDragEnd={draggable ? handleDragEnd : undefined}
-        className={`w-full max-h-[85%] flex flex-col bg-white rounded-t-[28px] overflow-hidden ${className}`}
+        className={`w-full max-h-[85%] flex flex-col rounded-t-[28px] overflow-hidden ${
+          variant === "solid" ? "bg-white" : ""
+        } ${className}`}
+        style={variant === "glass" ? liquidGlassSurface : undefined}
         onClick={(e) => e.stopPropagation()}
       >
         <div

@@ -8,11 +8,7 @@ import { getXlmBalance, fundWithFriendbot, StellarWalletsKit, ensureWalletSessio
 import {
   CONTRACT_ID,
   getTreasuryInfo,
-  getRewardEvents,
-  getRewardLedger,
-  attachTxHashes,
   type TreasuryInfo,
-  type RewardLedgerRecord,
 } from './contract';
 import { activityAgent, rewardAgent, feedbackAgent } from './agents';
 import { ProgressionAgent, type StoredProgression } from './agents/progression';
@@ -25,7 +21,6 @@ import { RewardCard } from './RewardCard';
 import { TransactionFeedback } from './TransactionFeedback';
 import { hasSubmittedFeedback, type FeedbackPrompt } from './transactionFeedback';
 import { RewardHistory, type RewardHistoryItem } from './RewardHistory';
-import { RecentPayouts } from './RecentPayouts';
 import { StudentProfile } from './StudentProfile';
 import { Dashboard } from './Dashboard';
 import { ReferFriend } from './ReferFriend';
@@ -149,13 +144,6 @@ export default function App() {
     });
   }, [history]);
 
-  // On-chain payout feed: durable ledger (get_history, contract storage — survives
-  // past the RPC event-retention window) with tx hashes attached from getRewardEvents
-  // where available (falls back to a ledger-sequence explorer link otherwise).
-  const [payouts, setPayouts]           = useState<RewardLedgerRecord[]>([]);
-  const [payoutsLoading, setPayoutsLoading] = useState<boolean>(false);
-  const [payoutsError, setPayoutsError] = useState<string | null>(null);
-
   // Success modal states for wallet actions
   const [showConnectSuccess, setShowConnectSuccess] = useState<boolean>(false);
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState<boolean>(false);
@@ -212,31 +200,6 @@ export default function App() {
     try { setTreasuryInfo(await getTreasuryInfo(CONTRACT_ID)); } catch { /* ignore */ }
   }, []);
 
-  const loadPayouts = useCallback(async () => {
-    if (!walletAddress || (CONTRACT_ID as string) === "PLACEHOLDER_DEPLOY_AND_UPDATE") return;
-    setPayoutsLoading(true);
-    setPayoutsError(null);
-    try {
-      // get_history is the durable, read-only on-chain ledger (contract storage) —
-      // unlike getRewardEvents it isn't bounded by RPC event retention, so past
-      // rewards never disappear from view. getRewardEvents is still queried
-      // alongside it purely to supply the tx hash (a contract can't observe its
-      // own tx hash), joined in via attachTxHashes.
-      const [ledger, chainEvents] = await Promise.all([
-        getRewardLedger(),
-        getRewardEvents(walletAddress),
-      ]);
-      const mine = ledger.filter((record) => record.recipient === walletAddress);
-      const withHashes = attachTxHashes(mine, chainEvents)
-        .sort((a, b) => b.timestamp - a.timestamp);
-      setPayouts(withHashes);
-    } catch (err) {
-      setPayoutsError((err as Error).message ?? "Failed to load payouts");
-    } finally {
-      setPayoutsLoading(false);
-    }
-  }, [walletAddress]);
-
   const setStep = (i: number, patch: Partial<PipelineStep>) =>
     setPipeline(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s));
 
@@ -280,19 +243,6 @@ export default function App() {
       setRewardXlm(null);
     }
   }, [walletAddress]);
-
-  // Poll on-chain reward events every 15 s while a wallet is connected
-  useEffect(() => {
-    if (!walletAddress) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPayouts([]);
-      setPayoutsError(null);
-      return;
-    }
-    void loadPayouts();
-    const id = setInterval(() => { void loadPayouts(); }, 15_000);
-    return () => clearInterval(id);
-  }, [walletAddress, loadPayouts]);
 
   // ── Wallet actions ─────────────────────────────────────────────────────────
 
@@ -497,7 +447,6 @@ export default function App() {
 
       await fetchBalance(walletAddress);
       void loadTreasury();
-      void loadPayouts();
       setActivityText("");
 
     } finally {
@@ -681,15 +630,7 @@ export default function App() {
               )
             )}
             {!showSplash && !showLogin && tab === 'history' && (
-              <div key="history">
-                <RecentPayouts
-                  payouts={payouts}
-                  loading={payoutsLoading}
-                  error={payoutsError}
-                  walletConnected={!!walletAddress}
-                />
-                <RewardHistory history={history} />
-              </div>
+              <RewardHistory key="history" history={history} />
             )}
             {!showSplash && !showLogin && tab === 'wallet' && (
               <WalletProfile

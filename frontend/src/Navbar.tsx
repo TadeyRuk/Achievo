@@ -5,12 +5,15 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
-  type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { createPortal } from "react-dom";
 import { iosEase, iosSpring, reducedMotionTransition } from "./sheetMotion";
+import {
+  LiquidGlassPill,
+  liquidGlassAlert,
+  liquidGlassSurface,
+} from "./liquidGlass";
 
 interface NavbarProps {
   onFeedbackClick?: () => void;
@@ -19,24 +22,6 @@ interface NavbarProps {
 const LONG_PRESS_MS = 500;
 const SHEET_W = 220;
 const SHEET_GAP = 10;
-
-/** Shared Liquid Glass material (iOS 26 Regular variant — CSS approximation). */
-const liquidGlassSurface: CSSProperties = {
-  background:
-    "linear-gradient(155deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.48) 45%, rgba(255,255,255,0.58) 100%)",
-  backdropFilter: "blur(48px) saturate(180%)",
-  WebkitBackdropFilter: "blur(48px) saturate(180%)",
-  boxShadow:
-    "0 4px 24px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(255,255,255,0.55), inset 0 0.5px 0 rgba(255,255,255,0.85), inset 0 -0.5px 0 rgba(0,0,0,0.04)",
-};
-
-const liquidGlassAlert: CSSProperties = {
-  ...liquidGlassSurface,
-  background:
-    "linear-gradient(160deg, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.72) 100%)",
-  boxShadow:
-    "0 16px 48px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.6), inset 0 0.5px 0 rgba(255,255,255,0.9)",
-};
 
 async function clearServiceWorkerCaches() {
   try {
@@ -93,23 +78,6 @@ function measureAnchor(
     originX: b.left - f.left + b.width / 2,
     originY: b.top - f.top + b.height / 2,
   };
-}
-
-function LiquidGlassPill({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={`flex items-center rounded-full ${className}`}
-      style={liquidGlassSurface}
-    >
-      {children}
-    </div>
-  );
 }
 
 export function Navbar({ onFeedbackClick }: NavbarProps) {

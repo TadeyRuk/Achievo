@@ -150,6 +150,7 @@ export function RewardHistory({ history }: RewardHistoryProps) {
 
   return (
     <motion.div
+      data-tour="rewards-history"
       variants={containerVariants}
       initial="hidden"
       animate="show"
