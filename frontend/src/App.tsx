@@ -30,6 +30,9 @@ import { StudentProfile } from './StudentProfile';
 import { Dashboard } from './Dashboard';
 import { ReferFriend } from './ReferFriend';
 import { SplashScreen } from './SplashScreen';
+import { Login } from './Login';
+import { GeneralFeedback } from './GeneralFeedback';
+import { getUserName, hasUserName } from './userIdentity';
 
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 
@@ -70,6 +73,8 @@ export default function App() {
   const devPreview = devFeedbackPreview();
   const [showSplash, setShowSplash] = useState<boolean>(() => !devPreview);
   const [bootstrapProgress, setBootstrapProgress] = useState<number>(0);
+  const [showLogin, setShowLogin] = useState<boolean>(() => !hasUserName());
+  const [userName, setUserNameState] = useState<string>(() => getUserName() ?? "");
 
   const [tab, setTab] = useState<Tab>('home');
 
@@ -151,6 +156,7 @@ export default function App() {
   const [showDisconnectConfirm, setShowDisconnectConfirm] = useState<boolean>(false);
   const [showDisconnectSuccess, setShowDisconnectSuccess] = useState<boolean>(false);
   const [showInfo, setShowInfo] = useState<boolean>(false);
+  const [showFeedback, setShowFeedback] = useState<boolean>(false);
 
   // Scroll reference for auto-scrolling
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -526,14 +532,26 @@ export default function App() {
         </AnimatePresence>
 
         <AnimatePresence>
-          {!showSplash && (
+          {!showSplash && showLogin && (
+            <Login
+              onComplete={(name, avatar) => {
+                setUserNameState(name);
+                handleAvatarChange(avatar);
+                setShowLogin(false);
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {!showSplash && !showLogin && (
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 110, damping: 19 }}
               style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 60 }}
             >
-              <Navbar onInfoClick={() => setShowInfo(true)} />
+              <Navbar onFeedbackClick={() => setShowFeedback(true)} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -541,7 +559,7 @@ export default function App() {
         {/* Scrollable tab content */}
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pt-[84px] pb-28 custom-scrollbar">
           <AnimatePresence mode="wait" initial={false}>
-            {!showSplash && tab === 'home' && (
+            {!showSplash && !showLogin && tab === 'home' && (
               isRunning || txHash || pipeline.some(step => step.status === 'error') ? (
                 <div key="home-running" className="p-5 space-y-5">
                   <PipelineVisualizer steps={pipeline} logs={logs} />
@@ -611,7 +629,7 @@ export default function App() {
               ) : (
                 <Dashboard
                   key="home-dashboard"
-                  userName="Xander"
+                  userName={userName}
                   history={history}
                   progression={progression}
                   walletAddress={walletAddress}
@@ -628,7 +646,7 @@ export default function App() {
                 />
               )
             )}
-            {!showSplash && tab === 'history' && (
+            {!showSplash && !showLogin && tab === 'history' && (
               <div key="history">
                 <RecentPayouts
                   payouts={payouts}
@@ -639,7 +657,7 @@ export default function App() {
                 <RewardHistory history={history} />
               </div>
             )}
-            {!showSplash && tab === 'wallet' && (
+            {!showSplash && !showLogin && tab === 'wallet' && (
               <WalletProfile
                 key="wallet"
                 walletAddress={walletAddress}
@@ -654,7 +672,7 @@ export default function App() {
                 history={history}
               />
             )}
-            {!showSplash && tab === 'profile' && (
+            {!showSplash && !showLogin && tab === 'profile' && (
               <StudentProfile
                 key="profile"
                 walletAddress={walletAddress}
@@ -662,6 +680,8 @@ export default function App() {
                 progression={progression}
                 userAvatar={userAvatar}
                 onAvatarChange={handleAvatarChange}
+                userName={userName}
+                onShowInfoClick={() => setShowInfo(true)}
               />
             )}
           </AnimatePresence>
@@ -672,14 +692,14 @@ export default function App() {
           {showRefer && (
             <div className="absolute inset-0 z-50 overflow-y-auto">
               <ReferFriend
-                userName="Xander"
+                userName={userName}
               />
             </div>
           )}
         </AnimatePresence>
 
         <AnimatePresence>
-          {!showSplash && (
+          {!showSplash && !showLogin && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -840,6 +860,16 @@ export default function App() {
                 </div>
               </motion.div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* General Feedback Sheet */}
+        <AnimatePresence>
+          {showFeedback && (
+            <GeneralFeedback
+              userName={userName}
+              onClose={() => setShowFeedback(false)}
+            />
           )}
         </AnimatePresence>
 

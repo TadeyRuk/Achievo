@@ -3,6 +3,7 @@ import { ShieldAlert, Lock, Check, Pencil, X, ChevronLeft, ChevronRight, Snowfla
 import { motion, AnimatePresence } from "motion/react";
 import { type RewardHistoryItem } from "./RewardHistory";
 import { ProgressionAgent, type StoredProgression } from "./agents/progression";
+import { AVATAR_OPTIONS } from "./avatarOptions";
 import {
   CustomCompass,
   CustomStar,
@@ -20,24 +21,9 @@ interface StudentProfileProps {
   progression?: StoredProgression;
   userAvatar: string;
   onAvatarChange: (avatar: string) => void;
+  userName: string;
+  onShowInfoClick: () => void;
 }
-
-const AVAILABLE_AVATARS = [
-  "1", "1-1", "1-2", "2", "2-1", "2-2", "3", "3-1", "3-2", "4", "4-1", "4-2", "5", "5-1", "5-2", 
-  "6", "6-1", "6-2", "7", "7-1", "7-2", "8", "8-1", "8-2", "9", "9-1", "9-2", "10", "10-1", "10-2", 
-  "11", "11-1", "12", "12-1", "12-2", "13", "13-1", "13-2", "14", "14-1", "14-2", "15", "15-1", "15-2", 
-  "16", "16-1", "17", "17-1", "18", "18-1", "19", "19-1", "20", "20-1", "21", "21-1", "22", "22-1", 
-  "23", "23-1", "24", "24-1", "25", "25-1", "26", "26-1", "27", "27-1", "28", "28-1", "29", "29-1", 
-  "30", "30-1", "31", "32", "33", "34", "35", "36", "37"
-];
-
-const AVATAR_OPTIONS = [
-  { path: "/xander_avatar.webp", label: "Default" },
-  ...AVAILABLE_AVATARS.map(name => ({
-    path: `/avatars/${name}.webp`,
-    label: `Avatar ${name}`
-  }))
-];
 
 const containerVariants = {
   hidden: {},
@@ -74,6 +60,8 @@ export function StudentProfile({
   progression,
   userAvatar,
   onAvatarChange,
+  userName,
+  onShowInfoClick,
 }: StudentProfileProps) {
   // Calculations
   const totalEarned = history.reduce((sum, item) => sum + item.reward, 0);
@@ -271,7 +259,7 @@ export function StudentProfile({
         </div>
         <div className="min-w-0 space-y-0.5">
           <h2 className="text-[20px] font-extrabold tracking-tight text-[var(--dah-primary)] font-display">
-            Xander Dacillo
+            {userName}
           </h2>
           <p className="text-[12px] text-[var(--dah-outline)] font-bold uppercase tracking-wider">
             Academic Explorer
@@ -288,6 +276,20 @@ export function StudentProfile({
           )}
         </div>
       </motion.div>
+
+      {/* How Achievo Works entry point */}
+      <motion.button
+        type="button"
+        variants={itemVariants}
+        onClick={onShowInfoClick}
+        className="w-full bg-white rounded-[20px] border border-[var(--dah-outline-variant)] px-5 py-4 shadow-sm flex items-center justify-between text-left"
+      >
+        <div>
+          <p className="text-[13px] font-extrabold text-[var(--dah-primary)] font-display">How Achievo Works</p>
+          <p className="text-[11px] text-[var(--dah-on-surface-variant)] font-semibold">5-agent pipeline & reward formula</p>
+        </div>
+        <ChevronLeft className="w-4 h-4 rotate-180 text-[var(--dah-outline)]" />
+      </motion.button>
 
       {/* Stats Dashboard */}
       <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2.5">

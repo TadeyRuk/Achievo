@@ -96,3 +96,21 @@ export async function notifyFeedbackTelegram(payload: FeedbackTelegramPayload): 
       `<a href="${txUrl}">Tx</a>`,
   );
 }
+
+export type GeneralFeedbackTelegramPayload = {
+  rating: number;
+  comment: string | null;
+  name: string | null;
+};
+
+export async function notifyGeneralFeedbackTelegram(payload: GeneralFeedbackTelegramPayload): Promise<void> {
+  const stars = '★'.repeat(payload.rating) + '☆'.repeat(5 - payload.rating);
+  const commentBlock = payload.comment
+    ? `\n💬 “${escapeHtml(payload.comment.slice(0, 280))}”`
+    : '';
+  const from = payload.name ? ` from ${escapeHtml(payload.name)}` : '';
+
+  await sendTelegramMessage(
+    `📣 <b>General feedback</b>${from} ${stars}${commentBlock}`,
+  );
+}
