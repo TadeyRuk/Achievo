@@ -24,7 +24,7 @@
 
 <p align="center">
   <img alt="Stellar Testnet" src="https://img.shields.io/badge/Stellar-Testnet-7C3AED?style=flat-square" />
-  <img alt="Current challenge level" src="https://img.shields.io/badge/Current_Level-Level_4-16A34A?style=flat-square" />
+  <img alt="Current challenge level" src="https://img.shields.io/badge/Current_Level-Level_5-16A34A?style=flat-square" />
   <img alt="Idea approved" src="https://img.shields.io/badge/Idea_Submission-Approved-16A34A?style=flat-square" />
   <img alt="Frontend tests" src="https://img.shields.io/badge/Frontend_Tests-68_passing-2563EB?style=flat-square" />
   <img alt="Contract tests" src="https://img.shields.io/badge/Contract_Tests-18_passing-2563EB?style=flat-square" />
@@ -101,8 +101,8 @@ Client agents live in `frontend/src/agents.ts`. Kouri Agent evaluation runs in `
 | Level 1 | Approved and completed |
 | Level 2 | Approved and completed |
 | Level 3 | Approved and completed |
-| Level 4 | **Current — idea approved, MVP progression in progress** |
-| Level 5 | Upcoming |
+| Level 4 | Approved and completed |
+| Level 5 | **Current — idea approved, MVP progression in progress** |
 | Level 6 | Upcoming |
 | Level 7 | Upcoming |
 
@@ -117,10 +117,10 @@ gantt
     Level 1                         :done, level1, 2026-01-01, 1d
     Level 2                         :done, level2, after level1, 1d
     Level 3                         :done, level3, after level2, 1d
+    Level 4                         :done, level4, after level3, 1d
     section Current
-    Level 4 — Idea approved         :active, level4, after level3, 2d
+    Level 5 — Idea approved         :active, level5, after level4, 2d
     section Roadmap
-    Level 5                         :level5, after level4, 1d
     Level 6                         :level6, after level5, 1d
     Level 7                         :level7, after level6, 1d
 ```
