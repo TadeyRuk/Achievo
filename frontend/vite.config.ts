@@ -48,5 +48,18 @@ export default defineConfig({
         ],
       },
     },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'json-summary', 'json'],
+      // Floors set just under current coverage (statements 69%, branches 65%,
+      // functions 63%, lines 71%) so this is a ratchet against regression,
+      // not an unmet aspiration — raise these as coverage grows.
+      thresholds: {
+        statements: 65,
+        branches: 60,
+        functions: 55,
+        lines: 65,
+      },
+    },
   },
 })

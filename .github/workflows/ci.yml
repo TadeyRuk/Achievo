@@ -40,7 +40,9 @@ jobs:
   frontend:
     name: Frontend (lint · test · build)
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -69,8 +71,22 @@ jobs:
         working-directory: frontend
         run: npx vitest --run --coverage
 
+      - name: Report frontend coverage
+        if: always() && github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: frontend
+          working-directory: frontend
+
       - name: Test API with coverage
         run: npx vitest --run --coverage --config api/vitest.config.ts
+
+      - name: Report API coverage
+        if: always() && github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: api
+          working-directory: api
 
       - name: Build
         working-directory: frontend

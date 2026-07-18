@@ -9,13 +9,16 @@ export default defineConfig({
     include: ['__tests__/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'lcov'],
+      reporter: ['text', 'lcov', 'json-summary', 'json'],
       include: ['_lib/**/*.ts', '_agents/**/*.ts', '*.ts'],
       exclude: ['__tests__/**', 'vitest.config.ts'],
+      // Raised from the original 50/50/40 floor now that Phase 0's store/http/
+      // health/payout tests pushed real coverage to ~63%/61%/53% — set just
+      // under that so this stays a ratchet, not a hard pin on today's exact number.
       thresholds: {
-        lines: 50,
-        functions: 50,
-        branches: 40,
+        lines: 60,
+        functions: 58,
+        branches: 50,
       },
     },
   },
