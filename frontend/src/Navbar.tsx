@@ -64,6 +64,7 @@ async function clearAllLocalData() {
 function usePhoneFrame(): Element | null {
   const [frame, setFrame] = useState<Element | null>(null);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFrame(document.querySelector("[data-phone-frame]"));
   }, []);
   return frame;

@@ -50,7 +50,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: "wallet-connect",
     title: "Connect your wallet",
     body: "Link a Stellar wallet so rewards can be paid out to you on-chain.",
-    placement: "bottom",
+    placement: "auto",
   },
   {
     id: "rewards-history",
@@ -58,7 +58,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: "rewards-history",
     title: "Track your rewards",
     body: "See recent payouts and your personal reward history here.",
-    placement: "bottom",
+    placement: "auto",
   },
   {
     id: "profile-info",
@@ -66,6 +66,6 @@ export const TOUR_STEPS: TourStep[] = [
     target: "profile-info",
     title: "Your profile",
     body: "Manage your avatar, check progress, and learn how Achievo’s reward pipeline works.",
-    placement: "bottom",
+    placement: "auto",
   },
 ];

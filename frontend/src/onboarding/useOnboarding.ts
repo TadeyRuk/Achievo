@@ -28,12 +28,17 @@ interface UseOnboardingOptions {
 export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
   const [phase, setPhase] = useState<OnboardingPhase>("idle");
   const [stepIndex, setStepIndex] = useState(0);
+  /** True when the latest step change also switched tabs (tour should wait for settle). */
+  const [tabHop, setTabHop] = useState(false);
   const startedRef = useRef(false);
+  const lastTabRef = useRef<TourTab | null>(null);
 
   const complete = useCallback((reason: "skipped" | "completed") => {
     markOnboardingDone();
     setPhase("idle");
     setStepIndex(0);
+    setTabHop(false);
+    lastTabRef.current = null;
     setTab("home");
     posthog.capture(reason === "skipped" ? "onboarding_skipped" : "onboarding_completed");
   }, [setTab]);
@@ -41,6 +46,9 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
   const goToStep = useCallback((index: number) => {
     const step = TOUR_STEPS[index];
     if (!step) return;
+    const hop = lastTabRef.current !== null && lastTabRef.current !== step.tab;
+    lastTabRef.current = step.tab;
+    setTabHop(hop);
     setTab(step.tab);
     setStepIndex(index);
     posthog.capture("onboarding_step", { id: step.id, index });
@@ -49,6 +57,8 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
   const startWelcome = useCallback(() => {
     setTab("home");
     setStepIndex(0);
+    setTabHop(false);
+    lastTabRef.current = "home";
     setPhase("welcome");
     posthog.capture("onboarding_welcome_shown");
   }, [setTab]);
@@ -84,6 +94,7 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
 
     if (wantsTourPreview()) {
       clearOnboardingDone();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       startWelcome();
       return;
     }
@@ -103,6 +114,7 @@ export function useOnboarding({ ready, setTab }: UseOnboardingOptions) {
     currentStep,
     isLastStep,
     active,
+    tabHop,
     totalSteps: TOUR_STEPS.length,
     startTour,
     next,

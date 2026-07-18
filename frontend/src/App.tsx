@@ -753,6 +753,7 @@ export default function App() {
               stepIndex={onboarding.stepIndex}
               totalSteps={onboarding.totalSteps}
               isLastStep={onboarding.isLastStep}
+              tabHop={onboarding.tabHop}
               onNext={onboarding.next}
               onSkip={onboarding.skip}
             />

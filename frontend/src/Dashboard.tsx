@@ -127,7 +127,7 @@ export function Dashboard({
     item => new Date(item.timestamp).toLocaleDateString("en-CA") === todayStr
   ).length;
 
-  // eslint-disable-next-line react-hooks/purity -- coach card uses wall-clock "now"
+  // Coach card uses wall-clock "now"
   const nextWin = ProgressionAgent.getNextWin(history, progression ?? {}, new Date(), todayCount);
 
   const handleInviteClick = () => {
