@@ -200,7 +200,7 @@ export async function getRewardEvents(
 ): Promise<RewardEvent[]> {
   const { sequence: latestLedger } = await rpcServer.getLatestLedger();
 
-  // Topic encoding (confirmed against installed @stellar/stellar-sdk v13):
+  // Topic encoding (confirmed against installed @stellar/stellar-sdk v15):
   // Api.EventFilter.topics is typed `string[][]`, where each segment is the
   // base64-encoded XDR of the topic ScVal. The contract emits the symbol topics
   // ("reward","sent"), so each segment is scvSymbol(...).toXDR("base64").

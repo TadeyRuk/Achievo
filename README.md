@@ -1,6 +1,5 @@
 <p align="center">
-  <img src="frontend/public/only_logo.png" alt="Achievo logo" width="1
-    04" />
+  <img src="frontend/public/only_logo.png" alt="Achievo logo" width="104" />
 </p>
 
 <h1 align="center">Achievo</h1>
