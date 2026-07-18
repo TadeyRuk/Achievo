@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 vi.mock('../../../api/_lib/telegram', () => ({
   notifyGeneralFeedbackTelegram: vi.fn().mockResolvedValue(undefined),
@@ -7,14 +8,25 @@ vi.mock('../../../api/_lib/telegram', () => ({
 import handler from '../../../api/feedback-general';
 import { notifyGeneralFeedbackTelegram } from '../../../api/_lib/telegram';
 
+type MockResponse = VercelResponse & {
+  statusCode: number;
+  body: unknown;
+};
+
 function makeReqRes(method: string, body: unknown) {
-  const req = { method, body } as any;
-  const res: any = {
+  const req = { method, body } as VercelRequest;
+  const res = {
     statusCode: 0,
     body: undefined as unknown,
-    status(code: number) { this.statusCode = code; return this; },
-    json(payload: unknown) { this.body = payload; return this; },
-  };
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      this.body = payload;
+      return this;
+    },
+  } as MockResponse;
   return { req, res };
 }
 

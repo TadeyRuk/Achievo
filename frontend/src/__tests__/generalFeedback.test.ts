@@ -11,7 +11,7 @@ describe('submitGeneralFeedback', () => {
   });
 
   it('posts to /api/feedback-general and returns ok on success', async () => {
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ ok: true }),
     });
@@ -27,7 +27,7 @@ describe('submitGeneralFeedback', () => {
   });
 
   it('returns the server error message on failure', async () => {
-    (global.fetch as any).mockResolvedValue({
+    vi.mocked(global.fetch).mockResolvedValue({
       ok: false,
       status: 400,
       text: async () => JSON.stringify({ error: 'rating must be an integer from 1 to 5.' }),
