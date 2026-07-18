@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { AVATAR_OPTIONS } from './avatarOptions';
+import { Dialog } from '../../shared/ui/Dialog';
 
 interface AvatarPickerModalProps {
   open: boolean;
@@ -43,26 +44,30 @@ export function AvatarPickerModal({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-50 bg-[#00162b]/65 backdrop-blur-md flex items-center justify-center p-4"
+        <Dialog
+          open={open}
+          onClose={onClose}
+          aria-labelledby="avatar-picker-title"
+          className="w-full max-w-[360px]"
         >
           <motion.div
             initial={{ scale: 0.96, y: 10, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.96, y: 10, opacity: 0 }}
             transition={{ type: "spring", stiffness: 480, damping: 28 }}
-            className="bg-white rounded-[32px] w-full max-w-[360px] p-6 shadow-2xl relative border border-slate-100 flex flex-col"
+            className="bg-white rounded-[32px] w-full p-6 shadow-2xl relative border border-slate-100 flex flex-col"
           >
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
-              <h3 className="text-[17px] font-extrabold text-[#00162b] font-display">
+              <h3
+                id="avatar-picker-title"
+                className="text-[17px] font-extrabold text-[#00162b] font-display"
+              >
                 Choose Avatar
               </h3>
               <button
+                type="button"
                 onClick={onClose}
+                aria-label="Close avatar picker"
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" strokeWidth={2.5} />
@@ -99,6 +104,7 @@ export function AvatarPickerModal({
                     return (
                       <motion.button
                         key={avatar.path}
+                        type="button"
                         whileHover={{ scale: 1.06 }}
                         whileTap={{ scale: 0.94 }}
                         onClick={() => {
@@ -126,9 +132,11 @@ export function AvatarPickerModal({
 
             <div className="flex items-center justify-between px-1 py-3 border-t border-b border-slate-100 shrink-0">
               <motion.button
+                type="button"
                 whileTap={{ scale: 0.9 }}
                 onClick={handlePrevPage}
                 disabled={currentPage === 0}
+                aria-label="Previous avatar page"
                 className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
                   currentPage === 0
                     ? "border-slate-100 text-slate-300 cursor-not-allowed"
@@ -144,9 +152,11 @@ export function AvatarPickerModal({
               </span>
 
               <motion.button
+                type="button"
                 whileTap={{ scale: 0.9 }}
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages - 1}
+                aria-label="Next avatar page"
                 className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all cursor-pointer ${
                   currentPage === totalPages - 1
                     ? "border-slate-100 text-slate-300 cursor-not-allowed"
@@ -159,6 +169,7 @@ export function AvatarPickerModal({
 
             <div className="pt-4 shrink-0">
               <button
+                type="button"
                 onClick={onClose}
                 className="w-full py-3 bg-[var(--dah-primary)] hover:bg-[#061d32] text-white rounded-full font-extrabold text-[13px] font-display uppercase tracking-wider transition-all shadow-md active:scale-95 cursor-pointer"
               >
@@ -166,7 +177,7 @@ export function AvatarPickerModal({
               </button>
             </div>
           </motion.div>
-        </motion.div>
+        </Dialog>
       )}
     </AnimatePresence>
   );

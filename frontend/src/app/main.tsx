@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import posthog from 'posthog-js'
 import '../index.css'
 import App from './App'
+import { ErrorBoundary } from '../shared/ui/ErrorBoundary'
 
 // Analytics — PostHog. Guarded on key presence so builds without a key
 // (local dev, CI) run fine with analytics simply disabled.
@@ -17,7 +18,9 @@ if (POSTHOG_KEY) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary name="app">
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )
 

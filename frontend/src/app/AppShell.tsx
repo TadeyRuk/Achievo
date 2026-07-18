@@ -1,4 +1,10 @@
-import { type RefObject, type Dispatch, type SetStateAction } from 'react';
+import {
+  lazy,
+  Suspense,
+  type RefObject,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import posthog from 'posthog-js';
 import { Analytics } from '@vercel/analytics/react';
@@ -20,9 +26,19 @@ import { GeneralFeedback } from '../features/feedback/GeneralFeedback';
 import { InfoSheet } from '../shared/ui/InfoSheet';
 import { ErrorBoundary } from '../shared/ui/ErrorBoundary';
 import { iosSpring, reducedMotionTransition } from '../shared/lib/sheetMotion';
-import { OnboardingWelcome } from '../features/onboarding/OnboardingWelcome';
-import { OnboardingTour } from '../features/onboarding/OnboardingTour';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
+
+const OnboardingWelcome = lazy(() =>
+  import('../features/onboarding/OnboardingWelcome').then((m) => ({
+    default: m.OnboardingWelcome,
+  })),
+);
+const OnboardingTour = lazy(() =>
+  import('../features/onboarding/OnboardingTour').then((m) => ({
+    default: m.OnboardingTour,
+  })),
+);
+
 import type { StoredProgression } from '../shared/lib/progression';
 import type { useRewardPipeline } from '../hooks/useRewardPipeline';
 import type { useWalletSession } from '../hooks/useWalletSession';
@@ -301,24 +317,28 @@ export function AppShell(props: AppShellProps) {
 
         <AnimatePresence mode="wait">
           {shellReady && onboarding.phase === 'welcome' && (
-            <OnboardingWelcome
-              key="onboarding-welcome"
-              onStart={onboarding.startTour}
-              onSkip={onboarding.skip}
-            />
+            <Suspense fallback={null}>
+              <OnboardingWelcome
+                key="onboarding-welcome"
+                onStart={onboarding.startTour}
+                onSkip={onboarding.skip}
+              />
+            </Suspense>
           )}
           {shellReady && onboarding.phase === 'tour' && onboarding.currentStep && (
-            <OnboardingTour
-              key="onboarding-tour"
-              containerRef={phoneFrameRef}
-              step={onboarding.currentStep}
-              stepIndex={onboarding.stepIndex}
-              totalSteps={onboarding.totalSteps}
-              isLastStep={onboarding.isLastStep}
-              tabHop={onboarding.tabHop}
-              onNext={onboarding.next}
-              onSkip={onboarding.skip}
-            />
+            <Suspense fallback={null}>
+              <OnboardingTour
+                key="onboarding-tour"
+                containerRef={phoneFrameRef}
+                step={onboarding.currentStep}
+                stepIndex={onboarding.stepIndex}
+                totalSteps={onboarding.totalSteps}
+                isLastStep={onboarding.isLastStep}
+                tabHop={onboarding.tabHop}
+                onNext={onboarding.next}
+                onSkip={onboarding.skip}
+              />
+            </Suspense>
           )}
         </AnimatePresence>
 

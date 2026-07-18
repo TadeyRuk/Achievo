@@ -367,7 +367,39 @@ Production runtime is limited to `frontend/`, `api/`, `packages/`, the deployed 
 - A Stellar Testnet-compatible wallet
 - Rust and the `wasm32v1-none` target only when building the contract
 
----
+```bash
+git clone https://github.com/TadeyRuk/Achievo.git
+cd Achievo
+
+npm install
+npm run build:packages
+
+# Pull configured variables if you have access to the Vercel project.
+npx vercel env pull .env.local
+
+# Or copy .env.example → .env.local and fill values.
+npx vercel dev
+```
+
+The local Vercel development server serves the frontend and `/api/*` functions together, normally at `http://localhost:3000`.
+
+### Environment variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `ADMIN_SECRET` | Yes | Server-only Stellar secret for the treasury administrator |
+| `GROQ_API_KEY` | Yes | Server-side activity evaluation |
+| `NONCE_HMAC_SECRET` | Yes | Signs and validates wallet ownership challenges |
+| `UPSTASH_REDIS_REST_URL` | Yes in production | Durable rate limits, payout ledger, and one-submit-per-tx claims |
+| `UPSTASH_REDIS_REST_TOKEN` | Yes in production | Authenticates the Upstash Redis connection |
+| `TELEGRAM_BOT_TOKEN` | No | Optional payout notifications |
+| `TELEGRAM_CHAT_ID` | No | Destination for optional Telegram payout notifications |
+| `GOOGLE_FORM_ID` | Yes for feedback | Form id for [Achievo Feedback](https://forms.gle/4Br3gSXfxV79bvYG7) (set on Vercel) |
+| `GOOGLE_FORM_ENTRY_*` | Yes for feedback | `TYPE`, `RATING`, `COMMENT`, `NAME`, `WALLET`, `REWARD`, `ACTIVITY`, `TXHASH` (set on Vercel) |
+| `VITE_POSTHOG_KEY` | No | Public PostHog project key; analytics stays disabled when omitted |
+| `VITE_POSTHOG_HOST` | No | PostHog ingestion host; defaults to `https://us.i.posthog.com` |
+
+Never expose `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VITE_*` variables or commit them to the repository.
 
 ## Testing
 
@@ -507,42 +539,6 @@ curl -s https://achievo-rust.vercel.app/api/payouts | jq '{count, uniqueWallets,
 
 ---
 
-## Setup — Run Locally
-
-```bash
-git clone https://github.com/TadeyRuk/Achievo.git
-cd Achievo
-
-npm install
-npm run build:packages
-
-# Pull configured variables if you have access to the Vercel project.
-npx vercel env pull .env.local
-
-# Or copy .env.example → .env.local and fill values.
-npx vercel dev
-```
-
-The local Vercel development server serves the frontend and `/api/*` functions together, normally at `http://localhost:3000`.
-
-### Environment variables
-
-| Variable | Required | Purpose |
-|---|---|---|
-| `ADMIN_SECRET` | Yes | Server-only Stellar secret for the treasury administrator |
-| `GROQ_API_KEY` | Yes | Server-side activity evaluation |
-| `NONCE_HMAC_SECRET` | Yes | Signs and validates wallet ownership challenges |
-| `UPSTASH_REDIS_REST_URL` | Yes in production | Durable rate limits, payout ledger, and one-submit-per-tx claims |
-| `UPSTASH_REDIS_REST_TOKEN` | Yes in production | Authenticates the Upstash Redis connection |
-| `TELEGRAM_BOT_TOKEN` | No | Optional payout notifications |
-| `TELEGRAM_CHAT_ID` | No | Destination for optional Telegram payout notifications |
-| `GOOGLE_FORM_ID` | Yes for feedback | Form id for [Achievo Feedback](https://forms.gle/4Br3gSXfxV79bvYG7) (set on Vercel) |
-| `GOOGLE_FORM_ENTRY_*` | Yes for feedback | `TYPE`, `RATING`, `COMMENT`, `NAME`, `WALLET`, `REWARD`, `ACTIVITY`, `TXHASH` (set on Vercel) |
-| `VITE_POSTHOG_KEY` | No | Public PostHog project key; analytics stays disabled when omitted |
-| `VITE_POSTHOG_HOST` | No | PostHog ingestion host; defaults to `https://us.i.posthog.com` |
-
-Never expose `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VITE_*` variables or commit them to the repository.
-
 ## Test and Build
 
 ```bash
@@ -551,6 +547,7 @@ npm run lint
 npm test
 npm run typecheck
 npm run vercel-build
+npm run test:e2e   # Playwright smoke (needs a prior frontend build)
 
 # Contract
 cd contract

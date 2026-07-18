@@ -61,6 +61,9 @@ jobs:
       - name: Cross-check contract and package bindings
         run: npm run check-contract-integration
 
+      - name: Guard generated contract method bindings from drift
+        run: npm run check-bindings-drift
+
       - name: Typecheck packages + API
         run: npm run typecheck
 
@@ -91,6 +94,34 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: [frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke
+        run: npm run test:e2e
 
   contract:
     name: Contract (test · build)
@@ -132,7 +163,7 @@ jobs:
   publish-contract:
     name: Publish contract release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [frontend, contract]
+    needs: [frontend, contract, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -152,7 +183,7 @@ jobs:
   deploy-staging:
     name: Deploy staging (Vercel)
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [frontend, contract]
+    needs: [frontend, contract, e2e]
     runs-on: ubuntu-latest
     environment: staging
     outputs:

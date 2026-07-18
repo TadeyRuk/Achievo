@@ -11,16 +11,9 @@ import { createHmac, randomBytes } from 'crypto';
 import { challengeMacPayload } from './_lib/payout/intent';
 import { claimOnce, StoreUnavailableError } from './_lib/store';
 import { horizonServer } from './_lib/payout/stellarServers';
+import { getClientIp } from './_lib/http';
 
 const NONCE_IP_TTL = 60; // 1 challenge / IP / minute
-
-function getClientIp(req: VercelRequest): string {
-  return (
-    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-    req.socket?.remoteAddress ??
-    'unknown'
-  );
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {

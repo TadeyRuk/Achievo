@@ -5,6 +5,7 @@ import {
   submitFeedbackForm,
 } from './_lib/notify/googleForms';
 import { claimOnce, StoreUnavailableError } from './_lib/store';
+import { getClientIp } from './_lib/http';
 
 const MAX_COMMENT = 500;
 const MAX_NAME = 40;
@@ -51,14 +52,6 @@ function parseBody(req: VercelRequest): GeneralFeedbackRecord | { error: string 
   }
 
   return { rating, comment, name };
-}
-
-function getClientIp(req: VercelRequest): string {
-  return (
-    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-    req.socket?.remoteAddress ??
-    'unknown'
-  );
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

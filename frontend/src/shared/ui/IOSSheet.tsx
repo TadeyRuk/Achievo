@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import {
   motion,
   useDragControls,
@@ -7,6 +7,7 @@ import {
 } from "motion/react";
 import { iosEase, iosSpring, reducedMotionTransition } from '../lib/sheetMotion';
 import { liquidGlassSheet } from './liquidGlass';
+import { useFocusTrap } from './useFocusTrap';
 
 const DISMISS_OFFSET_Y = 120;
 const DISMISS_VELOCITY_Y = 800;
@@ -30,6 +31,8 @@ export function IOSSheet({
 }: IOSSheetProps) {
   const reduceMotion = useReducedMotion();
   const dragControls = useDragControls();
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(true, sheetRef, onDismiss);
   const draggable = !reduceMotion;
   const isGlass = variant === "glass";
 
@@ -71,9 +74,11 @@ export function IOSSheet({
       />
 
       <motion.div
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}
+        tabIndex={-1}
         initial={sheetInitial}
         animate={sheetAnimate}
         exit={sheetExit}
@@ -84,7 +89,7 @@ export function IOSSheet({
         dragConstraints={{ top: 0, bottom: 0 }}
         dragElastic={{ top: 0.05, bottom: 0.45 }}
         onDragEnd={draggable ? handleDragEnd : undefined}
-        className={`relative z-10 w-full max-h-[85%] flex flex-col rounded-t-[28px] overflow-hidden ${
+        className={`relative z-10 w-full max-h-[85%] flex flex-col rounded-t-[28px] overflow-hidden outline-none ${
           isGlass ? "" : "bg-white"
         } ${className}`}
         style={isGlass ? liquidGlassSheet : undefined}

@@ -1,6 +1,9 @@
 import type { VercelRequest } from '@vercel/node';
 import { claimOnce, releaseClaim } from '../store';
 import { getIdentityByWallet } from '../identity';
+import { getClientIp } from '../http';
+
+export { getClientIp };
 
 export const RATE_LIMIT_TTL_SECONDS = 24 * 60 * 60;
 
@@ -9,14 +12,6 @@ export type RateClaimSet = {
   ipKey: string | null;
   identityKey: string | null;
 };
-
-export function getClientIp(req: VercelRequest): string {
-  return (
-    (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim() ??
-    req.socket?.remoteAddress ??
-    'unknown'
-  );
-}
 
 /**
  * Hybrid rate claims: always wallet (+ IP when known).

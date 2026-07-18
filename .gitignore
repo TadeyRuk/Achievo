@@ -29,6 +29,9 @@ contract/target/
 vault/
 assets/
 .playwright-mcp/
+/playwright-report/
+/test-results/
+/blob-report/
 achievo-ui.png
 .vercel
 

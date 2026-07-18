@@ -20,7 +20,9 @@
     "lint:api": "eslint -c eslint.api.config.mjs api",
     "lint:packages": "eslint -c eslint.packages.config.mjs packages",
     "typecheck": "npm run typecheck -w @achievo/shared && npm run typecheck -w @achievo/stellar && npm run typecheck -w @achievo/identity && npm run typecheck -w frontend && npm run typecheck:api",
-    "typecheck:api": "tsc -p api/tsconfig.json --noEmit"
+    "typecheck:api": "tsc -p api/tsconfig.json --noEmit",
+    "test:e2e": "playwright test",
+    "check-bindings-drift": "npm run generate:bindings && git diff --exit-code -- packages/stellar/src/generated/methods.ts"
   },
   "dependencies": {
     "@achievo/identity": "*",
@@ -35,6 +37,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.3.0",
     "globals": "^17.6.0",
+    "@playwright/test": "^1.57.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "typescript": "~6.0.2",
