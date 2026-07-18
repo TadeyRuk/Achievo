@@ -11,6 +11,9 @@
     },
     "api/feedback.ts": {
       "maxDuration": 10
+    },
+    "api/feedback-general.ts": {
+      "maxDuration": 10
     }
   },
   "rewrites": [

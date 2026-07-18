@@ -1,0 +1,9 @@
+node_modules
+frontend/node_modules
+tools
+docs/media
+contract/target
+vault
+.git
+.playwright-mcp
+*.log
