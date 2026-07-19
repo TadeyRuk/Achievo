@@ -103,7 +103,7 @@ export interface RewardPorts extends StoreErrorPort {
     reward: number,
   ): Promise<{ ok: true; reservation: BudgetReservation } | { ok: false; error: string }>;
   releaseBudgets(reservation: BudgetReservation | null): Promise<void>;
-  /** TreasurySigner port — must not require callers to pass raw admin secrets. */
+  /** TreasurySigner port — mints voucher + relays claim_reward; no raw secrets in features. */
   submitReward(input: {
     wallet: string;
     rewardXlm: number;

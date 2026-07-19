@@ -40,7 +40,7 @@ Student contributions such as tutoring, volunteering, workshops, events, and par
 1. A student connects a supported  wallet and describes an activity.
 2. The student signs a nonce challenge to prove wallet ownership.
 3. The server evaluates the submission with Groq and calculates an effort-based reward.
-4. The server signs an admin-authorized `send_reward` call.
+4. The server mints an attestor voucher and relays `claim_reward` on-chain.
 5. The Soroban treasury transfers testnet XLM and records an on-chain reward entry.
 6. The UI displays the result, transaction hash, balance, history, and rank progress.
 
@@ -68,7 +68,7 @@ Client-side agents drive the live pipeline UI, but **only the Kouri Agent decisi
 | **Activity Agent** | Parses free-form text into an activity type and reward hint | Client |
 | **Verification Agent** | Validates the activity against the approved whitelist | Client |
 | **Reward Agent** | Estimates the canonical XLM payout for a verified activity | Client |
-| **Kouri Agent** | Issues the ownership challenge, collects the wallet signature, and submits the on-chain `send_reward` call | Client + server |
+| **Kouri Agent** | Issues the ownership challenge, collects the wallet signature, mints a voucher, and relays on-chain `claim_reward` | Client + server |
 | **Feedback Agent** | Formats the blockchain result into a student-facing confirmation | Client |
 
 ```mermaid
@@ -186,7 +186,7 @@ flowchart TB
     PWA -->|Read wallet balance| Horizon
     PWA -->|Signed challenge and activity| RewardAPI
     RewardAPI -->|Classify and score| Groq
-    AdminSigner -->|Submit send_reward| SorobanRPC
+    AdminSigner -->|Submit claim_reward| SorobanRPC
     SorobanRPC --> Treasury
     XlmSAC -->|Transfer testnet XLM| Student
     History --> SorobanRPC
@@ -258,7 +258,8 @@ function rename cannot be merged without updating its TypeScript consumers.
 
 | Contract function | Rust implementation | TypeScript consumer |
 |---|---|---|
-| `send_reward(recipient, amount, activity)` | `contract/src/lib.rs` | `api/_server/infrastructure/stellar.ts` |
+| `claim_reward(recipient, amount, activity, claim_id, expiry, signature)` | `contract/src/lib.rs` | `api/_server/infrastructure/stellar.ts` |
+| `send_reward(...)` (ops-only) | `contract/src/lib.rs` | not used by `/api/reward` |
 | `get_balance()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_admin()` | `contract/src/lib.rs` | `@achievo/stellar` |
 | `get_disbursed()` | `contract/src/lib.rs` | `@achievo/stellar` |
@@ -267,7 +268,7 @@ function rename cannot be merged without updating its TypeScript consumers.
 
 Wallet discovery, Testnet validation, and challenge signing live in the wallet
 feature. Chain reads use `@achievo/stellar`; production payouts use the
-server-side `send_reward` adapter in `api/_server/infrastructure/stellar.ts`.
+server-side `claim_reward` adapter in `api/_server/infrastructure/stellar.ts`.
 
 ### Documented testnet QA activity
 
@@ -278,7 +279,7 @@ During the June 14–16, 2026 QA window, the repository documented **9 reward tr
 
 This is a **snapshot** from June 2026 QA on the **legacy** contract. Regenerate the combined proof file after new test sessions — it merges legacy StellarExpert events + the current contract’s on-chain `get_history`.
 
-Every documented reward is a real `send_reward` call, independently verifiable
+Every documented reward is a real on-chain payout (`claim_reward` / legacy `send_reward`), independently verifiable
 through the legacy contract's on-chain event log (topics `("reward", "sent")`).
 
 - [`GAWTHZ…GZGSED`](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED)
@@ -393,7 +394,8 @@ The local Vercel development server serves the frontend and `/api/*` functions t
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ADMIN_SECRET` | Yes | Server-only Stellar secret for the treasury administrator |
+| `ATTESTOR_SECRET` | Yes | Server-only Stellar secret that mints claim vouchers |
+| `ADMIN_SECRET` | Yes* | Relayer / fee-paying source (*omit on API when using remote signer) |
 | `GROQ_API_KEY` | Yes | Server-side activity evaluation |
 | `NONCE_HMAC_SECRET` | Yes | Signs and validates wallet ownership challenges |
 | `UPSTASH_REDIS_REST_URL` | Yes in production | Durable rate limits, payout ledger, and one-submit-per-tx claims |
@@ -405,7 +407,7 @@ The local Vercel development server serves the frontend and `/api/*` functions t
 | `VITE_POSTHOG_KEY` | No | Public PostHog project key; analytics stays disabled when omitted |
 | `VITE_POSTHOG_HOST` | No | PostHog ingestion host; defaults to `https://us.i.posthog.com` |
 
-Never expose `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VITE_*` variables or commit them to the repository.
+Never expose `ATTESTOR_SECRET`, `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VITE_*` variables or commit them to the repository.
 
 ## Testing
 
@@ -414,7 +416,7 @@ Never expose `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VIT
 **Contract tests (Rust):**
 ```bash
 cd contract && cargo test
-# 18 tests: initialize, send_reward, per-tx cap, on-chain history, edge cases, event emission
+# contract tests: initialize, send_reward, claim_reward vouchers, caps, history, events
 ```
 
 **Workspace tests (Vitest + fast-check):**

@@ -77,16 +77,10 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
-              "function_name": "send_reward",
+              "function_name": "set_attestor",
               "args": [
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
-                },
-                {
-                  "i128": "200000000"
-                },
-                {
-                  "symbol": "volunteer"
+                  "bytes": "a9a8cd137a17210e3ec3b97e91efd69dd148fb2a926af84cf3965822c13bbe22"
                 }
               ]
             }
@@ -95,6 +89,9 @@
         }
       ]
     ],
+    [],
+    [],
+    [],
     []
   ],
   "ledger": {
@@ -198,6 +195,33 @@
               "key": {
                 "vec": [
                   {
+                    "symbol": "Claim"
+                  },
+                  {
+                    "bytes": "abfc685d621746f9df9a06207616f50ba6e34f0bc2f5ea3d07b0f3e3235b16a2"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "bool": true
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 4095
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+              "key": {
+                "vec": [
+                  {
                     "symbol": "History"
                   }
                 ]
@@ -212,7 +236,7 @@
                           "symbol": "activity"
                         },
                         "val": {
-                          "symbol": "volunteer"
+                          "symbol": "tutoring"
                         }
                       },
                       {
@@ -220,7 +244,7 @@
                           "symbol": "amount"
                         },
                         "val": {
-                          "i128": "200000000"
+                          "i128": "50000000"
                         }
                       },
                       {
@@ -282,7 +306,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "200000000"
+                      "i128": "50000000"
                     }
                   },
                   {
@@ -320,6 +344,18 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "Attestor"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "bytes": "a9a8cd137a17210e3ec3b97e91efd69dd148fb2a926af84cf3965822c13bbe22"
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "State"
                           }
                         ]
@@ -347,7 +383,7 @@
                               "symbol": "total_disbursed"
                             },
                             "val": {
-                              "i128": "200000000"
+                              "i128": "50000000"
                             }
                           }
                         ]
@@ -368,7 +404,7 @@
                               "symbol": "amount"
                             },
                             "val": {
-                              "i128": "200000000"
+                              "i128": "50000000"
                             }
                           },
                           {
@@ -436,7 +472,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "800000000"
+                      "i128": "950000000"
                     }
                   },
                   {
@@ -488,7 +524,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "200000000"
+                      "i128": "50000000"
                     }
                   },
                   {

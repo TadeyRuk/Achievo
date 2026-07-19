@@ -1,8 +1,10 @@
 # Achievo Architecture
 
-Achievo pays verified student activities in testnet XLM. The **server** is the
-payout authority: it evaluates submissions, signs admin `send_reward` calls, and
-enforces rate limits. The client proves wallet ownership and displays results.
+Achievo pays verified student activities in testnet XLM. The **server** evaluates
+submissions and mints attestor-signed vouchers; the **contract** is the payout
+gate via `claim_reward` (one-time claim id, expiry, money caps). A server relayer
+submits the claim and pays fees. The client proves wallet ownership and displays
+results.
 
 ## Package graph
 
@@ -53,7 +55,9 @@ flowchart TB
   Reward["/api/reward"]
   Groq[Kouri / Groq ScoringAgent]
   Redis[(Upstash Redis)]
-  Contract[Soroban treasury]
+  Attestor[ATTESTOR_SECRET]
+  Relayer[Relayer ADMIN_SECRET]
+  Contract[Soroban claim_reward]
 
   Student -->|sign challenge| UI
   UI --> Nonce
@@ -61,7 +65,9 @@ flowchart TB
   UI -->|signed XDR + activity| Reward
   Reward --> Redis
   Reward --> Groq
-  Reward -->|admin-signed send_reward| Contract
+  Reward -->|mint voucher| Attestor
+  Reward --> Relayer
+  Relayer -->|submit claim_reward| Contract
   Contract -->|XLM + history| Student
   UI -->|get_history / getEvents| Contract
 ```

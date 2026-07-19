@@ -20,9 +20,13 @@ Repo secrets required for the workflow:
 
 In production, missing `CRON_SECRET` fails closed (503) on `/api/reconcile`.
 
+## Vouchers + attestor
+
+`/api/reward` requires `ATTESTOR_SECRET` (Stellar secret) to mint ed25519 vouchers. After deploy, call contract `set_attestor` with the matching raw public key so `claim_reward` verifies signatures.
+
 ## Isolated signer (Phase 2)
 
-When `SIGNER_URL` + `SIGNER_HMAC_SECRET` are set on the Achievo API, payouts are signed by [`services/signer`](../services/signer/) (separate Vercel project). Omit `ADMIN_SECRET` from the web/API project in that mode. See the signer README for env split and rotation.
+When `SIGNER_URL` + `SIGNER_HMAC_SECRET` are set on the Achievo API, the relayer submits API-minted vouchers via [`services/signer`](../services/signer/) (separate Vercel project). Omit `ADMIN_SECRET` from the web/API project in that mode; keep `ATTESTOR_SECRET` on the API. See the signer README for env split and rotation.
 
 ## Ambiguous submits
 

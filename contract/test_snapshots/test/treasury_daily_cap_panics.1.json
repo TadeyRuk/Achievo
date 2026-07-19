@@ -376,7 +376,11 @@
               "ext": "v0",
               "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
               "key": {
-                "symbol": "history"
+                "vec": [
+                  {
+                    "symbol": "History"
+                  }
+                ]
               },
               "durability": "persistent",
               "val": {
@@ -846,7 +850,11 @@
                   "storage": [
                     {
                       "key": {
-                        "symbol": "state"
+                        "vec": [
+                          {
+                            "symbol": "State"
+                          }
+                        ]
                       },
                       "val": {
                         "map": [

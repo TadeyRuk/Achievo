@@ -1,6 +1,11 @@
 import type { RewardActivity } from '@achievo/contracts';
 import { createHmac, randomBytes } from 'crypto';
-import { submitSendReward, type SubmitRewardResult } from './stellar';
+import { submitClaimReward, type SubmitRewardResult } from './stellar';
+import {
+  attestorConfigured,
+  mintRewardVoucher,
+  type RewardVoucher,
+} from './voucher';
 
 export type SignRewardInput = {
   wallet: string;
@@ -13,8 +18,10 @@ function remoteSignerConfigured(): boolean {
 }
 
 export function treasurySignerConfigured(): boolean {
-  if (remoteSignerConfigured()) return true;
-  return Boolean(process.env.ADMIN_SECRET?.trim());
+  return (
+    attestorConfigured() &&
+    (remoteSignerConfigured() || Boolean(process.env.ADMIN_SECRET?.trim()))
+  );
 }
 
 function signServiceRequest(body: string, timestamp: string, nonce: string): string {
@@ -25,7 +32,10 @@ function signServiceRequest(body: string, timestamp: string, nonce: string): str
     .digest('hex');
 }
 
-async function submitViaRemoteSigner(input: SignRewardInput): Promise<SubmitRewardResult> {
+async function submitViaRemoteSigner(
+  input: SignRewardInput,
+  voucher: Pick<RewardVoucher, 'claimIdHex' | 'expiry' | 'signatureHex'>,
+): Promise<SubmitRewardResult> {
   const base = process.env.SIGNER_URL!.trim().replace(/\/$/, '');
   const timestamp = String(Date.now());
   const nonce = randomBytes(12).toString('hex');
@@ -33,6 +43,9 @@ async function submitViaRemoteSigner(input: SignRewardInput): Promise<SubmitRewa
     wallet: input.wallet,
     rewardXlm: input.rewardXlm,
     activity: input.activity,
+    claimIdHex: voucher.claimIdHex,
+    expiry: voucher.expiry,
+    signatureHex: voucher.signatureHex,
   });
   const signature = signServiceRequest(body, timestamp, nonce);
   const response = await fetch(`${base}/api/sign-reward`, {
@@ -70,21 +83,47 @@ async function submitViaRemoteSigner(input: SignRewardInput): Promise<SubmitRewa
   return { ok: true, txHash: payload.txHash };
 }
 
-async function submitViaLocalAdmin(input: SignRewardInput): Promise<SubmitRewardResult> {
-  const adminSecret = process.env.ADMIN_SECRET?.trim();
-  if (!adminSecret) {
-    return { ok: false, status: 503, error: 'ADMIN_SECRET is not configured.' };
+async function submitViaLocalRelayer(
+  input: SignRewardInput,
+  voucher: Pick<RewardVoucher, 'claimId' | 'expiry' | 'signature'>,
+): Promise<SubmitRewardResult> {
+  const relayerSecret = process.env.ADMIN_SECRET?.trim();
+  if (!relayerSecret) {
+    return { ok: false, status: 503, error: 'ADMIN_SECRET (relayer) is not configured.' };
   }
-  return submitSendReward({
-    adminSecret,
+  return submitClaimReward({
+    relayerSecret,
     wallet: input.wallet,
     rewardXlm: input.rewardXlm,
     activity: input.activity,
+    claimId: voucher.claimId,
+    expiry: voucher.expiry,
+    signature: voucher.signature,
   });
 }
 
-/** Phase 1 local / Phase 2 remote TreasurySigner adapter. */
+/**
+ * Mint an attestor voucher, then submit claim_reward via local relayer or remote signer.
+ * ADMIN_SECRET is the fee-paying relayer key — not sufficient alone to invent payouts.
+ */
 export async function signAndSubmitReward(input: SignRewardInput): Promise<SubmitRewardResult> {
-  if (remoteSignerConfigured()) return submitViaRemoteSigner(input);
-  return submitViaLocalAdmin(input);
+  if (!attestorConfigured()) {
+    return { ok: false, status: 503, error: 'ATTESTOR_SECRET is not configured.' };
+  }
+
+  let voucher: RewardVoucher;
+  try {
+    voucher = mintRewardVoucher(input);
+  } catch (cause) {
+    return {
+      ok: false,
+      status: 503,
+      error: cause instanceof Error ? cause.message : 'Failed to mint reward voucher.',
+    };
+  }
+
+  if (remoteSignerConfigured()) {
+    return submitViaRemoteSigner(input, voucher);
+  }
+  return submitViaLocalRelayer(input, voucher);
 }

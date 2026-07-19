@@ -3,7 +3,10 @@
  */
 export const CONTRACT_METHODS = [
   "initialize",
+  "set_attestor",
+  "get_attestor",
   "send_reward",
+  "claim_reward",
   "get_balance",
   "get_disbursed",
   "get_admin",

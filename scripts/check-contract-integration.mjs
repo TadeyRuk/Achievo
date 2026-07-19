@@ -19,7 +19,7 @@ const [rust, stellarViews, wallet, submitReward, evaluate, budgets, rewardRoute]
 ]);
 
 const bindings = {
-  send_reward: ['submit'],
+  claim_reward: ['submit'],
   get_balance: ['stellar'],
   get_admin: ['stellar'],
   get_disbursed: ['stellar'],

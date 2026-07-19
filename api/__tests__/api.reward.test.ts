@@ -152,8 +152,11 @@ describe('/api/reward', () => {
     reserveBudget.mockResolvedValue(true)
     getIdentityByWallet.mockResolvedValue(null)
     process.env.ADMIN_SECRET = adminKp.secret()
+    process.env.ATTESTOR_SECRET = Keypair.random().secret()
     process.env.NONCE_HMAC_SECRET = 'reward-test-secret'
     delete process.env.VERCEL_ENV
+    delete process.env.SIGNER_URL
+    delete process.env.SIGNER_HMAC_SECRET
   })
 
   function challengeBody(overrides: Record<string, unknown> = {}) {

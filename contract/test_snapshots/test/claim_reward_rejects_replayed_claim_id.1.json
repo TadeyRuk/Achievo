@@ -77,16 +77,10 @@
           "function": {
             "contract_fn": {
               "contract_address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
-              "function_name": "send_reward",
+              "function_name": "set_attestor",
               "args": [
                 {
-                  "address": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAK3IM"
-                },
-                {
-                  "i128": "200000000"
-                },
-                {
-                  "symbol": "volunteer"
+                  "bytes": "ff86e72aeea32df1261c866649534823563e9ce719bc039039b17095f10479f7"
                 }
               ]
             }
@@ -95,6 +89,7 @@
         }
       ]
     ],
+    [],
     []
   ],
   "ledger": {
@@ -198,6 +193,33 @@
               "key": {
                 "vec": [
                   {
+                    "symbol": "Claim"
+                  },
+                  {
+                    "bytes": "be922db7161d95f7610e5def3c16988ae55e82d4dc27ef305836990c01dcbc2b"
+                  }
+                ]
+              },
+              "durability": "persistent",
+              "val": {
+                "bool": true
+              }
+            }
+          },
+          "ext": "v0"
+        },
+        "live_until": 4095
+      },
+      {
+        "entry": {
+          "last_modified_ledger_seq": 0,
+          "data": {
+            "contract_data": {
+              "ext": "v0",
+              "contract": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAFCT4",
+              "key": {
+                "vec": [
+                  {
                     "symbol": "History"
                   }
                 ]
@@ -212,7 +234,7 @@
                           "symbol": "activity"
                         },
                         "val": {
-                          "symbol": "volunteer"
+                          "symbol": "event"
                         }
                       },
                       {
@@ -220,7 +242,7 @@
                           "symbol": "amount"
                         },
                         "val": {
-                          "i128": "200000000"
+                          "i128": "10000000"
                         }
                       },
                       {
@@ -282,7 +304,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "200000000"
+                      "i128": "10000000"
                     }
                   },
                   {
@@ -320,6 +342,18 @@
                       "key": {
                         "vec": [
                           {
+                            "symbol": "Attestor"
+                          }
+                        ]
+                      },
+                      "val": {
+                        "bytes": "ff86e72aeea32df1261c866649534823563e9ce719bc039039b17095f10479f7"
+                      }
+                    },
+                    {
+                      "key": {
+                        "vec": [
+                          {
                             "symbol": "State"
                           }
                         ]
@@ -347,7 +381,7 @@
                               "symbol": "total_disbursed"
                             },
                             "val": {
-                              "i128": "200000000"
+                              "i128": "10000000"
                             }
                           }
                         ]
@@ -368,7 +402,7 @@
                               "symbol": "amount"
                             },
                             "val": {
-                              "i128": "200000000"
+                              "i128": "10000000"
                             }
                           },
                           {
@@ -436,7 +470,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "800000000"
+                      "i128": "990000000"
                     }
                   },
                   {
@@ -488,7 +522,7 @@
                       "symbol": "amount"
                     },
                     "val": {
-                      "i128": "200000000"
+                      "i128": "10000000"
                     }
                   },
                   {

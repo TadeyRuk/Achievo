@@ -33,11 +33,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     wallet?: string;
     rewardXlm?: number;
     activity?: string;
+    claimIdHex?: string;
+    expiry?: number;
+    signatureHex?: string;
   };
   const wallet = typeof parsed.wallet === 'string' ? parsed.wallet : '';
   const rewardXlm = typeof parsed.rewardXlm === 'number' ? parsed.rewardXlm : NaN;
   const activity = typeof parsed.activity === 'string' ? parsed.activity : '';
-  if (!wallet || !activity || !Number.isFinite(rewardXlm)) {
+  const claimIdHex = typeof parsed.claimIdHex === 'string' ? parsed.claimIdHex : '';
+  const expiry = typeof parsed.expiry === 'number' ? parsed.expiry : NaN;
+  const signatureHex = typeof parsed.signatureHex === 'string' ? parsed.signatureHex : '';
+  if (
+    !wallet ||
+    !activity ||
+    !Number.isFinite(rewardXlm) ||
+    !claimIdHex ||
+    !signatureHex ||
+    !Number.isFinite(expiry)
+  ) {
     res.status(400).json({ ok: false, error: 'Invalid sign-reward payload.' });
     return;
   }
@@ -48,6 +61,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       wallet,
       rewardXlm,
       activity,
+      claimIdHex,
+      expiry,
+      signatureHex,
     });
     if ('pending' in result && result.pending) {
       res.status(202).json(result);

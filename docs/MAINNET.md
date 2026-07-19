@@ -4,7 +4,8 @@ Do **not** fund a mainnet treasury or point production `CONTRACT_ID` / network U
 
 ## Hard gates
 
-- [ ] Isolated signer deployed ([`services/signer`](../services/signer/)); Achievo web/API project has **no** `ADMIN_SECRET`
+- [ ] `ATTESTOR_SECRET` set on Achievo API; contract `set_attestor` matches attestor pubkey
+- [ ] Isolated signer deployed ([`services/signer`](../services/signer/)); Achievo web/API project has **no** `ADMIN_SECRET` (relayer only on signer)
 - [ ] `SIGNER_HMAC_SECRET` rotated and stored only in GitHub/Vercel environments
 - [ ] Production `CRON_SECRET` set; reconcile workflow secrets (`ACHIEVO_BASE_URL`, `CRON_SECRET`) verified
 - [ ] Production Redis fail-closed confirmed (`/api/health` returns Redis up)
@@ -24,11 +25,11 @@ Do **not** fund a mainnet treasury or point production `CONTRACT_ID` / network U
 
 ## Multisig upgrade path (Phase 3.5)
 
-Today the contract admin is a single Stellar account (`admin.require_auth()` on `send_reward`). For larger treasuries:
+Product payouts use `claim_reward` + attestor vouchers. Ops `send_reward` / `set_attestor` still use a single Stellar admin (`admin.require_auth()`). For larger treasuries:
 
-1. Move admin to a Stellar multisig account (e.g. 2-of-3).
-2. Keep the hot signer as one weighted key with low daily allowance; cold keys offline.
-3. Or replace direct `ADMIN_SECRET` signing with a policy engine that requires a second approval API for large payouts.
+1. Move admin to a Stellar multisig account (e.g. 2-of-3) for `set_attestor` / emergency `send_reward`.
+2. Keep the hot relayer as a low-privilege fee payer; rotate `ATTESTOR_SECRET` if compromised.
+3. Or add a second-approval policy before minting high-value vouchers.
 
 ## Network cutover checklist
 

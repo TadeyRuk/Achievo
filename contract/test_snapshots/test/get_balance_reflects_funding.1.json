@@ -160,7 +160,11 @@
                   "storage": [
                     {
                       "key": {
-                        "symbol": "state"
+                        "vec": [
+                          {
+                            "symbol": "State"
+                          }
+                        ]
                       },
                       "val": {
                         "map": [

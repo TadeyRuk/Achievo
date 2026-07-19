@@ -3,11 +3,38 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{
-    testutils::{Address as _, Ledger},
-    symbol_short, Address, Env,
-};
+use ed25519_dalek::{Signer, SigningKey};
+use rand::rngs::OsRng;
 use soroban_sdk::token::{StellarAssetClient, TokenClient};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, BytesN as _, Ledger},
+    Address, Bytes, BytesN, Env, Symbol,
+};
+
+fn bytes_to_std_vec(bytes: &Bytes) -> std::vec::Vec<u8> {
+    let len = bytes.len() as usize;
+    let mut out = std::vec::Vec::with_capacity(len);
+    for i in 0..bytes.len() {
+        out.push(bytes.get(i).unwrap());
+    }
+    out
+}
+
+fn sign_voucher(
+    env: &Env,
+    contract: &Address,
+    signing_key: &SigningKey,
+    recipient: &Address,
+    amount: i128,
+    activity: &Symbol,
+    claim_id: &BytesN<32>,
+    expiry: u64,
+) -> BytesN<64> {
+    let message = voucher_message(env, contract, recipient, amount, activity, claim_id, expiry);
+    let sig = signing_key.sign(&bytes_to_std_vec(&message));
+    BytesN::from_array(env, &sig.to_bytes())
+}
 
 // ── Test fixture ──────────────────────────────────────────────────────────────
 
@@ -53,6 +80,11 @@ impl TestFixture {
     /// Mint stroops directly into the treasury contract address.
     fn fund(&self, stroops: i128) {
         self.sac().mint(&self.contract_id, &stroops);
+    }
+
+    fn set_attestor_from_key(&self, signing_key: &SigningKey) {
+        let pk = BytesN::from_array(&self.env, signing_key.verifying_key().as_bytes());
+        self.client().set_attestor(&pk);
     }
 }
 
@@ -345,4 +377,161 @@ fn per_tx_cap_still_enforced_under_daily_headroom() {
     // Use should_panic sibling below; this asserts boundary still works.
     f.client().send_reward(&recipient, &200_000_000_i128, &symbol_short!("volunteer"));
     assert_eq!(f.client().get_recipient_daily(&recipient), 200_000_000_i128);
+}
+
+// ── claim_reward (attested vouchers) ──────────────────────────────────────────
+
+#[test]
+fn claim_reward_transfers_with_valid_voucher() {
+    let f = TestFixture::setup();
+    f.initialize();
+    f.fund(1_000_000_000_i128);
+    let signing_key = SigningKey::generate(&mut OsRng);
+    f.set_attestor_from_key(&signing_key);
+
+    let recipient = Address::generate(&f.env);
+    let amount = 50_000_000_i128;
+    let activity = symbol_short!("tutoring");
+    let claim_id = BytesN::<32>::random(&f.env);
+    let expiry = f.env.ledger().timestamp() + 600;
+    let signature = sign_voucher(
+        &f.env,
+        &f.contract_id,
+        &signing_key,
+        &recipient,
+        amount,
+        &activity,
+        &claim_id,
+        expiry,
+    );
+
+    f.client()
+        .claim_reward(&recipient, &amount, &activity, &claim_id, &expiry, &signature);
+
+    assert_eq!(f.token().balance(&recipient), amount);
+    assert_eq!(f.client().get_disbursed(), amount);
+    assert_eq!(f.client().get_history_len(), 1);
+}
+
+#[test]
+#[should_panic(expected = "ClaimAlreadyUsed")]
+fn claim_reward_rejects_replayed_claim_id() {
+    let f = TestFixture::setup();
+    f.initialize();
+    f.fund(1_000_000_000_i128);
+    let signing_key = SigningKey::generate(&mut OsRng);
+    f.set_attestor_from_key(&signing_key);
+
+    let recipient = Address::generate(&f.env);
+    let amount = 10_000_000_i128;
+    let activity = symbol_short!("event");
+    let claim_id = BytesN::<32>::random(&f.env);
+    let expiry = f.env.ledger().timestamp() + 600;
+    let signature = sign_voucher(
+        &f.env,
+        &f.contract_id,
+        &signing_key,
+        &recipient,
+        amount,
+        &activity,
+        &claim_id,
+        expiry,
+    );
+
+    f.client()
+        .claim_reward(&recipient, &amount, &activity, &claim_id, &expiry, &signature);
+    f.client()
+        .claim_reward(&recipient, &amount, &activity, &claim_id, &expiry, &signature);
+}
+
+#[test]
+#[should_panic(expected = "VoucherExpired")]
+fn claim_reward_rejects_expired_voucher() {
+    let f = TestFixture::setup();
+    f.initialize();
+    f.fund(1_000_000_000_i128);
+    let signing_key = SigningKey::generate(&mut OsRng);
+    f.set_attestor_from_key(&signing_key);
+
+    let recipient = Address::generate(&f.env);
+    let amount = 10_000_000_i128;
+    let activity = symbol_short!("event");
+    let claim_id = BytesN::<32>::random(&f.env);
+    let expiry = f.env.ledger().timestamp();
+    f.env.ledger().set_timestamp(expiry + 1);
+    let signature = sign_voucher(
+        &f.env,
+        &f.contract_id,
+        &signing_key,
+        &recipient,
+        amount,
+        &activity,
+        &claim_id,
+        expiry,
+    );
+
+    f.client()
+        .claim_reward(&recipient, &amount, &activity, &claim_id, &expiry, &signature);
+}
+
+#[test]
+#[should_panic]
+fn claim_reward_rejects_bad_signature() {
+    let f = TestFixture::setup();
+    f.initialize();
+    f.fund(1_000_000_000_i128);
+    let signing_key = SigningKey::generate(&mut OsRng);
+    f.set_attestor_from_key(&signing_key);
+
+    let recipient = Address::generate(&f.env);
+    let amount = 10_000_000_i128;
+    let activity = symbol_short!("event");
+    let claim_id = BytesN::<32>::random(&f.env);
+    let expiry = f.env.ledger().timestamp() + 600;
+    let bad_key = SigningKey::generate(&mut OsRng);
+    let signature = sign_voucher(
+        &f.env,
+        &f.contract_id,
+        &bad_key,
+        &recipient,
+        amount,
+        &activity,
+        &claim_id,
+        expiry,
+    );
+
+    f.client()
+        .claim_reward(&recipient, &amount, &activity, &claim_id, &expiry, &signature);
+}
+
+#[test]
+#[should_panic(expected = "AttestorNotSet")]
+fn claim_reward_requires_attestor() {
+    let f = TestFixture::setup();
+    f.initialize();
+    f.fund(1_000_000_000_i128);
+
+    let recipient = Address::generate(&f.env);
+    let claim_id = BytesN::<32>::random(&f.env);
+    let expiry = f.env.ledger().timestamp() + 600;
+    let signature = BytesN::<64>::random(&f.env);
+
+    f.client().claim_reward(
+        &recipient,
+        &10_000_000_i128,
+        &symbol_short!("event"),
+        &claim_id,
+        &expiry,
+        &signature,
+    );
+}
+
+#[test]
+fn get_attestor_returns_set_key() {
+    let f = TestFixture::setup();
+    f.initialize();
+    let signing_key = SigningKey::generate(&mut OsRng);
+    f.set_attestor_from_key(&signing_key);
+    let expected = BytesN::from_array(&f.env, signing_key.verifying_key().as_bytes());
+    assert_eq!(f.client().get_attestor(), expected);
 }
