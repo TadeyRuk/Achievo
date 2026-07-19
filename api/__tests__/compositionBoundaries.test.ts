@@ -69,8 +69,8 @@ describe('composition import boundaries', () => {
     expect(readFileSync(path.join(apiRoot, 'identity.ts'), 'utf8')).toContain(
       "'./_server/composition/identity'",
     );
-    expect(readFileSync(path.join(apiRoot, 'nonce.ts'), 'utf8')).toContain(
-      "'./_server/composition/nonce'",
+    expect(readFileSync(path.join(apiRoot, 'web-auth.ts'), 'utf8')).toContain(
+      "'./_server/composition/webauth'",
     );
     expect(readFileSync(path.join(apiRoot, 'reward.ts'), 'utf8')).toContain(
       "'./_server/composition/reward'",

@@ -5,32 +5,29 @@ import {
   createRewardRoute,
 } from '../_server/features/rewards/routes';
 import type {
-  NoncePorts,
   PayoutsPorts,
   ReconcilePorts,
   RewardPorts,
 } from '../_server/features/rewards/ports';
 
-function request(body: unknown): HttpRequest {
+function request(body: unknown, headers: Record<string, string> = {}): HttpRequest {
   return {
     method: 'POST',
-    headers: {},
+    headers: { authorization: 'Bearer test-token', ...headers },
     query: {},
     body,
     clientIp: '203.0.113.8',
   };
 }
 
-function createPorts(): RewardPorts & NoncePorts & PayoutsPorts & ReconcilePorts {
+function createPorts(): RewardPorts & PayoutsPorts & ReconcilePorts {
   return {
     payoutConfigured: vi.fn().mockReturnValue(true),
-    nonceSecret: 'nonce-secret',
     cronSecret: undefined,
     production: false,
     isValidWallet: vi.fn().mockReturnValue(true),
     hashIntent: vi.fn().mockReturnValue('a'.repeat(64)),
-    verifyChallenge: vi.fn().mockReturnValue({ ok: true }),
-    issueChallenge: vi.fn(),
+    verifyAuthToken: vi.fn().mockReturnValue({ ok: true, wallet: 'GTEST' }),
     claimOnce: vi.fn().mockResolvedValue(true),
     claimRates: vi.fn().mockResolvedValue({
       ok: true,
@@ -87,10 +84,6 @@ function createPorts(): RewardPorts & NoncePorts & PayoutsPorts & ReconcilePorts
 const validBody = {
   activityText: 'I tutored classmates for two hours.',
   wallet: 'GTEST',
-  nonce: 'nonce',
-  expiry: 1,
-  mac: 'mac',
-  signedXdr: 'xdr',
   intentHash: 'a'.repeat(64),
 };
 
@@ -102,6 +95,19 @@ describe('reward feature route', () => {
     );
     expect(result.status).toBe(400);
     expect(ports.claimOnce).not.toHaveBeenCalled();
+  });
+
+  it('rejects missing bearer token', async () => {
+    const ports = createPorts();
+    const result = await createRewardRoute(ports)({
+      method: 'POST',
+      headers: {},
+      query: {},
+      body: validBody,
+      clientIp: '203.0.113.8',
+    });
+    expect(result.status).toBe(401);
+    expect(ports.verifyAuthToken).not.toHaveBeenCalled();
   });
 
   it('releases rate claims after evaluation rejection', async () => {

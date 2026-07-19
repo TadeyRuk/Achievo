@@ -37,14 +37,14 @@
 
 Student contributions such as tutoring, volunteering, workshops, events, and participation are valuable but often difficult to recognize consistently. Achievo provides a transparent reward flow:
 
-1. A student connects a supported  wallet and describes an activity.
-2. The student signs a nonce challenge to prove wallet ownership.
+1. A student connects a supported wallet and describes an activity.
+2. The student completes SEP-10 Web Auth (signs a challenge, receives a JWT).
 3. The server evaluates the submission with Groq and calculates an effort-based reward.
 4. The server mints an attestor voucher and relays `claim_reward` on-chain.
-5. The Soroban treasury transfers testnet XLM and records an on-chain reward entry.
+5. The Soroban treasury transfers XLM and records an on-chain reward entry.
 6. The UI displays the result, transaction hash, balance, history, and rank progress.
 
-The admin secret remains server-side. A student wallet signs only the ownership challenge and receives rewards.
+Treasury and SEP-10 secrets remain server-side. A student wallet signs only the Web Auth challenge and receives rewards.
 
 ## Agent Pipeline
 
@@ -199,7 +199,7 @@ flowchart TB
 - **Client pipeline hints** provide immediate progress feedback; they are not authoritative AI decisions.
 - **`@achievo/sdk`** is the only browser path to `/api/*`; feature UI never owns raw fetch/XDR transport.
 - **Groq on the server** classifies valid activities and scores submission effort.
-- **Wallet ownership proof** uses an HMAC-protected nonce challenge signed by the connected wallet.
+- **Wallet ownership proof** uses SEP-10 Web Auth (`/.well-known/stellar.toml` + `/api/web-auth`) and a Bearer JWT on `/api/reward`.
 - **The server-side admin signer** authorizes treasury payouts; the admin key never enters browser code.
 - **API handlers** are thin Vercel adapters; use cases live under `api/_server/features` with ports wired in composition.
 - **The Soroban contract** enforces positive payouts, available treasury balance, and a 20 XLM per-transaction ceiling.
@@ -397,7 +397,11 @@ The local Vercel development server serves the frontend and `/api/*` functions t
 | `ATTESTOR_SECRET` | Yes | Server-only Stellar secret that mints claim vouchers |
 | `ADMIN_SECRET` | Yes* | Relayer / fee-paying source (*omit on API when using remote signer) |
 | `GROQ_API_KEY` | Yes | Server-side activity evaluation |
-| `NONCE_HMAC_SECRET` | Yes | Signs and validates wallet ownership challenges |
+| `SEP10_SERVER_SECRET` | Yes | Stellar secret that signs SEP-10 challenges (`SIGNING_KEY` in stellar.toml) |
+| `SEP10_JWT_SECRET` | Yes | HMAC secret for SEP-10 session JWTs |
+| `HOME_DOMAIN` / `WEB_AUTH_DOMAIN` | Yes | Domains advertised in stellar.toml and embedded in SEP-10 challenges |
+| `STELLAR_NETWORK` | No | `testnet` (default) or `public` |
+| `IDENTITY_SESSION_SECRET` | Yes for profile | HMAC for identity session tokens |
 | `UPSTASH_REDIS_REST_URL` | Yes in production | Durable rate limits, payout ledger, and one-submit-per-tx claims |
 | `UPSTASH_REDIS_REST_TOKEN` | Yes in production | Authenticates the Upstash Redis connection |
 | `TELEGRAM_BOT_TOKEN` | No | Optional payout notifications |
@@ -407,11 +411,11 @@ The local Vercel development server serves the frontend and `/api/*` functions t
 | `VITE_POSTHOG_KEY` | No | Public PostHog project key; analytics stays disabled when omitted |
 | `VITE_POSTHOG_HOST` | No | PostHog ingestion host; defaults to `https://us.i.posthog.com` |
 
-Never expose `ATTESTOR_SECRET`, `ADMIN_SECRET`, `GROQ_API_KEY`, or `NONCE_HMAC_SECRET` through `VITE_*` variables or commit them to the repository.
+Never expose `ATTESTOR_SECRET`, `ADMIN_SECRET`, `GROQ_API_KEY`, `SEP10_SERVER_SECRET`, or `SEP10_JWT_SECRET` through `VITE_*` variables or commit them to the repository.
 
 ## Testing
 
-> **Recommended:** Use the **[live Vercel deployment](https://achievo-rust.vercel.app)** for evaluation. All environment variables (`ADMIN_SECRET`, `GROQ_API_KEY`, `NONCE_HMAC_SECRET`) are already configured there — the AI pipeline, wallet auth, and on-chain payouts work out of the box with no local setup required.
+> **Recommended:** Use the **[live Vercel deployment](https://achievo-rust.vercel.app)** for evaluation once SEP-10 env vars are set — the AI pipeline, wallet auth, and on-chain payouts work end-to-end with Freighter on Testnet.
 
 **Contract tests (Rust):**
 ```bash
@@ -423,7 +427,7 @@ cd contract && cargo test
 ```bash
 npm test
 # Builds packages, then runs Vitest: shared rewards, stellar helpers,
-# API nonce/reward/feedback, pipeline UI, property tests
+# API web-auth/reward/feedback, pipeline UI, property tests
 ```
 
 **Payout proof export (Level 4):**

@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import {
   Account,
   Address,
@@ -6,8 +6,6 @@ import {
   Contract,
   Horizon,
   Keypair,
-  Networks,
-  Operation,
   rpc,
   StrKey,
   Transaction,
@@ -17,6 +15,7 @@ import {
 import {
   CONTRACT_ID,
   HORIZON_URL,
+  NETWORK_PASSPHRASE,
   SOROBAN_RPC_URL,
   xlmToStroops,
 } from '@achievo/shared';
@@ -27,96 +26,6 @@ export { StrKey };
 
 export function hashActivityIntent(activityText: string): string {
   return createHash('sha256').update(activityText.trim()).digest('hex');
-}
-
-export function challengeMacPayload(nonce: string, expiry: number, intentHash: string): string {
-  return `${nonce}:${expiry}:${intentHash}`;
-}
-
-export function verifyChallenge(
-  nonceSecret: string,
-  wallet: string,
-  nonce: string,
-  expiry: number,
-  mac: string,
-  signedXdr: string,
-  intentHash: string,
-): { ok: boolean; error?: string } {
-  const expectedMac = createHmac('sha256', nonceSecret)
-    .update(challengeMacPayload(nonce, expiry, intentHash))
-    .digest('hex');
-  if (expectedMac !== mac) return { ok: false, error: 'Invalid challenge token.' };
-  if (Date.now() > expiry) return { ok: false, error: 'Challenge expired. Please try again.' };
-
-  let transaction: Transaction;
-  try {
-    transaction = TransactionBuilder.fromXDR(signedXdr, Networks.TESTNET) as Transaction;
-  } catch {
-    return { ok: false, error: 'Invalid signed challenge XDR.' };
-  }
-  if (transaction.source !== wallet) {
-    return { ok: false, error: 'Challenge was not built for this wallet.' };
-  }
-  const operation = transaction.operations[0] as { type: string; name?: string; value?: Buffer };
-  if (operation?.type !== 'manageData' || operation?.name !== 'achievo-challenge') {
-    return { ok: false, error: 'Challenge structure invalid.' };
-  }
-  if (!operation.value || operation.value.toString('hex') !== nonce) {
-    return { ok: false, error: 'Challenge nonce mismatch.' };
-  }
-
-  const keypair = Keypair.fromPublicKey(wallet);
-  let signed = transaction.signatures.some((signature) => {
-    try {
-      return keypair.verify(transaction.hash(), signature.signature());
-    } catch {
-      return false;
-    }
-  });
-  if (!signed) {
-    try {
-      const publicTransaction = TransactionBuilder.fromXDR(signedXdr, Networks.PUBLIC) as Transaction;
-      signed = publicTransaction.signatures.some((signature) => {
-        try {
-          return keypair.verify(publicTransaction.hash(), signature.signature());
-        } catch {
-          return false;
-        }
-      });
-    } catch {
-      // Ignore alternate-network parse failures.
-    }
-  }
-  return signed ? { ok: true } : { ok: false, error: 'Wallet ownership could not be verified.' };
-}
-
-export async function issueChallenge(
-  wallet: string,
-  intentHash: string,
-  nonceSecret: string,
-): Promise<{ nonce: string; expiry: number; mac: string; intentHash: string; challengeXdr: string }> {
-  const normalizedIntent = intentHash.toLowerCase();
-  const nonce = randomBytes(16).toString('hex');
-  const expiry = Date.now() + 5 * 60 * 1000;
-  const mac = createHmac('sha256', nonceSecret)
-    .update(challengeMacPayload(nonce, expiry, normalizedIntent))
-    .digest('hex');
-  let sequenceNumber = '0';
-  try {
-    sequenceNumber = (await horizonServer.loadAccount(wallet)).sequenceNumber();
-  } catch {
-    // Unfunded account — sequence zero is valid because this transaction is never submitted.
-  }
-  const transaction = new TransactionBuilder(new Account(wallet, sequenceNumber), {
-    fee: BASE_FEE,
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(
-      Operation.manageData({ name: 'achievo-challenge', value: Buffer.from(nonce, 'hex') }),
-    )
-    .setTimebounds(0, Math.floor(expiry / 1000))
-    .build();
-  return { nonce, expiry, mac, intentHash: normalizedIntent, challengeXdr: transaction.toXDR() };
 }
 
 export type SubmitRewardResult =
@@ -148,7 +57,7 @@ function mapSubmitError(message: string): SubmitRewardResult | null {
 function rewardTxBuilder(sourceAccount: Account): TransactionBuilder {
   return new TransactionBuilder(sourceAccount, {
     fee: String(Math.max(Number(BASE_FEE), 10_000)),
-    networkPassphrase: Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   });
 }
 

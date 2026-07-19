@@ -4,7 +4,6 @@ import {
   Contract,
   Horizon,
   Keypair,
-  Networks,
   rpc,
   Transaction,
   TransactionBuilder,
@@ -13,6 +12,7 @@ import {
 import {
   CONTRACT_ID,
   HORIZON_URL,
+  NETWORK_PASSPHRASE,
   SOROBAN_RPC_URL,
   xlmToStroops,
 } from '@achievo/shared';
@@ -101,7 +101,7 @@ export async function signAndSubmitReward(params: {
   const sourceAccount = await horizonServer.loadAccount(relayerKeypair.publicKey());
   const transaction = new TransactionBuilder(sourceAccount, {
     fee: String(Math.max(Number(BASE_FEE), 10_000)),
-    networkPassphrase: Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(
       new Contract(CONTRACT_ID).call(

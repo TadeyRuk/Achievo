@@ -7,6 +7,8 @@ Do **not** fund a mainnet treasury or point production `CONTRACT_ID` / network U
 - [ ] `ATTESTOR_SECRET` set on Achievo API; contract `set_attestor` matches attestor pubkey
 - [ ] Isolated signer deployed ([`services/signer`](../services/signer/)); Achievo web/API project has **no** `ADMIN_SECRET` (relayer only on signer)
 - [ ] `SIGNER_HMAC_SECRET` rotated and stored only in GitHub/Vercel environments
+- [ ] SEP-10 configured: `SEP10_SERVER_SECRET`, `SEP10_JWT_SECRET`, `HOME_DOMAIN`, `WEB_AUTH_DOMAIN`; `/.well-known/stellar.toml` reachable
+- [ ] `STELLAR_NETWORK=public` with explicit mainnet `CONTRACT_ID`, `HORIZON_URL`, `SOROBAN_RPC_URL` (and matching `VITE_*`)
 - [ ] Production `CRON_SECRET` set; reconcile workflow secrets (`ACHIEVO_BASE_URL`, `CRON_SECRET`) verified
 - [ ] Production Redis fail-closed confirmed (`/api/health` returns Redis up)
 - [ ] `rewardsPaused` path tested (health 503 + UI disabled)

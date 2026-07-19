@@ -1,6 +1,7 @@
 import {
   CONTRACT_ID,
   SOROBAN_RPC_URL,
+  STELLAR_NETWORK,
 } from '@achievo/shared';
 import { createHealthRoute } from '../features/health/routes';
 import type { HealthPorts } from '../features/health/ports';
@@ -12,6 +13,9 @@ const healthPorts: HealthPorts = {
   },
   get production() {
     return process.env.VERCEL_ENV === 'production';
+  },
+  get network() {
+    return STELLAR_NETWORK;
   },
   async checkRedis() {
     try {

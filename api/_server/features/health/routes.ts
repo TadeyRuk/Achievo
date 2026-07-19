@@ -16,7 +16,7 @@ export function createHealthRoute(ports: HealthPorts): HttpRoute {
       ok: !rewardsPaused,
       rewardsPaused,
       checks,
-      network: 'testnet',
+      network: ports.network,
     });
   };
 }

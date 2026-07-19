@@ -2,7 +2,7 @@
 
 ## Never commit
 
-- `ADMIN_SECRET`, `ATTESTOR_SECRET`, `NONCE_HMAC_SECRET`, `CRON_SECRET`, `SIGNER_HMAC_SECRET`, `IDENTITY_ID_PEPPER`
+- `ADMIN_SECRET`, `ATTESTOR_SECRET`, `SEP10_SERVER_SECRET`, `SEP10_JWT_SECRET`, `IDENTITY_SESSION_SECRET`, `CRON_SECRET`, `SIGNER_HMAC_SECRET`, `IDENTITY_ID_PEPPER`
 - Upstash / Telegram / Groq / Google Forms tokens
 - Wallet seed phrases or Stellar secret keys
 - `.env`, `.env.local`, Vercel pull dumps with secrets
@@ -18,7 +18,8 @@ Use [`.env.example`](../.env.example) as the template. Real values live in Verce
 | Attestor key (`ATTESTOR_SECRET`) | Mints claim vouchers; can authorize payouts up to on-chain caps if leaked |
 | Relayer key (`ADMIN_SECRET`) | Fee-paying source for `claim_reward`; alone cannot invent vouchers |
 | Redis (Upstash) | Rate limits, budgets, identity, pending reconcile, payout ledger |
-| `NONCE_HMAC_SECRET` / session MAC | Challenge + identity session forgery |
+| `SEP10_SERVER_SECRET` / `SEP10_JWT_SECRET` | SEP-10 challenge signing + JWT forgery |
+| `IDENTITY_SESSION_SECRET` | Identity session MAC forgery |
 | Activity text | Student-authored content; privacy-sensitive in logs/analytics |
 | Sink credentials | Telegram, Groq, Google Forms, PostHog |
 
@@ -43,7 +44,7 @@ Students prove wallet ownership; they never hold the treasury key. Public APIs m
 | Cron without secret in production | Fail-closed 503 when `CRON_SECRET` missing under `VERCEL_ENV=production` |
 | Stolen `sessionToken` | HMAC + expiry; clear client session on wallet disconnect; verify wallet bind on identity routes |
 | Rate-limit bypass | Redis `claimOnce` SET NX; production Redis fail-closed |
-| Missing attestor/relayer/nonce secrets | Reward/nonce return 503/500; no unsigned payouts |
+| Missing attestor/relayer/SEP-10 secrets | Web Auth / reward return 503/401; no unsigned payouts |
 
 ## CI gates
 

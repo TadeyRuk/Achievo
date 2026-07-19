@@ -72,6 +72,8 @@ describe('useRewardPipeline SDK errors', () => {
     expect(mocks.submitActivity).toHaveBeenCalledWith({
       wallet: 'GABC',
       activityText: 'Tutored a classmate',
+      authToken: undefined,
+      onAuthToken: expect.any(Function),
       signChallenge: expect.any(Function),
     });
     expect(mocks.signChallengeXdr).toHaveBeenCalledWith('freighter', 'challenge-xdr');

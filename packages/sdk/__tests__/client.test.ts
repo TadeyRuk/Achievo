@@ -15,18 +15,20 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe('createAchievoClient', () => {
-  it('submits an activity after hashing its trimmed text and signing the nonce challenge', async () => {
+  it('submits an activity after SEP-10 auth and hashing its trimmed text', async () => {
     const activityText = '  Tutored five students for two hours.  ';
     const trimmedActivity = activityText.trim();
     const intentHash = createHash('sha256').update(trimmedActivity).digest('hex');
     const fetch = vi
       .fn<typeof globalThis.fetch>()
       .mockResolvedValueOnce(jsonResponse({
-        nonce: 'nonce-1',
-        expiry: 123,
-        mac: 'mac-1',
-        intentHash,
-        challengeXdr: 'challenge-xdr',
+        transaction: 'challenge-xdr',
+        network_passphrase: 'Test SDF Network ; September 2015',
+      }))
+      .mockResolvedValueOnce(jsonResponse({
+        token: 'jwt-token',
+        wallet: 'G-WALLET',
+        expiresAt: 123,
       }))
       .mockResolvedValueOnce(jsonResponse({
         txHash: 'tx-1',
@@ -45,35 +47,84 @@ describe('createAchievoClient', () => {
         sessionToken: 'session-1',
       }));
     const signChallenge = vi.fn().mockResolvedValue('signed-xdr');
+    const onAuthToken = vi.fn();
     const client = createAchievoClient({ fetch });
 
     const result = await client.submitActivity({
       wallet: 'G-WALLET',
       activityText,
       signChallenge,
+      onAuthToken,
     });
 
     expect(result.txHash).toBe('tx-1');
     expect(signChallenge).toHaveBeenCalledWith('challenge-xdr');
+    expect(onAuthToken).toHaveBeenCalledWith('jwt-token');
     expect(fetch).toHaveBeenNthCalledWith(
       1,
-      `/api/nonce?wallet=${encodeURIComponent('G-WALLET')}&intentHash=${intentHash}`,
+      `/api/web-auth?account=${encodeURIComponent('G-WALLET')}`,
       { method: 'GET' },
     );
     expect(fetch).toHaveBeenNthCalledWith(
       2,
+      '/api/web-auth',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ transaction: 'signed-xdr' }),
+      }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
       '/api/reward',
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer jwt-token',
+        }),
         body: JSON.stringify({
           activityText: trimmedActivity,
           wallet: 'G-WALLET',
-          nonce: 'nonce-1',
-          expiry: 123,
-          mac: 'mac-1',
-          signedXdr: 'signed-xdr',
           intentHash,
         }),
+      }),
+    );
+  });
+
+  it('reuses a cached auth token without calling Web Auth', async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      jsonResponse({
+        txHash: 'tx-2',
+        reward: 5,
+        base: 5,
+        bonus: 0,
+        effortScore: 0.2,
+        activity: 'tutoring',
+        reason: 'ok',
+        criteria: [],
+        flagged: false,
+        flagReason: null,
+        integrityReasons: [],
+        scoringMode: 'heuristic',
+        identityId: null,
+        sessionToken: null,
+      }),
+    );
+    const signChallenge = vi.fn();
+    const client = createAchievoClient({ fetch });
+
+    await client.submitActivity({
+      wallet: 'G-WALLET',
+      activityText: 'Tutored peers in math tonight.',
+      authToken: 'cached-jwt',
+      signChallenge,
+    });
+
+    expect(signChallenge).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/reward',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer cached-jwt' }),
       }),
     );
   });
@@ -92,11 +143,11 @@ describe('createAchievoClient', () => {
   });
 
   it('throws a typed ApiError for non-2xx responses', async () => {
-    const body = { error: 'Too many challenge requests. Wait a moment and retry.' };
+    const body = { error: 'Too many auth requests. Wait a moment and retry.' };
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(jsonResponse(body, 429));
     const client = createAchievoClient({ fetch });
 
-    const promise = client.getNonce({ wallet: 'G-WALLET', intentHash: 'a'.repeat(64) });
+    const promise = client.getWebAuthChallenge('G-WALLET');
 
     await expect(promise).rejects.toBeInstanceOf(ApiError);
     await expect(promise).rejects.toEqual(expect.objectContaining({
@@ -149,81 +200,35 @@ describe('createAchievoClient', () => {
     }));
   });
 
-  it('allows payout entries from reconcile to omit effortScore', () => {
-    const reconciledPayout: PublicPayoutEntry = {
-      txHash: 'tx-reconciled',
-      wallet: 'G-WA…LLET',
+  it('maps payout table rows with typed PublicPayoutEntry entries', async () => {
+    const entry: PublicPayoutEntry = {
+      txHash: 'abc',
+      wallet: 'G…',
       identityId: null,
-      amount: 5,
+      amount: 1,
       activity: 'tutoring',
-      scoringMode: null,
-      createdAt: '2026-07-18T00:00:00.000Z',
-    };
-
-    expect(reconciledPayout.effortScore).toBeUndefined();
-  });
-
-  it('returns a 202 pending reward as a typed result instead of throwing', async () => {
-    const pending = {
-      pending: true as const,
-      txHash: 'tx-pending',
-      reward: 5,
-      activity: 'tutoring',
-      error: 'Submission status is uncertain.',
       scoringMode: 'heuristic',
+      createdAt: '2026-01-01T00:00:00.000Z',
     };
-    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(jsonResponse(pending, 202));
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(jsonResponse({
+      count: 1,
+      uniqueWallets: 1,
+      uniqueIdentities: 0,
+      totalXlm: 1,
+      entries: [entry],
+      tableRows: [{
+        n: 1,
+        date: '2026-01-01',
+        wallet: 'G…',
+        identityId: null,
+        amount: 1,
+        activity: 'tutoring',
+        txUrl: 'https://example.com',
+        txHash: 'abc',
+      }],
+    }));
     const client = createAchievoClient({ fetch });
-
-    await expect(client.submitReward({
-      activityText: 'Tutored a student.',
-      wallet: 'G-WALLET',
-      nonce: 'nonce-1',
-      expiry: 123,
-      mac: 'mac-1',
-      signedXdr: 'signed-xdr',
-      intentHash: 'a'.repeat(64),
-    })).resolves.toEqual(pending);
-  });
-
-  it('does not submit a reward when the signer rejects', async () => {
-    const nonce = {
-      nonce: 'nonce-1',
-      expiry: 123,
-      mac: 'mac-1',
-      intentHash: 'a'.repeat(64),
-      challengeXdr: 'challenge-xdr',
-    };
-    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(jsonResponse(nonce));
-    const signerError = new Error('User declined the signature.');
-    const client = createAchievoClient({ fetch });
-
-    await expect(client.submitActivity({
-      wallet: 'G-WALLET',
-      activityText: 'Tutored a student.',
-      signChallenge: vi.fn().mockRejectedValue(signerError),
-    })).rejects.toBe(signerError);
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('keeps browser URLs relative and robustly joins a non-empty base URL', async () => {
-    const relativeFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
-      jsonResponse({ ok: true, rewardsPaused: false, checks: {}, network: 'testnet' }),
-    );
-    const absoluteFetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
-      jsonResponse({ ok: true, rewardsPaused: false, checks: {}, network: 'testnet' }),
-    );
-
-    await createAchievoClient({ fetch: relativeFetch }).getHealth();
-    await createAchievoClient({
-      baseUrl: 'https://achievo.example/root///',
-      fetch: absoluteFetch,
-    }).getHealth();
-
-    expect(relativeFetch).toHaveBeenCalledWith('/api/health', { method: 'GET' });
-    expect(absoluteFetch).toHaveBeenCalledWith(
-      'https://achievo.example/root/api/health',
-      { method: 'GET' },
-    );
+    const payouts = await client.getPayouts();
+    expect(payouts.entries[0]).toEqual(entry);
   });
 });

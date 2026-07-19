@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { LogOut, ShieldCheck, RefreshCw, TrendingUp, Check, Clock } from "lucide-react";
 import { motion } from "motion/react";
 import type { TreasuryInfo } from "@achievo/stellar";
-import type { RewardHistoryItem } from "@achievo/shared";
+import { FRIENDBOT_ENABLED, type RewardHistoryItem } from "@achievo/shared";
 import { WeeklyEarningsTrendChart } from './WeeklyEarningsTrendChart';
 import { WalletFundPrompt } from './WalletFundPrompt';
 import { TreasuryStatsBlock } from './TreasuryStatsBlock';
@@ -221,7 +221,7 @@ export function WalletProfile({
           </motion.div>
 
           {/* Funding Prompt for fresh testnet accounts */}
-          {!isFunded && (
+          {FRIENDBOT_ENABLED && !isFunded && (
             <WalletFundPrompt variants={itemVariants} onFund={onFund} />
           )}
 

@@ -25,7 +25,6 @@ import {
 import {
   hashActivityIntent,
   StrKey,
-  verifyChallenge,
 } from '../infrastructure/stellar';
 import {
   HeuristicScoringAgent,
@@ -36,28 +35,15 @@ import {
   signAndSubmitReward,
   treasurySignerConfigured,
 } from '../infrastructure/treasurySigner';
+import { sep10Configured, verifyRewardAuthToken } from '../infrastructure/sep10';
 
 const rewardPorts: RewardPorts = {
   payoutConfigured() {
-    return treasurySignerConfigured() && Boolean(process.env.NONCE_HMAC_SECRET?.trim());
-  },
-  get nonceSecret() {
-    return process.env.NONCE_HMAC_SECRET;
+    return treasurySignerConfigured() && sep10Configured();
   },
   isValidWallet: StrKey.isValidEd25519PublicKey,
   hashIntent: hashActivityIntent,
-  verifyChallenge(input) {
-    if (!process.env.NONCE_HMAC_SECRET) return { ok: false, error: 'Server configuration error.' };
-    return verifyChallenge(
-      process.env.NONCE_HMAC_SECRET,
-      input.wallet,
-      input.nonce,
-      input.expiry,
-      input.mac,
-      input.signedXdr,
-      input.intentHash,
-    );
-  },
+  verifyAuthToken: verifyRewardAuthToken,
   claimOnce,
   claimRates: claimRewardRates,
   releaseRates: releaseRateClaims,

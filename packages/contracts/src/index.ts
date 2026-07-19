@@ -2,20 +2,26 @@ export interface ApiErrorResponse {
   error: string;
 }
 
-export interface NonceApiRequest {
+export interface WebAuthChallengeRequest {
+  account: string;
+}
+
+export interface WebAuthChallengeSuccess {
+  transaction: string;
+  network_passphrase: string;
+}
+
+export interface WebAuthTokenRequest {
+  transaction: string;
+}
+
+export interface WebAuthTokenSuccess {
+  token: string;
   wallet: string;
-  intentHash: string;
+  expiresAt: number;
 }
 
-export interface NonceApiSuccess {
-  nonce: string;
-  expiry: number;
-  mac: string;
-  intentHash: string;
-  challengeXdr: string;
-}
-
-export type NonceApiError = ApiErrorResponse;
+export type WebAuthApiError = ApiErrorResponse;
 
 export type RewardActivity =
   | 'tutoring'
@@ -36,10 +42,6 @@ export interface ScoreCriterion {
 export interface RewardApiRequest {
   activityText: string;
   wallet: string;
-  nonce: string;
-  expiry: number;
-  mac: string;
-  signedXdr: string;
   intentHash: string;
 }
 
@@ -86,7 +88,7 @@ export interface HealthApiSuccess {
     redis: HealthCheckStatus;
     rpc: HealthCheckStatus;
   };
-  network: 'testnet';
+  network: 'testnet' | 'public';
 }
 
 export type HealthApiError = HealthApiSuccess | ApiErrorResponse;

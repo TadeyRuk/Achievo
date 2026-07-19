@@ -54,30 +54,12 @@ interface StoreErrorPort {
   isStoreUnavailable(error: unknown): boolean;
 }
 
-export interface NoncePorts extends StoreErrorPort {
-  nonceSecret?: string;
-  isValidWallet(wallet: string): boolean;
-  claimOnce(key: string, ttlSeconds: number): Promise<boolean>;
-  issueChallenge(
-    wallet: string,
-    intentHash: string,
-  ): Promise<{ nonce: string; expiry: number; mac: string; intentHash: string; challengeXdr: string }>;
-}
-
 export interface RewardPorts extends StoreErrorPort {
-  /** True when secrets required for payout are configured (admin via signer + nonce). */
+  /** True when secrets required for payout + SEP-10 auth are configured. */
   payoutConfigured(): boolean;
-  nonceSecret?: string;
   isValidWallet(wallet: string): boolean;
   hashIntent(activityText: string): string;
-  verifyChallenge(input: {
-    wallet: string;
-    nonce: string;
-    expiry: number;
-    mac: string;
-    signedXdr: string;
-    intentHash: string;
-  }): { ok: boolean; error?: string };
+  verifyAuthToken(token: string): { ok: true; wallet: string } | { ok: false; error: string };
   claimOnce(key: string, ttlSeconds: number): Promise<boolean>;
   claimRates(
     clientIp: string,

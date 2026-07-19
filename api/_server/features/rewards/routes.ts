@@ -1,6 +1,4 @@
 import type {
-  NonceApiRequest,
-  NonceApiSuccess,
   PayoutsApiSuccess,
   PublicPayoutEntry,
   ReconcileApiSuccess,
@@ -19,7 +17,6 @@ import {
 import { error, json, methodNotAllowed, type HttpRoute } from '../../http';
 import type {
   BudgetReservation,
-  NoncePorts,
   PayoutRecord,
   PayoutsPorts,
   RateClaims,
@@ -27,36 +24,11 @@ import type {
   RewardPorts,
 } from './ports';
 
-export function createNonceRoute(ports: NoncePorts): HttpRoute {
-  return async (request) => {
-    if (request.method !== 'GET') return methodNotAllowed();
-    try {
-      const walletRaw = request.query.wallet;
-      const intentRaw = request.query.intentHash;
-      const input: NonceApiRequest = {
-        wallet: (Array.isArray(walletRaw) ? walletRaw[0] : walletRaw)?.trim() ?? '',
-        intentHash: (Array.isArray(intentRaw) ? intentRaw[0] : intentRaw)?.trim() ?? '',
-      };
-      if (!input.wallet || !ports.isValidWallet(input.wallet)) {
-        return error(400, 'Invalid wallet address.');
-      }
-      if (!/^[a-f0-9]{64}$/i.test(input.intentHash)) {
-        return error(400, 'intentHash must be a 64-character hex SHA-256 digest.');
-      }
-      if (
-        request.clientIp !== 'unknown' &&
-        !(await ports.claimOnce(`rate:nonce:ip:${request.clientIp}`, 60))
-      ) {
-        return error(429, 'Too many challenge requests. Wait a moment and retry.');
-      }
-      if (!ports.nonceSecret) return error(500, 'Server configuration error.');
-      return json<NonceApiSuccess>(200, await ports.issueChallenge(input.wallet, input.intentHash));
-    } catch (cause) {
-      return ports.isStoreUnavailable(cause)
-        ? error(503, (cause as Error).message)
-        : error(500, 'Failed to issue challenge.');
-    }
-  };
+function bearerFromHeaders(headers: Record<string, string | undefined>): string | null {
+  const raw = headers.authorization ?? headers.Authorization;
+  if (!raw) return null;
+  const match = /^Bearer\s+(.+)$/i.exec(raw.trim());
+  return match?.[1]?.trim() || null;
 }
 
 export function createRewardRoute(ports: RewardPorts): HttpRoute {
@@ -79,27 +51,24 @@ export function createRewardRoute(ports: RewardPorts): HttpRoute {
           `Activity description must be at most ${MAX_ACTIVITY_TEXT_LENGTH} characters.`,
         );
       }
-      if (!input.nonce || !input.expiry || !input.mac || !input.signedXdr) {
-        return error(400, 'Missing wallet ownership proof. Please retry.');
+      const bearer = bearerFromHeaders(request.headers);
+      if (!bearer) {
+        return error(401, 'Missing wallet auth token. Complete SEP-10 Web Auth first.');
+      }
+      if (!ports.payoutConfigured()) {
+        return error(503, 'Server configuration error.');
+      }
+      const auth = ports.verifyAuthToken(bearer);
+      if (!auth.ok) return error(401, auth.error);
+      if (auth.wallet !== wallet) {
+        return error(401, 'Auth token wallet does not match request wallet.');
       }
       const intentHash = ports.hashIntent(activityText);
       if (input.intentHash && input.intentHash.toLowerCase() !== intentHash) {
-        return error(400, 'Activity text does not match challenge intent.');
+        return error(400, 'Activity text does not match intent hash.');
       }
-      if (!ports.payoutConfigured() || !ports.nonceSecret) {
-        return error(503, 'Server configuration error.');
-      }
-      const proof = ports.verifyChallenge({
-        wallet,
-        nonce: input.nonce,
-        expiry: input.expiry,
-        mac: input.mac,
-        signedXdr: input.signedXdr,
-        intentHash,
-      });
-      if (!proof.ok) return error(401, proof.error ?? 'Invalid wallet ownership proof.');
-      if (!(await ports.claimOnce(`nonce:${input.nonce}`, 300))) {
-        return error(401, 'Challenge nonce has already been used.');
+      if (!(await ports.claimOnce(`intent:${wallet}:${intentHash}`, 300))) {
+        return error(401, 'This activity submission was already used. Edit the text and retry.');
       }
 
       const rates = await ports.claimRates(request.clientIp, wallet);

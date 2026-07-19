@@ -1,7 +1,12 @@
 import { useCallback, useState } from 'react';
 import type { RewardHistoryItem } from '@achievo/shared';
 import { activityAgent, feedbackAgent, rewardAgent, type PipelineStep } from '../../features/earn';
-import { signChallengeXdr } from '../../features/wallet';
+import {
+  clearSep10Token,
+  getSep10Token,
+  setSep10Token,
+  signChallengeXdr,
+} from '../../features/wallet';
 import { hasSubmittedFeedback, type FeedbackPrompt } from '../../features/feedback';
 import { trackActivitySubmitted, trackRewardPaid } from '../../shared/analytics';
 import { achievoClient } from '../../shared/api';
@@ -145,11 +150,11 @@ export function useRewardPipeline({
       setLogs((p) => [
         ...p,
         `✓ [Reward Agent] ${rewardHint}`,
-        '🤖 [Kouri Agent] Generating challenge transaction…',
+        '🤖 [Kouri Agent] Starting SEP-10 Web Auth…',
       ]);
 
       setStep(3, { status: 'running', detail: 'Requesting wallet ownership proof…' });
-      setLogs((p) => [...p, '⏳ [Kouri Agent] Fetching nonce…']);
+      setLogs((p) => [...p, '⏳ [Kouri Agent] Fetching Web Auth challenge…']);
 
       let hash: string;
       let serverReward = rwdPreview.reward;
@@ -159,11 +164,13 @@ export function useRewardPipeline({
         const data = await achievoClient.submitActivity({
           wallet: walletAddress,
           activityText: textToSubmit,
+          authToken: getSep10Token(),
+          onAuthToken: setSep10Token,
           signChallenge: async (challengeXdr) => {
             if (!challengeXdr) {
-              throw new Error('Nonce API error 200');
+              throw new Error('Web Auth API error 200');
             }
-            setStep(3, { detail: 'Sign the challenge in your wallet…' });
+            setStep(3, { detail: 'Sign the SEP-10 challenge in your wallet…' });
             setLogs((p) => [...p, '⏳ [Kouri Agent] Awaiting wallet signature…']);
             if (!walletId) {
               throw new Error('Connect Freighter on the Wallet tab before submitting.');
@@ -203,6 +210,9 @@ export function useRewardPipeline({
         });
       } catch (err) {
         const msg = (err as Error).message ?? String(err);
+        if (/auth token|Web Auth|ownership/i.test(msg)) {
+          clearSep10Token();
+        }
         setPipelineError(msg);
         setStep(3, { status: 'error', detail: msg });
         setLogs((p) => [...p, `❌ [Kouri Agent] ${msg}`]);

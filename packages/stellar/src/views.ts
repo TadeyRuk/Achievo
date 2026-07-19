@@ -3,13 +3,13 @@ import {
   Contract,
   TransactionBuilder,
   BASE_FEE,
-  Networks,
   rpc,
   scValToNative,
   xdr,
 } from "@stellar/stellar-sdk";
 import {
   CONTRACT_ID,
+  NETWORK_PASSPHRASE,
   REWARD_EVENT_LEDGER_WINDOW,
   STROOP_FACTOR,
 } from "@achievo/shared";
@@ -44,7 +44,7 @@ async function simulateViewCall(
 
   const tx = new TransactionBuilder(sourceAccount, {
     fee: BASE_FEE,
-    networkPassphrase: Networks.TESTNET,
+    networkPassphrase: NETWORK_PASSPHRASE,
   })
     .addOperation(callOp)
     .setTimeout(30)

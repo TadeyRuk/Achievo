@@ -40,7 +40,8 @@ describe('identity bind + session', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.NONCE_HMAC_SECRET = 'identity-test-secret'
+    process.env.IDENTITY_SESSION_SECRET = 'identity-test-secret'
+    delete process.env.NONCE_HMAC_SECRET
     process.env.IDENTITY_ID_PEPPER = 'identity-pepper'
   })
 

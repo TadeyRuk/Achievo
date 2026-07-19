@@ -51,7 +51,8 @@ this repository.
 flowchart TB
   Student[Student wallet]
   UI[frontend + SDK]
-  Nonce["/api/nonce"]
+  Toml["/.well-known/stellar.toml"]
+  WebAuth["/api/web-auth"]
   Reward["/api/reward"]
   Groq[Kouri / Groq ScoringAgent]
   Redis[(Upstash Redis)]
@@ -59,10 +60,11 @@ flowchart TB
   Relayer[Relayer ADMIN_SECRET]
   Contract[Soroban claim_reward]
 
-  Student -->|sign challenge| UI
-  UI --> Nonce
-  Nonce -->|HMAC nonce + intentHash| UI
-  UI -->|signed XDR + activity| Reward
+  Student -->|discover WEB_AUTH_ENDPOINT| Toml
+  Student -->|sign SEP-10 challenge| UI
+  UI --> WebAuth
+  WebAuth -->|JWT| UI
+  UI -->|Bearer JWT + activity + intentHash| Reward
   Reward --> Redis
   Reward --> Groq
   Reward -->|mint voucher| Attestor
@@ -174,5 +176,5 @@ Browser `/api` traffic goes through `@achievo/sdk` via `frontend/src/shared/api/
 - Challenge MAC binds `nonce:expiry:intentHash` where `intentHash = sha256(activityText)`.
 - Wallet / IP / (hybrid) identity rate limits use atomic `claimOnce` (SET NX); failed payouts release slots.
 - Production requires Upstash Redis (`VERCEL_ENV=production` fail-closed).
-- `ADMIN_SECRET` and `NONCE_HMAC_SECRET` never ship to the client.
+- `ADMIN_SECRET`, `ATTESTOR_SECRET`, `SEP10_SERVER_SECRET`, and `SEP10_JWT_SECRET` never ship to the client.
 - Public payout/identity APIs redact full wallet addresses.

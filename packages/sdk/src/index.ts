@@ -8,13 +8,13 @@ import type {
   IdentityApiPublicSuccess,
   IdentityApiUpdateRequest,
   IdentityApiUpdateSuccess,
-  NonceApiRequest,
-  NonceApiSuccess,
   PayoutsApiSuccess,
   RewardApiRequest,
   RewardApiResponse,
   TransactionFeedbackApiInfoSuccess,
   TransactionFeedbackApiRequest,
+  WebAuthChallengeSuccess,
+  WebAuthTokenSuccess,
 } from '@achievo/contracts';
 
 export type AchievoFetch = typeof globalThis.fetch;
@@ -30,12 +30,23 @@ export interface SubmitActivityRequest {
   wallet: string;
   activityText: string;
   signChallenge: SignChallenge;
+  /** Optional cached SEP-10 JWT; when omitted, authenticate() runs first. */
+  authToken?: string;
+  /** Called when a fresh SEP-10 JWT is minted so the host can cache it. */
+  onAuthToken?: (token: string) => void;
+}
+
+export interface AuthenticateRequest {
+  wallet: string;
+  signChallenge: SignChallenge;
 }
 
 export interface AchievoClient {
   getHealth(): Promise<HealthApiSuccess>;
-  getNonce(request: NonceApiRequest): Promise<NonceApiSuccess>;
-  submitReward(request: RewardApiRequest): Promise<RewardApiResponse>;
+  getWebAuthChallenge(account: string): Promise<WebAuthChallengeSuccess>;
+  getWebAuthToken(signedTransaction: string): Promise<WebAuthTokenSuccess>;
+  authenticate(request: AuthenticateRequest): Promise<WebAuthTokenSuccess>;
+  submitReward(request: RewardApiRequest, authToken: string): Promise<RewardApiResponse>;
   submitActivity(request: SubmitActivityRequest): Promise<RewardApiResponse>;
   getIdentity(request: IdentityApiGetRequest): Promise<IdentityApiPublicSuccess>;
   updateIdentity(request: IdentityApiUpdateRequest): Promise<IdentityApiUpdateSuccess>;
@@ -116,41 +127,57 @@ export function createAchievoClient(options: CreateAchievoClientOptions = {}): A
     return body as TSuccess;
   }
 
-  const getNonce = (nonceRequest: NonceApiRequest) => {
-    const query = new URLSearchParams({
-      wallet: nonceRequest.wallet,
-      intentHash: nonceRequest.intentHash,
-    });
-    return request<NonceApiSuccess>(`/api/nonce?${query.toString()}`, 'Nonce', { method: 'GET' });
+  const getWebAuthChallenge = (account: string) => {
+    const query = new URLSearchParams({ account });
+    return request<WebAuthChallengeSuccess>(
+      `/api/web-auth?${query.toString()}`,
+      'Web Auth',
+      { method: 'GET' },
+    );
   };
 
-  const submitReward = (rewardRequest: RewardApiRequest) =>
-    request<RewardApiResponse>('/api/reward', 'Reward', {
+  const getWebAuthToken = (signedTransaction: string) =>
+    request<WebAuthTokenSuccess>('/api/web-auth', 'Web Auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transaction: signedTransaction }),
+    });
+
+  const authenticate = async ({ wallet, signChallenge }: AuthenticateRequest) => {
+    const challenge = await getWebAuthChallenge(wallet);
+    const signedTransaction = await signChallenge(challenge.transaction);
+    return getWebAuthToken(signedTransaction);
+  };
+
+  const submitReward = (rewardRequest: RewardApiRequest, authToken: string) =>
+    request<RewardApiResponse>('/api/reward', 'Reward', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
       body: JSON.stringify(rewardRequest),
     });
 
   return {
     getHealth: () =>
       request<HealthApiSuccess, HealthApiError>('/api/health', 'Health', { method: 'GET' }),
-    getNonce,
+    getWebAuthChallenge,
+    getWebAuthToken,
+    authenticate,
     submitReward,
-    async submitActivity({ wallet, activityText, signChallenge }) {
+    async submitActivity({ wallet, activityText, signChallenge, authToken, onAuthToken }) {
       const trimmedActivity = activityText.trim();
       const intentHash = await hashActivityIntent(trimmedActivity);
-      const nonce = await getNonce({ wallet, intentHash });
-      const signedXdr = await signChallenge(nonce.challengeXdr);
 
-      return submitReward({
-        activityText: trimmedActivity,
-        wallet,
-        nonce: nonce.nonce,
-        expiry: nonce.expiry,
-        mac: nonce.mac,
-        signedXdr,
-        intentHash,
-      });
+      let token = authToken?.trim() ?? '';
+      if (!token) {
+        const auth = await authenticate({ wallet, signChallenge });
+        token = auth.token;
+        onAuthToken?.(token);
+      }
+
+      return submitReward({ activityText: trimmedActivity, wallet, intentHash }, token);
     },
     getIdentity: ({ wallet }) => {
       const query = new URLSearchParams({ wallet });
@@ -194,12 +221,12 @@ export type {
   IdentityApiPublicSuccess,
   IdentityApiUpdateRequest,
   IdentityApiUpdateSuccess,
-  NonceApiRequest,
-  NonceApiSuccess,
   PayoutsApiSuccess,
   PublicPayoutEntry,
   RewardApiRequest,
   RewardApiResponse,
   TransactionFeedbackApiInfoSuccess,
   TransactionFeedbackApiRequest,
+  WebAuthChallengeSuccess,
+  WebAuthTokenSuccess,
 } from '@achievo/contracts';

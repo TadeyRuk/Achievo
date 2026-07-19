@@ -24,7 +24,7 @@ Identity {
 
 ## Lifecycle
 
-1. Student connects a wallet and completes the ownership challenge in `/api/reward`.
+1. Student connects a wallet, completes SEP-10 Web Auth, and submits via `/api/reward` with a Bearer JWT.
 2. On successful payout, the server `bindIdentity(wallet)` and returns `identityId` + `sessionToken`.
 3. The client stores the session (`sessionIdentity.ts`) and keys progression cache by `identityId` when present.
 4. `POST /api/identity` refreshes a session or updates `displayNameHash` — it does **not** create a first bind without a prior reward proof.

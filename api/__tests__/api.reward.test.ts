@@ -1,7 +1,8 @@
 /** @vitest-environment node */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Keypair } from '@stellar/stellar-sdk'
-import { createHash, createHmac } from 'node:crypto'
+import { createHash } from 'node:crypto'
+import { signSep10Jwt } from '../_server/infrastructure/jwt'
 
 const claimOnce = vi.fn().mockResolvedValue(true)
 const releaseClaim = vi.fn().mockResolvedValue(undefined)
@@ -81,13 +82,6 @@ vi.mock('../_server/infrastructure/telegram', async (importOriginal) => ({
 
 import handler from '../reward'
 import { ScoringAgent } from '../_server/infrastructure/evaluator'
-import {
-  TransactionBuilder,
-  Networks,
-  Operation,
-  Account,
-  BASE_FEE,
-} from '@stellar/stellar-sdk'
 
 interface MockResponse {
   statusCode: number
@@ -121,29 +115,17 @@ function testKeypair(fill: number) {
   return Keypair.fromRawEd25519Seed(seed)
 }
 
-function buildSignedChallenge(walletKp: Keypair, nonce: string, expiry: number) {
-  const account = new Account(walletKp.publicKey(), '0')
-  const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase: Networks.TESTNET,
-  })
-    .addOperation(
-      Operation.manageData({
-        name: 'achievo-challenge',
-        value: Buffer.from(nonce, 'hex'),
-      }),
-    )
-    .setTimebounds(0, Math.floor(expiry / 1000))
-    .build()
-  tx.sign(walletKp)
-  return tx.toXDR()
-}
-
 describe('/api/reward', () => {
   const walletKp = testKeypair(3)
   const adminKp = testKeypair(9)
   const activityText = 'I tutored three classmates in calculus for two hours.'
   const hash = intentHash(activityText)
+  const jwtSecret = 'reward-test-jwt-secret'
+  const homeDomain = 'achievo.test'
+
+  function authToken(wallet = walletKp.publicKey()) {
+    return signSep10Jwt({ sub: wallet, iss: homeDomain, ttlSeconds: 1800 }, jwtSecret)
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -153,144 +135,69 @@ describe('/api/reward', () => {
     getIdentityByWallet.mockResolvedValue(null)
     process.env.ADMIN_SECRET = adminKp.secret()
     process.env.ATTESTOR_SECRET = Keypair.random().secret()
-    process.env.NONCE_HMAC_SECRET = 'reward-test-secret'
+    process.env.SEP10_SERVER_SECRET = Keypair.random().secret()
+    process.env.SEP10_JWT_SECRET = jwtSecret
+    process.env.HOME_DOMAIN = homeDomain
+    process.env.WEB_AUTH_DOMAIN = homeDomain
     delete process.env.VERCEL_ENV
     delete process.env.SIGNER_URL
     delete process.env.SIGNER_HMAC_SECRET
   })
 
-  function challengeBody(overrides: Record<string, unknown> = {}) {
-    const nonce = (overrides.nonce as string) ?? 'ab'.repeat(16)
-    const expiry = (overrides.expiry as number) ?? Date.now() + 60_000
+  function rewardBody(overrides: Record<string, unknown> = {}) {
     const text = (overrides.activityText as string) ?? activityText
-    const hashForText = intentHash(text)
-    const mac =
-      (overrides.mac as string) ??
-      createHmac('sha256', 'reward-test-secret')
-        .update(`${nonce}:${expiry}:${hashForText}`)
-        .digest('hex')
-    const signedXdr =
-      (overrides.signedXdr as string) ?? buildSignedChallenge(walletKp, nonce, expiry)
     return {
       activityText: text,
       wallet: walletKp.publicKey(),
-      nonce,
-      expiry,
-      mac,
-      signedXdr,
-      intentHash: hashForText,
+      intentHash: intentHash(text),
       ...overrides,
+    }
+  }
+
+  function post(body: Record<string, unknown>, ip: string, token = authToken()) {
+    return {
+      method: 'POST' as const,
+      body,
+      headers: {
+        authorization: `Bearer ${token}`,
+        'x-forwarded-for': ip,
+      },
+      socket: {},
     }
   }
 
   it('rejects short activity text', async () => {
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body: { activityText: 'hi', wallet: walletKp.publicKey() },
-        headers: {},
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post({ activityText: 'hi', wallet: walletKp.publicKey() }, '1.1.1.1') as never, res as never)
     expect(res.statusCode).toBe(400)
   })
 
-  it('rejects invalid challenge MAC', async () => {
-    const nonce = 'ab'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const signedXdr = buildSignedChallenge(walletKp, nonce, expiry)
+  it('rejects invalid auth token', async () => {
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body: {
-          activityText,
-          wallet: walletKp.publicKey(),
-          nonce,
-          expiry,
-          mac: '00'.repeat(32),
-          signedXdr,
-          intentHash: hash,
-        },
-        headers: { 'x-forwarded-for': '2.2.2.2' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody(), '2.2.2.2', 'not-a-jwt') as never, res as never)
     expect(res.statusCode).toBe(401)
   })
 
   it('rejects intent mismatch', async () => {
-    const nonce = 'cd'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const mac = createHmac('sha256', 'reward-test-secret')
-      .update(`${nonce}:${expiry}:${hash}`)
-      .digest('hex')
-    const signedXdr = buildSignedChallenge(walletKp, nonce, expiry)
     const res = makeRes()
     await handler(
-      {
-        method: 'POST',
-        body: {
-          activityText,
-          wallet: walletKp.publicKey(),
-          nonce,
-          expiry,
-          mac,
-          signedXdr,
-          intentHash: '11'.repeat(32),
-        },
-        headers: { 'x-forwarded-for': '3.3.3.3' },
-        socket: {},
-      } as never,
+      post(rewardBody({ intentHash: '11'.repeat(32) }), '3.3.3.3') as never,
       res as never,
     )
     expect(res.statusCode).toBe(400)
   })
 
   it('returns 429 when wallet rate limit already claimed', async () => {
-    const nonce = 'ef'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const mac = createHmac('sha256', 'reward-test-secret')
-      .update(`${nonce}:${expiry}:${hash}`)
-      .digest('hex')
-    const signedXdr = buildSignedChallenge(walletKp, nonce, expiry)
-
     claimOnce
-      .mockResolvedValueOnce(true) // nonce
+      .mockResolvedValueOnce(true) // intent
       .mockResolvedValueOnce(false) // wallet rate
 
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body: {
-          activityText,
-          wallet: walletKp.publicKey(),
-          nonce,
-          expiry,
-          mac,
-          signedXdr,
-          intentHash: hash,
-        },
-        headers: { 'x-forwarded-for': '4.4.4.4' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody(), '4.4.4.4') as never, res as never)
     expect(res.statusCode).toBe(429)
   })
 
   it('releases rate claims when AI rejects activity', async () => {
-    const nonce = '11'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const mac = createHmac('sha256', 'reward-test-secret')
-      .update(`${nonce}:${expiry}:${hash}`)
-      .digest('hex')
-    const signedXdr = buildSignedChallenge(walletKp, nonce, expiry)
-
     vi.mocked(ScoringAgent.evaluate).mockResolvedValue({
       activity: 'unknown',
       valid: false,
@@ -300,70 +207,22 @@ describe('/api/reward', () => {
     })
 
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body: {
-          activityText,
-          wallet: walletKp.publicKey(),
-          nonce,
-          expiry,
-          mac,
-          signedXdr,
-          intentHash: hash,
-        },
-        headers: { 'x-forwarded-for': '5.5.5.5' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody(), '5.5.5.5') as never, res as never)
     expect(res.statusCode).toBe(422)
     expect(releaseClaim).toHaveBeenCalled()
   })
 
   it('falls back to heuristic when Groq fails and still rejects unknown activities', async () => {
-    const nonce = '22'.repeat(16)
-    const expiry = Date.now() + 60_000
-
     vi.mocked(ScoringAgent.evaluate).mockRejectedValue(new Error('Groq 503'))
 
     const unknownText = 'I bought groceries today at the market.'
-    const unknownHash = intentHash(unknownText)
-    const mac2 = createHmac('sha256', 'reward-test-secret')
-      .update(`${nonce}:${expiry}:${unknownHash}`)
-      .digest('hex')
-    const signed2 = buildSignedChallenge(walletKp, nonce, expiry)
-
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body: {
-          activityText: unknownText,
-          wallet: walletKp.publicKey(),
-          nonce,
-          expiry,
-          mac: mac2,
-          signedXdr: signed2,
-          intentHash: unknownHash,
-        },
-        headers: { 'x-forwarded-for': '6.6.6.6' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody({ activityText: unknownText }), '6.6.6.6') as never, res as never)
     expect(res.statusCode).toBe(422)
     expect((res.body as { scoringMode?: string }).scoringMode).toBe('heuristic')
   })
 
   it('returns 429 when treasury daily budget is exhausted', async () => {
-    const nonce = '33'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const mac = createHmac('sha256', 'reward-test-secret')
-      .update(`${nonce}:${expiry}:${hash}`)
-      .digest('hex')
-    const signedXdr = buildSignedChallenge(walletKp, nonce, expiry)
-
     vi.mocked(ScoringAgent.evaluate).mockResolvedValue({
       activity: 'tutoring',
       valid: true,
@@ -374,32 +233,12 @@ describe('/api/reward', () => {
     reserveBudget.mockResolvedValueOnce(false)
 
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body: {
-          activityText,
-          wallet: walletKp.publicKey(),
-          nonce,
-          expiry,
-          mac,
-          signedXdr,
-          intentHash: hash,
-        },
-        headers: { 'x-forwarded-for': '7.7.7.7' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody(), '7.7.7.7') as never, res as never)
     expect(res.statusCode).toBe(429)
     expect(releaseClaim).toHaveBeenCalled()
   })
 
-  it('claims only wallet and IP when no identity is bound', async () => {
-    const nonce = '44'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const body = challengeBody({ nonce, expiry })
-
+  it('claims intent then wallet and IP when no identity is bound', async () => {
     vi.mocked(ScoringAgent.evaluate).mockResolvedValue({
       activity: 'unknown',
       valid: false,
@@ -409,29 +248,17 @@ describe('/api/reward', () => {
     })
 
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body,
-        headers: { 'x-forwarded-for': '8.8.8.8' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody(), '8.8.8.8') as never, res as never)
 
     expect(res.statusCode).toBe(422)
     const keys = claimOnce.mock.calls.map((c) => c[0] as string)
-    expect(keys).toContain(`nonce:${nonce}`)
+    expect(keys).toContain(`intent:${walletKp.publicKey()}:${hash}`)
     expect(keys).toContain(`rate:wallet:${walletKp.publicKey()}`)
     expect(keys).toContain('rate:ip:8.8.8.8')
     expect(keys.some((k) => k.startsWith('rate:identity:'))).toBe(false)
   })
 
   it('claims identity rate when wallet already has an identity', async () => {
-    const nonce = '55'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const body = challengeBody({ nonce, expiry })
-
     getIdentityByWallet.mockResolvedValue({
       id: 'id_existing',
       walletPublicKey: walletKp.publicKey(),
@@ -446,15 +273,7 @@ describe('/api/reward', () => {
     })
 
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body,
-        headers: { 'x-forwarded-for': '9.9.9.9' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody(), '9.9.9.9') as never, res as never)
 
     expect(res.statusCode).toBe(422)
     const keys = claimOnce.mock.calls.map((c) => c[0] as string)
@@ -463,31 +282,19 @@ describe('/api/reward', () => {
   })
 
   it('returns 429 and releases wallet/IP when identity rate is already claimed', async () => {
-    const nonce = '66'.repeat(16)
-    const expiry = Date.now() + 60_000
-    const body = challengeBody({ nonce, expiry })
-
     getIdentityByWallet.mockResolvedValue({
       id: 'id_existing',
       walletPublicKey: walletKp.publicKey(),
       createdAt: '2026-01-01T00:00:00.000Z',
     })
     claimOnce
-      .mockResolvedValueOnce(true) // nonce
+      .mockResolvedValueOnce(true) // intent
       .mockResolvedValueOnce(true) // wallet
       .mockResolvedValueOnce(true) // ip
       .mockResolvedValueOnce(false) // identity
 
     const res = makeRes()
-    await handler(
-      {
-        method: 'POST',
-        body,
-        headers: { 'x-forwarded-for': '10.10.10.10' },
-        socket: {},
-      } as never,
-      res as never,
-    )
+    await handler(post(rewardBody(), '10.10.10.10') as never, res as never)
 
     expect(res.statusCode).toBe(429)
     expect((res.body as { error: string }).error).toMatch(/identity/i)

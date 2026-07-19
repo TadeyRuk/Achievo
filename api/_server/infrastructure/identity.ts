@@ -16,6 +16,7 @@ function identityKey(id: string): string {
 export function mintIdentityId(wallet: string): string {
   const pepper =
     process.env.IDENTITY_ID_PEPPER?.trim() ||
+    process.env.IDENTITY_SESSION_SECRET?.trim() ||
     process.env.NONCE_HMAC_SECRET?.trim() ||
     'achievo-dev-identity-pepper';
   const digest = createHmac('sha256', pepper).update(wallet.trim()).digest('hex');
@@ -61,7 +62,7 @@ export async function bindIdentity(
 }
 
 function sessionSecret(): string {
-  const secret = process.env.NONCE_HMAC_SECRET ?? process.env.IDENTITY_SESSION_SECRET;
+  const secret = process.env.IDENTITY_SESSION_SECRET ?? process.env.NONCE_HMAC_SECRET;
   if (!secret) throw new StoreUnavailableError('Session secret not configured.');
   return secret;
 }
