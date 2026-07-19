@@ -35,3 +35,26 @@ If confirmation polling times out, budgets are **not** released. The tx hash is 
 ## Rollback
 
 See [`DEPLOY.md`](DEPLOY.md).
+
+## Telegram activity feed (optional)
+
+When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` are set on Vercel, every successful payout
+posts to your Telegram channel or group — a live ledger for demos. Feedback still goes to
+Google Forms, not Telegram (see [`FEEDBACK.md`](FEEDBACK.md)).
+
+**Setup:**
+
+1. Message [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token.
+2. Create a channel (e.g. `Achievo Payouts`) or use a group; add the bot as **admin** (channels) or member (groups).
+3. Get the chat ID (`@userinfobot` for DMs, or forward a channel post to `@RawDataBot`).
+4. Add to Vercel → Settings → Environment Variables:
+   - `TELEGRAM_BOT_TOKEN`
+   - `TELEGRAM_CHAT_ID` (e.g. `-1001234567890` for channels)
+
+**Server-side payout log:** `GET /api/payouts` returns payouts recorded in Redis after each
+successful `POST /api/reward` (count, unique wallets, total XLM, entries). Complements
+on-chain `get_history` and Telegram history.
+
+```bash
+curl -s https://achievo-rust.vercel.app/api/payouts | jq '{count, uniqueWallets, totalXlm}'
+```
