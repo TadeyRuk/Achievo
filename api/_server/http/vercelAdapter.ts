@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import type { HttpRequest, HttpRoute } from './types';
+import type { HttpRequest, HttpRoute } from './types.js';
 
 function firstHeader(req: VercelRequest, name: string): string | undefined {
   const raw = req.headers?.[name];
@@ -42,7 +42,12 @@ export function normalizeVercelRequest(req: VercelRequest): HttpRequest {
 
 export function adaptVercelRoute(route: HttpRoute) {
   return async (req: VercelRequest, res: VercelResponse): Promise<unknown> => {
-    const result = await route(normalizeVercelRequest(req));
-    return res.status(result.status).json(result.body);
+    try {
+      const result = await route(normalizeVercelRequest(req));
+      return res.status(result.status).json(result.body);
+    } catch (cause) {
+      console.error('Unhandled route error:', cause);
+      return res.status(500).json({ error: 'Internal server error.' });
+    }
   };
 }

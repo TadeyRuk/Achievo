@@ -2,7 +2,7 @@ import {
   classifyActivityKeyword,
   isKnownActivity,
 } from '@achievo/shared';
-import { fetchWithTimeout } from './fetchWithTimeout';
+import { fetchWithTimeout } from './fetchWithTimeout.js';
 
 export interface ScoreCriterion {
   key: string;

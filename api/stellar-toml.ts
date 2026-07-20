@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { renderStellarToml } from './_server/infrastructure/stellarToml';
+import { renderStellarToml } from './_server/infrastructure/stellarToml.js';
 
 export default function handler(_req: VercelRequest, res: VercelResponse): void {
   const result = renderStellarToml();

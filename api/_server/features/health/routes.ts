@@ -1,6 +1,6 @@
 import type { HealthApiSuccess } from '@achievo/contracts';
-import { json, methodNotAllowed, type HttpRoute } from '../../http';
-import type { HealthPorts } from './ports';
+import { json, methodNotAllowed, type HttpRoute } from '../../http/index.js';
+import type { HealthPorts } from './ports.js';
 
 export function createHealthRoute(ports: HealthPorts): HttpRoute {
   return async (request) => {

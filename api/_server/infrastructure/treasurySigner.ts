@@ -1,11 +1,11 @@
 import type { RewardActivity } from '@achievo/contracts';
 import { createHmac, randomBytes } from 'crypto';
-import { submitClaimReward, type SubmitRewardResult } from './stellar';
+import { submitClaimReward, type SubmitRewardResult } from './stellar.js';
 import {
   attestorConfigured,
   mintRewardVoucher,
   type RewardVoucher,
-} from './voucher';
+} from './voucher.js';
 
 export type SignRewardInput = {
   wallet: string;

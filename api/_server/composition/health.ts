@@ -3,9 +3,9 @@ import {
   SOROBAN_RPC_URL,
   STELLAR_NETWORK,
 } from '@achievo/shared';
-import { createHealthRoute } from '../features/health/routes';
-import type { HealthPorts } from '../features/health/ports';
-import { getRedis } from '../infrastructure/store';
+import { createHealthRoute } from '../features/health/routes.js';
+import type { HealthPorts } from '../features/health/ports.js';
+import { getRedis } from '../infrastructure/store/index.js';
 
 const healthPorts: HealthPorts = {
   get contractConfigured() {

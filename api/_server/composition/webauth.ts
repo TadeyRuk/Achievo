@@ -1,12 +1,12 @@
-import { createWebAuthRoute } from '../features/webauth/routes';
-import type { WebAuthPorts } from '../features/webauth/ports';
-import { claimOnce, StoreUnavailableError } from '../infrastructure/store';
+import { createWebAuthRoute } from '../features/webauth/routes.js';
+import type { WebAuthPorts } from '../features/webauth/ports.js';
+import { claimOnce, StoreUnavailableError } from '../infrastructure/store/index.js';
 import {
   buildWebAuthChallenge,
   sep10Configured,
   verifyWebAuthAndIssueToken,
-} from '../infrastructure/sep10';
-import { StrKey } from '../infrastructure/stellar';
+} from '../infrastructure/sep10.js';
+import { StrKey } from '../infrastructure/stellar.js';
 
 const webAuthPorts: WebAuthPorts = {
   configured: sep10Configured,

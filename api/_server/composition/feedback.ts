@@ -1,18 +1,18 @@
 import {
   createGeneralFeedbackRoute,
   createTransactionFeedbackRoute,
-} from '../features/feedback/routes';
-import type { FeedbackPorts } from '../features/feedback/ports';
+} from '../features/feedback/routes.js';
+import type { FeedbackPorts } from '../features/feedback/ports.js';
 import {
   GoogleFormsConfigError,
   GoogleFormsSubmitError,
   submitFeedbackForm,
-} from '../infrastructure/googleForms';
+} from '../infrastructure/googleForms.js';
 import {
   claimOnce,
   releaseClaim,
   StoreUnavailableError,
-} from '../infrastructure/store';
+} from '../infrastructure/store/index.js';
 
 const feedbackPorts: FeedbackPorts = {
   claimOnce,

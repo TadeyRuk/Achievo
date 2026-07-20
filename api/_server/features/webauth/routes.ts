@@ -1,6 +1,6 @@
 import type { WebAuthChallengeSuccess, WebAuthTokenSuccess } from '@achievo/contracts';
-import { error, json, methodNotAllowed, type HttpRoute } from '../../http';
-import type { WebAuthPorts } from './ports';
+import { error, json, methodNotAllowed, type HttpRoute } from '../../http/index.js';
+import type { WebAuthPorts } from './ports.js';
 
 function firstQuery(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value)?.trim() ?? '';

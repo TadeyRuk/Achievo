@@ -1,5 +1,5 @@
 import { CONTRACT_ID, HORIZON_URL, NETWORK_PASSPHRASE, STELLAR_NETWORK } from '@achievo/shared';
-import { sep10SigningPublicKey } from './sep10';
+import { sep10SigningPublicKey } from './sep10.js';
 
 function webAuthEndpoint(): string | null {
   const explicit = process.env.WEB_AUTH_ENDPOINT?.trim();

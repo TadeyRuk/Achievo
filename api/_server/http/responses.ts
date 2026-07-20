@@ -1,5 +1,5 @@
 import type { ApiErrorResponse } from '@achievo/contracts';
-import type { HttpResult } from './types';
+import type { HttpResult } from './types.js';
 
 export function json<T>(status: number, body: T): HttpResult<T> {
   return { status, body };

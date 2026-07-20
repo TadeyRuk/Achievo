@@ -3,8 +3,8 @@ import type {
   TransactionFeedbackApiInfoSuccess,
   TransactionFeedbackApiRequest,
 } from '@achievo/contracts';
-import { error, json, methodNotAllowed, type HttpRequest, type HttpRoute } from '../../http';
-import type { FeedbackPorts } from './ports';
+import { error, json, methodNotAllowed, type HttpRequest, type HttpRoute } from '../../http/index.js';
+import type { FeedbackPorts } from './ports.js';
 
 const TX_HASH = /^[a-f0-9]{64}$/i;
 const MAX_COMMENT = 500;

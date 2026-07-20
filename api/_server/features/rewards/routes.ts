@@ -14,7 +14,7 @@ import {
   MAX_REWARD_PER_TX_XLM,
   isKnownActivity,
 } from '@achievo/shared';
-import { error, json, methodNotAllowed, type HttpRoute } from '../../http';
+import { error, json, methodNotAllowed, type HttpRoute } from '../../http/index.js';
 import type {
   BudgetReservation,
   PayoutRecord,
@@ -22,7 +22,7 @@ import type {
   RateClaims,
   ReconcilePorts,
   RewardPorts,
-} from './ports';
+} from './ports.js';
 
 function bearerFromHeaders(headers: Record<string, string | undefined>): string | null {
   const raw = headers.authorization ?? headers.Authorization;

@@ -9,8 +9,8 @@ import {
   releaseClaim,
   reserveBudget,
   setJson,
-} from './store';
-import { getIdentityByWallet } from './identity';
+} from './store/index.js';
+import { getIdentityByWallet } from './identity.js';
 
 const RATE_LIMIT_TTL_SECONDS = 24 * 60 * 60;
 const BUDGET_TTL_SECONDS = 48 * 60 * 60;

@@ -1,8 +1,8 @@
 import { redactWallet } from '@achievo/identity';
-import { createPayoutsRoute } from '../features/rewards/routes';
-import type { PayoutsPorts } from '../features/rewards/ports';
-import { listPayouts } from '../infrastructure/store';
-import { stellarExpertTxUrl } from '../infrastructure/stellarExpert';
+import { createPayoutsRoute } from '../features/rewards/routes.js';
+import type { PayoutsPorts } from '../features/rewards/ports.js';
+import { listPayouts } from '../infrastructure/store/index.js';
+import { stellarExpertTxUrl } from '../infrastructure/stellarExpert.js';
 
 const payoutsPorts: PayoutsPorts = {
   listPayouts,

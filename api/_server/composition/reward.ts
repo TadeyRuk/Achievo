@@ -1,41 +1,41 @@
-import { createRewardRoute } from '../features/rewards/routes';
-import type { RewardPorts } from '../features/rewards/ports';
+import { createRewardRoute } from '../features/rewards/routes.js';
+import type { RewardPorts } from '../features/rewards/ports.js';
 import {
   notifyOpsAlert,
   notifyPayoutTelegram,
-} from '../infrastructure/telegram';
+} from '../infrastructure/telegram.js';
 import {
   addRecent,
   appendPayout,
   claimOnce,
   listRecent,
   StoreUnavailableError,
-} from '../infrastructure/store';
+} from '../infrastructure/store/index.js';
 import {
   bindIdentity,
   issueSessionToken,
-} from '../infrastructure/identity';
+} from '../infrastructure/identity.js';
 import {
   claimRewardRates,
   markPendingReconcile,
   releaseDailyBudgets,
   releaseRateClaims,
   reserveDailyBudgets,
-} from '../infrastructure/rewards';
+} from '../infrastructure/rewards.js';
 import {
   hashActivityIntent,
   StrKey,
-} from '../infrastructure/stellar';
+} from '../infrastructure/stellar.js';
 import {
   HeuristicScoringAgent,
   ScoringAgent,
-} from '../infrastructure/evaluator';
-import { IntegrityAgent } from '../infrastructure/integrity';
+} from '../infrastructure/evaluator.js';
+import { IntegrityAgent } from '../infrastructure/integrity.js';
 import {
   signAndSubmitReward,
   treasurySignerConfigured,
-} from '../infrastructure/treasurySigner';
-import { sep10Configured, verifyRewardAuthToken } from '../infrastructure/sep10';
+} from '../infrastructure/treasurySigner.js';
+import { sep10Configured, verifyRewardAuthToken } from '../infrastructure/sep10.js';
 
 const rewardPorts: RewardPorts = {
   payoutConfigured() {

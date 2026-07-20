@@ -3,8 +3,8 @@ import type {
   IdentityApiUpdateRequest,
   IdentityApiUpdateSuccess,
 } from '@achievo/contracts';
-import { error, json, methodNotAllowed, type HttpRoute } from '../../http';
-import type { IdentityPorts } from './ports';
+import { error, json, methodNotAllowed, type HttpRoute } from '../../http/index.js';
+import type { IdentityPorts } from './ports.js';
 
 export function createIdentityRoute(ports: IdentityPorts): HttpRoute {
   return async (request) => {

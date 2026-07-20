@@ -1,5 +1,5 @@
 import { redactWallet } from '@achievo/identity';
-import { stellarExpertTxUrl } from './stellarExpert';
+import { stellarExpertTxUrl } from './stellarExpert.js';
 
 async function sendTelegramMessage(html: string): Promise<void> {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();

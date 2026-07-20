@@ -7,7 +7,8 @@ const importPattern = /(?:import|export)\s+(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['
 
 function resolveLocalImport(fromFile: string, specifier: string): string | null {
   if (!specifier.startsWith('.')) return null;
-  const base = path.resolve(path.dirname(fromFile), specifier);
+  const stripped = specifier.endsWith('.js') ? specifier.slice(0, -3) : specifier;
+  const base = path.resolve(path.dirname(fromFile), stripped);
   for (const candidate of [`${base}.ts`, path.join(base, 'index.ts')]) {
     if (existsSync(candidate)) return candidate;
   }
@@ -58,28 +59,28 @@ describe('composition import boundaries', () => {
 
   it('keeps thin handlers pointed at feature-specific composition modules', () => {
     expect(readFileSync(path.join(apiRoot, 'health.ts'), 'utf8')).toContain(
-      "'./_server/composition/health'",
+      "'./_server/composition/health.js'",
     );
     expect(readFileSync(path.join(apiRoot, 'feedback.ts'), 'utf8')).toContain(
-      "'./_server/composition/feedback'",
+      "'./_server/composition/feedback.js'",
     );
     expect(readFileSync(path.join(apiRoot, 'feedback-general.ts'), 'utf8')).toContain(
-      "'./_server/composition/feedback'",
+      "'./_server/composition/feedback.js'",
     );
     expect(readFileSync(path.join(apiRoot, 'identity.ts'), 'utf8')).toContain(
-      "'./_server/composition/identity'",
+      "'./_server/composition/identity.js'",
     );
     expect(readFileSync(path.join(apiRoot, 'web-auth.ts'), 'utf8')).toContain(
-      "'./_server/composition/webauth'",
+      "'./_server/composition/webauth.js'",
     );
     expect(readFileSync(path.join(apiRoot, 'reward.ts'), 'utf8')).toContain(
-      "'./_server/composition/reward'",
+      "'./_server/composition/reward.js'",
     );
     expect(readFileSync(path.join(apiRoot, 'payouts.ts'), 'utf8')).toContain(
-      "'./_server/composition/payouts'",
+      "'./_server/composition/payouts.js'",
     );
     expect(readFileSync(path.join(apiRoot, 'reconcile.ts'), 'utf8')).toContain(
-      "'./_server/composition/reconcile'",
+      "'./_server/composition/reconcile.js'",
     );
   });
 });

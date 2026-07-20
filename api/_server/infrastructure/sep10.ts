@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { Keypair, WebAuth } from '@stellar/stellar-sdk';
 import { NETWORK_PASSPHRASE } from '@achievo/shared';
-import { signSep10Jwt, verifySep10Jwt } from './jwt';
+import { signSep10Jwt, verifySep10Jwt } from './jwt.js';
 
 const CHALLENGE_TIMEOUT_SECONDS = 300;
 const JWT_TTL_SECONDS = 30 * 60;
