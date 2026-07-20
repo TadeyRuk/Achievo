@@ -214,20 +214,23 @@ contract as of 2026-07-10 — wallet diversity is capped by the 1-reward-per-wal
 limit). Regenerate with `npm run export-payout-proof` → `docs/generated/level4-payout-proof.md`.
 Recruit testers with [`docs/LEVEL4_TESTER_CHECKLIST.md`](docs/LEVEL4_TESTER_CHECKLIST.md).
 
-## Tester Feedback
+## Verified Wallet Interactions
 
-| Wallet | Activity | Reward | Status | Feedback |
-|---|---|---:|---|---|
-| [`GHBRPOIG...OGYR5XK`](https://stellar.expert/explorer/testnet/account/GHBRPOIGF3CBFNOBM2O4RAK3VRJNVGFYGWWQC5HYFSXMECOSFOGYR5XK) | Workshop | 9.56 XLM | Completed | "Finally got the hang of writing my first smart contract today, mind blown." |
-| [`GXWNREKP...QAHRVHS3`](https://stellar.expert/explorer/testnet/account/GXWNREKPK5YROUDOCUZRENUN7Z5JQIPQ3ZXOI7FDHJK3EYY5QAHRVHS3) | Volunteering | 4.12 XLM | Completed | "Just helped set up chairs and greet folks at the door, nothing fancy." |
-| [`GK5AQLGT...DAFPK276`](https://stellar.expert/explorer/testnet/account/GK5AQLGTMJXKAU7BHXTPDPFF7EII6KQ3NMTZX44HPOEVBOOAEDOECVEP) | Event | 8.03 XLM | Completed | "That demo day was INSANE, so many great builders in one room!!" |
-| [`GR7NI6P6...FK276NZD`](https://stellar.expert/explorer/testnet/account/GR7NI6P62MGG3W325DGDZVGPMM4I3LR5PE4GDAFPK276NZDKYAYQ5S37) | Participation | 6.07 XLM | Completed | "Showed up, joined the discussion, dropped a few ideas in the chat." |
-| [`GJMSNDDU...A5GENQIW`](https://stellar.expert/explorer/testnet/account/GJMSNDDUDD6KDFLEEPZHPCF2UQNUPQZIT5UEA5GENQIWEPXSK4TATGIQ) | Tutoring | 6.28 XLM | Completed | "Walked a newbie through their first Stellar transaction. Felt really good seeing it click for them." |
-| [`GHGJRSNV...XCWNPGW2`](https://stellar.expert/explorer/testnet/account/GHGJRSNVNQ7QDF3RCAVIQK43AHEJCXJ3ICTXCWNPGW2JPKL2BLV2PRKG) | Workshop | 6.92 XLM | Completed | "long session, brain is fried, but i actually get the SDK now lol" |
-| [`GYC6OM5W...MQC3AMX3`](https://stellar.expert/explorer/testnet/account/GYC6OM5WTOOBMZVRERWZVBHQLQCG3WU3HYMQC3AMX3EVUHTT2UZSIM2Y) | Volunteering | 4.22 XLM | Completed | "Spent the afternoon coordinating the meetup. Glad I could give back." |
-| [`GLTZATSN...5DPH5I5U`](https://stellar.expert/explorer/testnet/account/GLTZATSN3U544N6KFSVFPTOMJBCP6E52MY7ZPJAG3OL5DPH5I5U434K6) | Event | 8.01 XLM | Completed | "Attended. Networked. Got a sticker." |
-| [`G4QPR7PR...AWTY2O7O`](https://stellar.expert/explorer/testnet/account/G4QPR7PR4ESPRVUFIJOYJNE22V52DN2YBY6AWTY2O7OR37BYVZK5IBZB) | Participation | 5.06 XLM | Completed | "Jumped into the challenge thread and tried a few things out, learned a ton tbh." |
-| [`GF3I5LDQ...HN5QXKHK`](https://stellar.expert/explorer/testnet/account/GF3I5LDQUN5UVYR2QF6BDWOECBPMBJPI6HN5QXKHKTGBTYZMEPGTHCW) | Tutoring | 5.80 XLM | Completed | "Spent an hour walking someone through smart contract basics. Good reminder of how far I've come." |
+Live counts from [`docs/generated/level4-payout-proof.md`](docs/generated/level4-payout-proof.md) (regenerate with `npm run export-payout-proof`).
+
+| # | Date (UTC) | Contract | Wallet | Amount | Activity |
+|---:|---|---|---|---:|---|
+| 1 | 2026-06-14 14:05 | legacy | [`GAWTHZ…GZGSED`](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 3.5 XLM | reward |
+| 2 | 2026-06-14 14:10 | legacy | [`GAWTHZ…GZGSED`](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 3.5 XLM | reward |
+| 3 | 2026-06-14 17:08 | legacy | [`GAWTHZ…GZGSED`](https://stellar.expert/explorer/testnet/account/GAWTHZQUA75JWE4KHZW434VS3WJ6ETFAOBR42A5TG7I2W7OVASGZGSED) | 14 XLM | reward |
+| 4 | 2026-06-14 17:25 | legacy | [`GBL55A…GE7KB5`](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 4.1 XLM | reward |
+| 5 | 2026-06-14 18:18 | legacy | [`GBL55A…GE7KB5`](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 6 XLM | reward |
+| 6 | 2026-06-14 18:26 | legacy | [`GBL55A…GE7KB5`](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM | reward |
+| 7 | 2026-06-15 02:15 | legacy | [`GBL55A…GE7KB5`](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM | reward |
+| 8 | 2026-06-15 08:26 | legacy | [`GBL55A…GE7KB5`](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 11 XLM | reward |
+| 9 | 2026-06-16 01:28 | legacy | [`GBL55A…GE7KB5`](https://stellar.expert/explorer/testnet/account/GBL55A67ZYVI2VABOLPJEHKMNTYPPJHNT2KXN7ETVJXJHVXPXNGE7KB5) | 5.5 XLM | reward |
+
+**9 verified on-chain reward transactions, 69.6 XLM disbursed, across 2 unique wallets.** Recruiting toward the 10-transaction / 10-unique-wallet Level 4 bar with [`docs/LEVEL4_TESTER_CHECKLIST.md`](docs/LEVEL4_TESTER_CHECKLIST.md).
 
 ## Analytics
 
