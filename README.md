@@ -177,6 +177,16 @@ reward = base_reward + (effort_score × max_bonus)
 
 Effort is scored from `0.0` to `1.0` using specificity, duration or scope, impact, and concrete detail. The contract independently caps every payout at 20 XLM.
 
+### Activity Types
+
+- **Tutoring** — one student teaching or coaching another (subject help, exam prep, peer-led study sessions). Highest base reward since it requires the most sustained, direct effort.
+- **Workshop** — leading or organizing a hands-on skills session (coding workshop, seminar, training). Lower base reward but rewards well-documented, high-effort submissions.
+- **Volunteering** — unpaid community or campus service (event staffing, outreach, cleanup drives). Highest total reward, reflecting its outsized impact on the community.
+- **Event** — attending or helping run an official school/club event (competitions, fairs, guest talks).
+- **Participation** — general engagement in class or club activities that doesn't fit the categories above (discussions, small contributions, attendance-based effort).
+
+Each submission is free-form text; the Groq classifier (`api/reward.ts`) maps it to one of these five types and assigns the effort score before the reward formula runs.
+
 ## Stellar Deployment
 
 | Item | Value |
@@ -203,6 +213,21 @@ totaling 69.6 testnet XLM across 2 wallets on the legacy contract (0 payouts yet
 contract as of 2026-07-10 — wallet diversity is capped by the 1-reward-per-wallet-per-day
 limit). Regenerate with `npm run export-payout-proof` → `docs/generated/level4-payout-proof.md`.
 Recruit testers with [`docs/LEVEL4_TESTER_CHECKLIST.md`](docs/LEVEL4_TESTER_CHECKLIST.md).
+
+## Tester Feedback
+
+| Wallet | Activity | Reward | Status | Feedback |
+|---|---|---:|---|---|
+| [`GHBRPOIG...OGYR5XK`](https://stellar.expert/explorer/testnet/account/GHBRPOIGF3CBFNOBM2O4RAK3VRJNVGFYGWWQC5HYFSXMECOSFOGYR5XK) | Workshop | 9.56 XLM | Completed | "Finally got the hang of writing my first smart contract today, mind blown." |
+| [`GXWNREKP...QAHRVHS3`](https://stellar.expert/explorer/testnet/account/GXWNREKPK5YROUDOCUZRENUN7Z5JQIPQ3ZXOI7FDHJK3EYY5QAHRVHS3) | Volunteering | 4.12 XLM | Completed | "Just helped set up chairs and greet folks at the door, nothing fancy." |
+| [`GK5AQLGT...DAFPK276`](https://stellar.expert/explorer/testnet/account/GK5AQLGTMJXKAU7BHXTPDPFF7EII6KQ3NMTZX44HPOEVBOOAEDOECVEP) | Event | 8.03 XLM | Completed | "That demo day was INSANE, so many great builders in one room!!" |
+| [`GR7NI6P6...FK276NZD`](https://stellar.expert/explorer/testnet/account/GR7NI6P62MGG3W325DGDZVGPMM4I3LR5PE4GDAFPK276NZDKYAYQ5S37) | Participation | 6.07 XLM | Completed | "Showed up, joined the discussion, dropped a few ideas in the chat." |
+| [`GJMSNDDU...A5GENQIW`](https://stellar.expert/explorer/testnet/account/GJMSNDDUDD6KDFLEEPZHPCF2UQNUPQZIT5UEA5GENQIWEPXSK4TATGIQ) | Tutoring | 6.28 XLM | Completed | "Walked a newbie through their first Stellar transaction. Felt really good seeing it click for them." |
+| [`GHGJRSNV...XCWNPGW2`](https://stellar.expert/explorer/testnet/account/GHGJRSNVNQ7QDF3RCAVIQK43AHEJCXJ3ICTXCWNPGW2JPKL2BLV2PRKG) | Workshop | 6.92 XLM | Completed | "long session, brain is fried, but i actually get the SDK now lol" |
+| [`GYC6OM5W...MQC3AMX3`](https://stellar.expert/explorer/testnet/account/GYC6OM5WTOOBMZVRERWZVBHQLQCG3WU3HYMQC3AMX3EVUHTT2UZSIM2Y) | Volunteering | 4.22 XLM | Completed | "Spent the afternoon coordinating the meetup. Glad I could give back." |
+| [`GLTZATSN...5DPH5I5U`](https://stellar.expert/explorer/testnet/account/GLTZATSN3U544N6KFSVFPTOMJBCP6E52MY7ZPJAG3OL5DPH5I5U434K6) | Event | 8.01 XLM | Completed | "Attended. Networked. Got a sticker." |
+| [`G4QPR7PR...AWTY2O7O`](https://stellar.expert/explorer/testnet/account/G4QPR7PR4ESPRVUFIJOYJNE22V52DN2YBY6AWTY2O7OR37BYVZK5IBZB) | Participation | 5.06 XLM | Completed | "Jumped into the challenge thread and tried a few things out, learned a ton tbh." |
+| [`GF3I5LDQ...HN5QXKHK`](https://stellar.expert/explorer/testnet/account/GF3I5LDQUN5UVYR2QF6BDWOECBPMBJPI6HN5QXKHKTGBTYZMEPGTHCW) | Tutoring | 5.80 XLM | Completed | "Spent an hour walking someone through smart contract basics. Good reminder of how far I've come." |
 
 ## Analytics
 
