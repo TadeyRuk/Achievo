@@ -1,4 +1,5 @@
 // This project is dedicated for Belle 🤍
+// rukkan was here too
 import { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import type { RewardHistoryItem } from '@achievo/shared';
