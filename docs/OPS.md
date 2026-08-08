@@ -13,10 +13,19 @@
 
 Scheduled by GitHub Actions (`.github/workflows/reconcile.yml`, every 10 minutes + manual `workflow_dispatch`), not Vercel Cron — Hobby plans reject sub-daily Vercel crons and would fail deploy.
 
-Repo secrets required for the workflow:
+Repo secrets required for the workflow (Settings → Secrets and variables → Actions):
 
 - `ACHIEVO_BASE_URL` — production (or staging) origin, e.g. `https://achievo.example.com`
 - `CRON_SECRET` — same value as the app’s `CRON_SECRET` env on Vercel
+
+When either secret is missing the workflow **skips with a warning instead of failing** — a
+job that fails every 10 minutes buries real alerts in notification noise. The run still shows
+`⚠️ Reconcile is not configured` in its summary, and nothing is being settled while it does,
+so treat that warning as an outage: add the secrets and re-run.
+
+Once configured, a failing call retries twice (5s, 10s backoff) before failing the run, and
+logs the response body. Config-level statuses (400/401/403/404/405) fail immediately — a bad
+secret or wrong origin will not fix itself on retry.
 
 In production, missing `CRON_SECRET` fails closed (503) on `/api/reconcile`.
 
