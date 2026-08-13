@@ -6,23 +6,74 @@ on:
     - cron: '*/10 * * * *'
   workflow_dispatch:
 
+concurrency:
+  group: reconcile
+  cancel-in-progress: false
+
 jobs:
   reconcile:
     name: Settle pending payouts
     runs-on: ubuntu-latest
     steps:
-      - name: Call /api/reconcile
+      - name: Check workflow secrets
+        id: config
         env:
           ACHIEVO_BASE_URL: ${{ secrets.ACHIEVO_BASE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           set -euo pipefail
-          if [ -z "${ACHIEVO_BASE_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
-            echo "Missing repo secrets ACHIEVO_BASE_URL and/or CRON_SECRET."
-            exit 1
+          missing=()
+          [ -n "${ACHIEVO_BASE_URL:-}" ] || missing+=(ACHIEVO_BASE_URL)
+          [ -n "${CRON_SECRET:-}" ] || missing+=(CRON_SECRET)
+          if [ ${#missing[@]} -gt 0 ]; then
+            note="Reconcile is not configured: missing repo secret(s) ${missing[*]}. Pending payouts are NOT being settled. Add them under Settings → Secrets and variables → Actions, then re-run this workflow."
+            echo "::warning title=Reconcile skipped::${note}"
+            echo "⚠️ ${note}" >> "$GITHUB_STEP_SUMMARY"
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Call /api/reconcile
+        if: steps.config.outputs.configured == 'true'
+        env:
+          ACHIEVO_BASE_URL: ${{ secrets.ACHIEVO_BASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
           base="${ACHIEVO_BASE_URL%/}"
-          curl -fsS -X POST \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Accept: application/json" \
-            "${base}/api/reconcile"
+          code=000
+          for attempt in 1 2 3; do
+            # Network failures write no body; drop the previous attempt's so logs never show a stale one.
+            rm -f response.json
+            code="$(curl -sS -X POST \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              -H "Accept: application/json" \
+              --max-time 60 \
+              -o response.json -w '%{http_code}' \
+              "${base}/api/reconcile")" || code=000
+            if [ "$code" = "200" ]; then
+              {
+                echo '```json'
+                cat response.json
+                echo
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+              cat response.json
+              echo
+              exit 0
+            fi
+            echo "Attempt ${attempt}: HTTP ${code}"
+            # Response body carries the server's reason (bad secret, 503 fail-closed, ...).
+            head -c 2000 response.json 2>/dev/null || true
+            echo
+            case "$code" in
+              # Auth/route problems are configuration, not transient — retrying wastes 10 minutes.
+              400|401|403|404|405) break ;;
+            esac
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 5))
+            fi
+          done
+          echo "::error title=Reconcile failed::POST ${base}/api/reconcile returned HTTP ${code}"
+          exit 1
