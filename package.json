@@ -34,11 +34,11 @@
     "@achievo/shared": "*",
     "@achievo/stellar": "*",
     "@stellar/stellar-sdk": "^15.1.0",
-    "@upstash/redis": "^1.38.0"
+    "@upstash/redis": "^1.38.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@vercel/node": "^5.1.5",
+    "@vercel/node": "^5.10.2",
     "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^10.3.0",
     "globals": "^17.6.0",
