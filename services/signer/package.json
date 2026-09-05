@@ -10,7 +10,7 @@
   "dependencies": {
     "@achievo/shared": "*",
     "@stellar/stellar-sdk": "^15.1.0",
-    "@vercel/node": "^5.1.5"
+    "@vercel/node": "^5.10.2"
   },
   "devDependencies": {
     "typescript": "~6.0.2",
